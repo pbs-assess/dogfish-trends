@@ -11,6 +11,7 @@ chunk_years <- function(x, chunks) {
 # data prep -----------------------------------------------------------------
 
 source("analysis/01-prep-overall-trawl.R")
+rm(dat) # only keep 'grid'
 grid <- rename(grid, X = UTM.lon, Y = UTM.lat)
 
 d <- readRDS("output/splitbymaturityregion_df.rds")
@@ -19,10 +20,7 @@ d <- filter(d, survey_name != "Triennial")
 d <- add_utm_columns(d, c("longitude", "latitude"), units = "km", utm_crs = 32607)
 d$offset_km <- log(d$area_swept/(1000*1000))
 d$catch_weight_t <- d$catch_weight / 1000
-range(d$catch_weight_t)
-mean(d$offset_km)
 d$depth_m <- exp(d$logbot_depth)
-hist(d$depth_m)
 
 ggplot(d, aes(X, Y, colour = survey_name)) + geom_point() +
   facet_wrap(~lengthgroup)
@@ -38,7 +36,6 @@ domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(example_dat[, c("X", "Y")]),
   concave = -0.07, convex = -0.05, resolution = c(200, 200)
 )
-plot(domain)
 mesh3 <- fmesher::fm_mesh_2d_inla(
   boundary = domain,
   max.edge = c(200, 2000),
@@ -56,7 +53,6 @@ indexes <- list()
 groups <- sort(unique(d$lengthgroup))
 
 for (i in seq_along(groups)) {
-  gc()
   this_group <- groups[i]
   cat("Fitting:", this_group, "\n")
 
@@ -72,7 +68,7 @@ for (i in seq_along(groups)) {
     spatial = "on",
     spatiotemporal = "rw",
     extra_time = seq(min(dd$year), max(dd$year)),
-    family = delta_lognormal_mix(),
+    family = delta_lognormal_mix(type = "poisson-link"),
     control = sdmTMBcontrol(
       start = list(logit_p_mix = qlogis(0.01)),
       map = list(logit_p_mix = factor(NA))
@@ -104,7 +100,10 @@ for (i in seq_along(groups)) {
   }
   index_l <- lapply(yy, run_index_coastwide)
   index <- do.call(rbind, index_l)
-  ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) + geom_line() + geom_ribbon(alpha = 0.2)
+  if (FALSE) {
+    ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) + geom_line() +
+      geom_ribbon(alpha = 0.2)
+  }
 
   # predict by region -------------------------------------------------------
 
@@ -122,12 +121,14 @@ for (i in seq_along(groups)) {
   }
   index_reg_l <- lapply(regions, run_index_by_region)
   index_reg <- do.call(rbind, index_reg_l)
-
   ind <- bind_rows(mutate(index, region = "Coast"), index_reg)
 
   indexes[[i]] <- ind
   fits[[i]] <- fit
 }
+
+saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link.rds")
+saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link.rds")
 
 # ind$region <- factor(ind$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
 #
