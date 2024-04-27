@@ -127,11 +127,15 @@ for (i in seq_along(groups)) {
   fits[[i]] <- fit
 }
 
-saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link.rds")
+names(indexes) <- groups
+ind <- bind_rows(indexes, .id = "group")
+row.names(ind) <- NULL
+glimpse(ind)
+saveRDS(ind, file = "output/index-trawl-by-maturity-poisson-link.rds")
 saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link.rds")
 
-# ind$region <- factor(ind$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
-#
-# ggplot(ind, aes(year, est, ymin = lwr, ymax = upr)) +
-  # geom_line() + geom_ribbon(alpha = 0.2) +
-  # facet_wrap(~region, ncol = 1, scales = "free_y")
+ind$region <- factor(ind$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
+
+ggplot(ind, aes(year, est, ymin = lwr, ymax = upr)) +
+  geom_line() + geom_ribbon(alpha = 0.2) +
+  facet_grid(group~region, scales = "free_y")
