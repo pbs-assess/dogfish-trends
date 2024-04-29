@@ -45,7 +45,7 @@ fits <- lapply(dd, \(x) {
     mesh = .mesh,
     spatial = "on",
     spatiotemporal = "rw",
-    family = delta_lognormal_mix(),
+    family = delta_lognormal_mix(type = "poisson-link"),
     control = sdmTMBcontrol(
       start = list(logit_p_mix = qlogis(0.01)),
       map = list(logit_p_mix = factor(NA))
