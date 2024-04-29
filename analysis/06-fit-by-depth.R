@@ -15,7 +15,6 @@ table(dat_coast$survey_name)
 
 # coast trawl model ---------------------------------------------------------
 
-# custom mesh:
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(dat_coast[, c("UTM.lon", "UTM.lat")]),
   concave = -0.07, convex = -0.05, resolution = c(200, 200)
@@ -59,10 +58,13 @@ fits <- lapply(dd, \(x) {
     ),
   )
 })
+fits
+purrr::walk(fits, sanity)
 
 saveRDS(fits, file = "output/fit-by-depth-poisson-link.rds")
 
 indexes <- lapply(seq_along(fits), \(i) {
+  cat(i, "\n")
   if (i == 1) {
     nd <- dplyr::filter(grid, depth_m < 200)
     id <- "shallow"
@@ -70,7 +72,8 @@ indexes <- lapply(seq_along(fits), \(i) {
     nd <- dplyr::filter(grid, depth_m >= 200)
     id <- "deep"
   }
-  pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
+  nd <- filter(nd, year %in% unique(dat_coast$year))
+  pred <- predict(fits[[i]], newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
   ind$group <- id
   gc()
@@ -78,6 +81,6 @@ indexes <- lapply(seq_along(fits), \(i) {
 })
 saveRDS(indexes, file = "output/indexes-by-depth-poisson-link.rds")
 
-bind_rows(index) |>
+bind_rows(indexes) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group)) +
   geom_pointrange()
