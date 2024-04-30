@@ -1,7 +1,7 @@
 library(ggplot2)
 library(dplyr)
 library(sdmTMB)
-source("analysis/01-prep-overall-trawl.R")
+source("analysis/999-prep-overall-trawl.R")
 fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
 regions <- unique(grid$region)
 grid <- rename(grid, X = UTM.lon, Y = UTM.lat)

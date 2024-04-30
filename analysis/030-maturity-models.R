@@ -10,7 +10,7 @@ chunk_years <- function(x, chunks) {
 
 # data prep -----------------------------------------------------------------
 
-source("analysis/01-prep-overall-trawl.R")
+source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
 grid <- rename(grid, X = UTM.lon, Y = UTM.lat)
 

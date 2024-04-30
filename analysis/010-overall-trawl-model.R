@@ -3,7 +3,7 @@ library(ggplot2)
 library(sdmTMB)
 theme_set(ggsidekick::theme_sleek())
 
-source("analysis/01-prep-overall-trawl.R")
+source("analysis/999-prep-overall-trawl.R")
 
 dat_coast <- filter(dat, survey_name %in%
     c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
@@ -171,7 +171,7 @@ coast_index <- ind
 
 # iterate over regions with individual fits ---------------------------------
 
-source("analysis/01-prep-overall-trawl.R")
+source("analysis/999-prep-overall-trawl.R")
 table(dat$survey_name)
 dat$region <- ""
 dat$region[dat$survey_name %in%
