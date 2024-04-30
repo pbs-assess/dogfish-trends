@@ -13,7 +13,7 @@ fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix.rds")
 fits <- c(fit_reg, list(fit_coast))
 names(fits) <- c(names(fit_reg), "Coast")
 
-ret <- purrr::map_dfr(seq_along(fits), function(i) {
+coefs <- purrr::map_dfr(seq_along(fits), function(i) {
   x <- fits[[i]]
   if (length(fits[[i]]) > 3) {
     x1 <- tidy(x, 'ran_pars', model = 1, conf.int = TRUE)
@@ -32,30 +32,21 @@ ret <- purrr::map_dfr(seq_along(fits), function(i) {
   x$region <- names(fits)[i]
   x
 })
-# transmute(Region = region, `Linear predictor` = linear_predictor, Term = term, `Lower CI` = conf.low, Estimate = estimate, `Upper CI` = conf.high) |>
-# mutate(Region = factor(Region, levels = ))
-# knitr::kable(digits = 1)
 
 firstup <- function(x) {
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
   x
 }
 
-ret$region <- gsub("Coast", "Coastwide", ret$region)
-ret$region <- gsub("GOA", "Gulf of Alaska", ret$region)
-ret$region <- gsub("BC", "British Columbia", ret$region)
-ret$region <- gsub("NWFSC", "US West Coast", ret$region)
+coefs <- clean_region_names(coefs)
 
-ret <- ret |>
-  mutate(region = factor(region,
-    levels = rev(c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast"))))
-
-ret |>
+coefs |>
   mutate(term = gsub("sigma_E", "spatiotemporal SD", term)) |>
   mutate(term = gsub("sigma_O", "spatial SD", term)) |>
   mutate(term = gsub("phi", "lognormal SD", term)) |>
   mutate(term = firstup(term)) |>
-  ggplot(aes(estimate, y = region, xmin = conf.low, xmax = conf.high, colour = as.factor(linear_predictor))) +
+  ggplot(aes(estimate, y = region, xmin = conf.low, xmax = conf.high,
+    colour = as.factor(linear_predictor))) +
   geom_pointrange(position = position_dodge(width = 0.2)) +
   facet_wrap(~term, scales = "free_x", nrow = 2) +
   scale_color_brewer(palette = "Dark2") +
@@ -84,16 +75,8 @@ ret <- purrr::map_dfr(seq_along(fits), function(i) {
   pp
 })
 
-ret$region <- gsub("Coast", "Coastwide", ret$region)
-ret$region <- gsub("GOA", "Gulf of Alaska", ret$region)
-ret$region <- gsub("BC", "British Columbia", ret$region)
-ret$region <- gsub("NWFSC", "US West Coast", ret$region)
-
-ret <- ret |>
-  mutate(region = factor(region,
-    levels = rev(c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast"))))
-
 ret |>
+  clean_region_names() |>
   group_by(region) |>
   mutate(est = log(exp(est) / max(exp(est)))) |>
   ggplot(aes(depth_m, exp(est),
