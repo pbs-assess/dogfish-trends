@@ -5,7 +5,10 @@ dir.create("figs", showWarnings = FALSE)
 source("analysis/010-overall-trawl-model.R")
 source("analysis/010-overall-longline-model.R")
 source("analysis/011-fig1.R")
+
+# biomass-weighted depth:
 source("analysis/012-weighted-mean-depth.R")
+source("analysis/013-plot-mean-depth.R")
 
 # overall SVC:
 source("analysis/020-svc-models.R")

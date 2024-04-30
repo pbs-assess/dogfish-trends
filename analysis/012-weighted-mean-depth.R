@@ -1,7 +1,7 @@
-library(ggplot2)
 library(dplyr)
 library(sdmTMB)
 source("analysis/999-prep-overall-trawl.R")
+
 fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
 regions <- unique(grid$region)
 grid <- rename(grid, X = UTM.lon, Y = UTM.lat)
@@ -75,37 +75,4 @@ run_mean_depth_by_maturity_mvn <- function(i) {
 }
 ret <- lapply(seq_along(mats), run_mean_depth_by_maturity_mvn)
 ret <- do.call(rbind, ret)
-ret$region <- factor(ret$region, levels = c("GOA", "BC", "NWFSC"))
-
-lu <- data.frame(
-  maturity_group = c("mm", "mf", "maturingm", "maturingf", "imm"),
-  group_clean = c("Mature males", "Mature females", "Maturing males", "Maturing females", "Immature"),
-  stringsAsFactors = FALSE
-)
-ret2 <- left_join(ret, lu)
-lvls <- rev(c("Immature", "Maturing females", "Maturing males", "Mature males", "Mature females"))
-ret2$group_clean <- factor(ret2$group_clean, levels = lvls)
-
-lu <- data.frame(
-  region = c("GOA", "BC", "NWFSC"),
-  region_clean = c("Gulf of Alaska", "British Columbia", "US West Coast"),
-  stringsAsFactors = FALSE
-)
-ret2 <- left_join(ret2, lu)
-ret2$region_clean <- factor(ret2$region_clean, levels = c("Gulf of Alaska", "British Columbia", "US West Coast"))
-
-pal <- "Paired"
-g <- ret2 |>
-  ggplot(aes(year, -mean_depth, colour = group_clean, fill = group_clean)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = -(mean_depth - sd_depth), ymax = -(mean_depth + sd_depth)),
-    colour = NA, alpha = 0.2
-  ) +
-  facet_wrap(~region_clean) +
-  scale_colour_brewer(palette = pal) +
-  scale_fill_brewer(palette = pal) +
-  labs(fill = "Group", colour = "Group", x = "Year", y = "Biomass-weighted mean depth (m)") +
-  theme(legend.position = "inside", legend.position.inside = c(0.11, 0.24))
-
-ggsave("figs/biomass-weighted-depth.png", width = 7, height = 3.5)
-ggsave("figs/biomass-weighted-depth.pdf", width = 7, height = 3.5)
+saveRDS(ret, file = "output/biomass-weighted-depth.rds")
