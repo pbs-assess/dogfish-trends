@@ -30,10 +30,12 @@ mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
 mesh$mesh$n
 
-dsh <- filter(dat_coast, depth_m < 200)
-ddeep <- filter(dat_coast, depth_m >= 200)
-dd <- list(dsh, ddeep)
-rm(dsh, ddeep)
+CUTOFF <- 100 # meters depth
+
+dd <- list(
+  filter(dat_coast, depth_m < CUTOFF),
+  filter(dat_coast, depth_m >= CUTOFF)
+)
 
 fits <- lapply(dd, \(x) {
   .mesh <- make_mesh(x, c("UTM.lon", "UTM.lat"), mesh = mesh$mesh)
@@ -52,6 +54,7 @@ fits <- lapply(dd, \(x) {
     ),
     silent = FALSE,
     share_range = FALSE,
+    extra_time = seq(min(x$year), max(x$year)),
     priors = sdmTMBpriors(
       matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
       matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
@@ -66,13 +69,13 @@ saveRDS(fits, file = "output/fit-by-depth-poisson-link.rds")
 indexes <- lapply(seq_along(fits), \(i) {
   cat(i, "\n")
   if (i == 1) {
-    nd <- dplyr::filter(grid, depth_m < 200)
+    nd <- dplyr::filter(grid, depth_m < CUTOFF)
     id <- "shallow"
   } else {
-    nd <- dplyr::filter(grid, depth_m >= 200)
+    nd <- dplyr::filter(grid, depth_m >= CUTOFF)
     id <- "deep"
   }
-  nd <- filter(nd, year %in% unique(dat_coast$year))
+  nd <- filter(nd, year %in% fits[[i]]$data$year)
   pred <- predict(fits[[i]], newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
   ind$group <- id
@@ -83,4 +86,14 @@ saveRDS(indexes, file = "output/indexes-by-depth-poisson-link.rds")
 
 bind_rows(indexes) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group)) +
-  geom_pointrange()
+  geom_pointrange() +
+  facet_wrap(~group)
+
+# try with the main model ---------------------------
+
+fit <- readRDS("output/fit-trawl-coast-lognormal-mix.rds")
+fit
+
+tofit <- expand.grid(region = unique(grid$region), depth = c("shallow", "deep"))
+
+

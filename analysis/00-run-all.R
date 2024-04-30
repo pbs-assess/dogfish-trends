@@ -10,3 +10,5 @@ source("analysis/04-maturity-models.R")
 source("analysis/05-plot-maturity-models.R")
 source("analysis/05-plot-maturity-svc.R")
 source("analysis/06-fit-by-depth.R")
+
+source("analysis/07-weighted-mean-depth.R")
