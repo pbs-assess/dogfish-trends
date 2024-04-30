@@ -68,6 +68,8 @@ prep_trawl_dat_and_grid <- function() {
 
   df2$catch_weight_t <- df2$catch_weight / 1000
   grid$depth_m <- grid$bot_depth
+  grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
+
   list(dat = df2, grid = grid)
 }
 

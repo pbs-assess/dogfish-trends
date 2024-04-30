@@ -4,7 +4,6 @@ source("analysis/999-prep-overall-trawl.R")
 
 fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
 regions <- unique(grid$region)
-grid <- rename(grid, X = UTM.lon, Y = UTM.lat)
 
 mats <- unlist(lapply(fits, \(x) x$data$lengthgroup[1]))
 names(fits) <- mats
