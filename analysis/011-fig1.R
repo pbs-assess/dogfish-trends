@@ -1,6 +1,7 @@
 library(dplyr)
 library(ggplot2)
 
+source("analysis/999-colours-etc.R")
 ind <- readRDS("output/trawl-coast-indexes.rds")
 
 ind <- ind |>

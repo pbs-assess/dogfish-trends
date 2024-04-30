@@ -28,11 +28,16 @@ mesh3 <- fmesher::fm_mesh_2d_inla(
   cutoff = 50
 )
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
-plot(mesh)
+ggplot() + inlabru::gg(mesh$mesh) +
+  geom_point(data = dat_coast, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.07, pch = 21) +
+  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+ggsave("figs/trawl-model-mesh.pdf", width = 6, height = 6)
+ggsave("figs/trawl-model-mesh.png", width = 6, height = 6)
+
 mesh$mesh$n
 
 tictoc::tic()
-fit5 <- sdmTMB(
+fit1 <- sdmTMB(
   formula = catch_weight_t ~ 1 + poly(log(depth_m), 2),
   data = dat_coast,
   time = "year",
@@ -116,10 +121,14 @@ chunk_years <- function(x, chunks) {
   ny <- length(x)
   split(x, rep(seq_len(chunks), each = ceiling(ny/chunks))[seq_along(x)])
 }
+yrs <- unique(dat_coast$year)
 yy <- chunk_years(yrs, 2)
 yy
 
-fit <- fit1 # !!
+saveRDS(fit4, file = "output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+fit4 <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+
+fit <- fit4 # !!
 
 index_l <- lapply(yy, \(y) {
   cat(y, "\n")
@@ -304,22 +313,8 @@ rm(fit, fit1, dat_coast)
 saveRDS(out, file = "output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
 out <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
 
-# param table ---------------------------------------------------------------
-
-purrr::map_dfr(names(out), function(i) {
-  x <- tidy(out[[i]]$fit, 'ran_pars')
-  x$region <- i
-  x
-})
-
 # depth effect --------------------------------------------------------------
 
-if (FALSE) {
-  dd <- seq(min(dat$depth_m), max(dat$depth_m), length.out = 200)
-  nd <- data.frame(depth_m = dd, year = 2003L)
-  pp <- predict(fit, newdata = nd, re_form = NA, se_fit = FALSE)
-  ggplot(pp, aes(depth_m, exp(est))) + geom_line()
-}
 
 aa <- bind_rows(
   mutate(ind, model = "Region-specific"),

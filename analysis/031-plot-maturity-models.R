@@ -1,11 +1,7 @@
 library(ggplot2)
 library(dplyr)
-
+source("analysis/999-colours-etc.R")
 indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds")
-# fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
-indexes
-# fits
-
 indexes$region <- factor(indexes$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
 
 glmdf <- indexes |> filter(year >= 2006) |>
@@ -48,34 +44,44 @@ glmdf$group_clean <- factor(glmdf$group_clean, levels = lvls)
 glmdf |> select(group_clean, region, slope, lwr, upr) |> distinct() |>
   mutate(slope = exp(slope), lwr = exp(lwr), upr = exp(upr)) |>
   ggplot(aes(slope, group_clean, xmin = lwr, xmax = upr, colour = region)) +
+  geom_vline(xintercept = 1, lty = 2, colour = "grey70") +
   geom_pointrange(position = position_dodge(width = 0.3), pch = 21) +
-  geom_vline(xintercept = 1, lty = 2) +
-  scale_colour_manual(values = c("grey30", RColorBrewer::brewer.pal(3, "Set2")), guide = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = cols_region, guide = guide_legend(reverse = TRUE)) +
   # scale_colour_brewer(palette = "Set2") +
   ggsidekick::theme_sleek() +
-  scale_x_log10() +
+  scale_x_log10(breaks = c(0.3, 0.5, 0.7, 1, 1.3)) +
   theme(axis.title.y.left = element_blank()) +
   xlab("Multiplicative population\nchange per decade") +
-  labs(colour = "Region")
+  labs(colour = "Region") +
+  coord_cartesian(xlim = c(0.2, 1.4))
+ggsave("figs/maturity-index-slopes.png", width = 4.4, height = 3.8)
+ggsave("figs/maturity-index-slopes.pdf", width = 4.4, height = 3.8)
 
 indexes$group_clean <- forcats::fct_rev(indexes$group_clean)
 glmdf$group_clean <- forcats::fct_rev(glmdf$group_clean)
-ggplot(indexes, aes(year, est, ymin = lwr, ymax = upr)) +
-  geom_line() + geom_ribbon(alpha = 0.2) +
+ggplot(indexes, aes(year, est, ymin = lwr, ymax = upr, colour = group_clean, fill = group_clean)) +
+  geom_line() + geom_ribbon(alpha = 0.2, colour = NA) +
   # facet_grid(group~region, scales = "free_y")
   facet_grid(region ~ group_clean, scales = "free_y") +
   ggsidekick::theme_sleek() +
   coord_cartesian(ylim = c(0, NA), expand = FALSE) +
-  geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = 0.7, colour = "red")
+  geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = 0.7, colour = "grey10", alpha = 0.8) +
+  labs(y = "Biomass index", x = "Year", colour = "Group", fill = "Group") +
+  scale_colour_brewer(palette = "Paired") +
+  scale_fill_brewer(palette = "Paired") +
+  guides(fill = "none", colour = "none")
+ggsave("figs/maturity-index-trends-facet-grid.pdf", width = 8.5, height = 5.5)
 
 indexes |>
-  ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group, fill = group)) +
+  ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group_clean, fill = group_clean)) +
   geom_line() +
   # scale_y_log10() +
-  scale_colour_brewer(palette = "Dark2") +
-  scale_fill_brewer(palette = "Dark2") +
+  scale_colour_brewer(palette = "Paired") +
+  scale_fill_brewer(palette = "Paired") +
   geom_ribbon(alpha = 0.2, colour = NA) +
   facet_wrap(~region, scales = "free_y", nrow = 4) +
   ggsidekick::theme_sleek() +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE)
+  coord_cartesian(ylim = c(0, NA), expand = FALSE) +
+  labs(y = "Biomass index", x = "Year", fill = "Group", colour = "Group")
+ggsave("figs/maturity-index-trends-colour.pdf", width = 5, height = 8.5)
 
