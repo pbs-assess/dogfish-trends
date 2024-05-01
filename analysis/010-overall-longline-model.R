@@ -98,6 +98,16 @@ if (FALSE) {
 
   logLik(fit)
   logLik(fit3)
+
+  fit4 <- update(
+    fit,
+    time_varying = ~ 1,
+    time_varying_type = "rw0"
+  )
+
+  AIC(fit, fit4)
+
+  test_resids_sim(fit4)
 }
 # conclusion (after a bunch of other delta and mixture modelling that is deleted
 # is to go with NB2)
@@ -115,26 +125,17 @@ regions <- list(
 gg <- select(as.data.frame(grid), area_km, depth_m, UTM.lon, UTM.lat, iphc_reg = ET_ID) |>
   distinct()
 gc()
-ret3 <- lapply(regions, \(r) {
+ret <- lapply(regions, \(r) {
   cat(r, "\n")
   nd <- filter(gg, iphc_reg %in% r)
   nd <- replicate_df(nd, "year", unique(fit$data$year))
   nd$obs_id <- NA
-  pred <- predict(fit3, newdata = nd, return_tmb_object = TRUE, re_form_iid = NA)
+  pred <- predict(fit, newdata = nd, return_tmb_object = TRUE, re_form_iid = NA)
   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
   gc()
   ind
 })
 
-out <- bind_rows(ret, .id = "region")
+out <- bind_rows(ret3, .id = "region")
 
 saveRDS(out, file = "output/indexes-iphc-nb2-coastwide.rds")
-out <- readRDS("output/indexes-iphc-nb2-coastwide.rds")
-
-ggplot(out, aes(year, est, ymin = lwr, ymax = upr)) +
-  geom_ribbon() +
-  geom_line() +
-  facet_wrap(~region, scales = "free_y")
-
-
-
