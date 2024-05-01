@@ -45,10 +45,22 @@ z2 <- b2$estimate[b1$term == "year_scaled"]
 # pick any year:
 p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
 p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
-p |>
-  ggplot(aes(UTM.lon, UTM.lat, fill = exp(svc))) +
-  geom_raster() +
+
+pr <- rotate_coords(
+  p$UTM.lon, p$UTM.lat, 44,
+  c(mean(p$UTM.lon),
+    mean(p$UTM.lat)
+  )) |> rename(rotated_x = x, rotated_y = y) |>
+  bind_cols(p)
+
+# plot(final2)
+# points(predimm3$x*1000, predimm3$y*1000, col = "red")
+
+pr |>
+  ggplot(aes(rotated_x, rotated_y, fill = exp(svc))) +
+  geom_tile(width = 3, height = 3) +
   scale_fill_gradient2(trans = "log10") +
   labs(fill = "Spatially\nvarying\ntrend\n\n(Proportion change\nby decade)") +
   coord_equal()
+
 ggsave("figs/svc-trawl.png", width = 6, height = 6)

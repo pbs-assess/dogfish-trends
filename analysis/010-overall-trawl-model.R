@@ -259,7 +259,7 @@ fit_trawl_region <- function(dd) {
     time = "year",
     offset = "offset_km2",
     mesh = mesh,
-    spatial = if (bc) "on" else "on",
+    spatial = "on",
     spatiotemporal = "rw",
     silent = FALSE,
     share_range = FALSE,

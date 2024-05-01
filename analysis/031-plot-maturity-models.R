@@ -76,6 +76,7 @@ indexes |>
 ggsave("figs/maturity-index-trends-colour.pdf", width = 5, height = 8.5)
 
 indexes |>
+  filter(year >= 2003) |>
   group_by(group_clean, region) |>
   mutate(geo_mean = exp(mean(log_est))) |>
   mutate(

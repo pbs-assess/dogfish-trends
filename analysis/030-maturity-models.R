@@ -3,25 +3,12 @@ library(dplyr)
 library(ggplot2)
 library(tictoc)
 
-chunk_years <- function(x, chunks) {
-  ny <- length(x)
-  split(x, rep(seq_len(chunks), each = ceiling(ny/chunks))[seq_along(x)])
-}
-
 # data prep -----------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
-grid <- rename(grid, X = UTM.lon, Y = UTM.lat)
-
-d <- readRDS("output/splitbymaturityregion_df.rds")
-d <- filter(d, !is.na(longitude) & !is.na(latitude))
-d <- filter(d, survey_name != "Triennial")
-d <- add_utm_columns(d, c("longitude", "latitude"), units = "km", utm_crs = 32607)
-d$offset_km <- log(d$area_swept/(1000*1000))
-# d$catch_weight_t <- d$catch_weight_ratio / 1000 # !! catch_weight_ratio; not catch_weight
-d$catch_weight_t <- d$catch_weight_ratio # !! catch_weight_ratio; not catch_weight
-d$depth_m <- exp(d$logbot_depth)
+source("analysis/999-prep-maturity-split-data.R")
+d <- prep_maturity_split_data()
 
 ggplot(d, aes(X, Y, colour = survey_name)) + geom_point() +
   facet_wrap(~lengthgroup)
@@ -108,7 +95,7 @@ for (i in seq_along(groups)) {
 
   # chunk years to keep memory use down:
   yrs <- sort(unique(dd$year))
-  yy <- chunk_years(yrs, 2)
+  yy <- sdmTMB:::chunk_time(yrs, 2)
   run_index_coastwide <- function(y) {
     cat(y, "\n")
     nd <- dplyr::filter(grid, year %in% y)

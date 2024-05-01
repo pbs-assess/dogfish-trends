@@ -15,6 +15,7 @@ coast <- sf::st_crop(
 )
 
 coast_proj <- sf::st_transform(coast, crs = 32612)
+# plot(coast_proj)
 df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
   filter(!survey_name %in% c("msa bc")) |>
   mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
@@ -23,9 +24,9 @@ df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
   mutate(survey_name = gsub("NWFSC.Combo.pass2", "NWFSC", survey_name))
 
 pnw <- ggplot() +
-  geom_point(data = filter(df, year %in% c(2003, 2004)), aes(X, Y,
-    col = (survey_name))) +
-  scale_size_continuous(range = c(1, 10)) +
+  geom_point(data = filter(df, year %in% c(2003, 2004, 2006, 2007)), aes(X, Y,
+    col = survey_name), size = 0.02) +
+  # scale_size_continuous(range = c(1, 10)) +
   geom_sf(data = coast_proj, colour = "grey70", fill = "grey90") +
   xlim(range(df$X) + c(-300000, 10000)) +
   ylim(range(df$Y) + c(-10000, 1000000)) +
@@ -151,5 +152,4 @@ ii <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
 g <- cowplot::plot_grid(pnw, ii, rel_widths = c(1.2, 3))
 print(g)
 
-ggsave("figs/overall-survey-trends.pdf", width = 5.9, height = 5.2)
-ggsave("figs/overall-survey-trends.png", width = 5.9, height = 5.2)
+ggsave("figs/overall-survey-trends.pdf", width = 6.3, height = 5.2)

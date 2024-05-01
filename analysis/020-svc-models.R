@@ -5,9 +5,9 @@ source("analysis/999-prep-overall-trawl.R")
 
 dat_coast <- filter(dat, survey_name %in%
     c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year >= 2003)
+  filter(year >= 2006)
 
-# coast SVC trawl model -----------------------------------------------------
+# coast SVC trawl model ------------------------------------------------
 
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(dat_coast[, c("UTM.lon", "UTM.lat")]),
@@ -79,4 +79,44 @@ if (FALSE) {
   # SVC SD collapses
 }
 
-# IPHC ----------------------------------------------------------------------
+# Trawl by maturity group ----------------------------------------------
+
+source("analysis/999-prep-overall-trawl.R")
+rm(dat) # only keep 'grid'
+source("analysis/999-prep-maturity-split-data.R")
+d <- prep_maturity_split_data() |> filter(year >= 2006)
+d$year_scaled <- (d$year - 2010) / 10
+
+fit_maturity_group_svc <- function(dd) {
+  cat(unique(dd$lengthgroup), "\n")
+  this_mesh <- make_mesh(dd, c("X", "Y"), mesh = mesh$mesh)
+  fit <- sdmTMB(
+    formula = catch_weight_t ~ 1 + year_scaled + poly(log(depth_m), 2),
+    spatial_varying = ~ 0 + year_scaled, #<
+    data = dd,
+    time = "year",
+    offset = "offset_km",
+    mesh = this_mesh,
+    spatial = "on",
+    spatiotemporal = "off",
+    # family = delta_lognormal_mix(type = "poisson-link"),
+    family = delta_lognormal(type = "poisson-link"),
+    # control = sdmTMBcontrol(
+    #   start = list(logit_p_mix = qlogis(0.01)),
+    #   map = list(logit_p_mix = factor(NA))
+    # ),
+    silent = FALSE,
+    share_range = FALSE,
+    priors = sdmTMBpriors(
+      matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
+      matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+    ),
+  )
+}
+
+ret <- split(d, d$lengthgroup) |> lapply(ds, fit_maturity_group_svc)
+saveRDS(ret, file = "output/fit-trawl-svc-maturity-lognormal-mix.rds")
+
+# IPHC -----------------------------------------------------------------
+
+# not linear??

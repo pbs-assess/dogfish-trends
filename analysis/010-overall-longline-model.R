@@ -118,8 +118,8 @@ head(grid)
 regions <- list(
   "Coast" = c("2A", "2B", "2C", "3A", "3B"),
   "US West Coast" = c("2A"),
-  "Gulf of Alaska" = c("3A", "3B"),
-  "British Columbia" = c("2B", "2C")
+  "Gulf of Alaska" = c("2C", "3A", "3B"),
+  "British Columbia" = c("2B")
 )
 
 gg <- select(as.data.frame(grid), area_km, depth_m, UTM.lon, UTM.lat, iphc_reg = ET_ID) |>
@@ -136,6 +136,6 @@ ret <- lapply(regions, \(r) {
   ind
 })
 
-out <- bind_rows(ret3, .id = "region")
+out <- bind_rows(ret, .id = "region")
 
 saveRDS(out, file = "output/indexes-iphc-nb2-coastwide.rds")
