@@ -99,23 +99,27 @@ fit_maturity_group_svc <- function(dd) {
     mesh = this_mesh,
     spatial = "on",
     spatiotemporal = "off",
-    # family = delta_lognormal_mix(type = "poisson-link"),
     family = delta_lognormal(type = "poisson-link"),
-    # control = sdmTMBcontrol(
-    #   start = list(logit_p_mix = qlogis(0.01)),
-    #   map = list(logit_p_mix = factor(NA))
-    # ),
     silent = FALSE,
-    share_range = FALSE,
     priors = sdmTMBpriors(
       matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
       matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
     ),
   )
+  s <- sanity(fit)
+  if (!s$all_ok) {
+    fit <- update(fit, family = delta_gamma(type = "poisson-link"))
+  }
+  s <- sanity(fit)
+  if (!s$all_ok) {
+    fit <- update(fit, family = tweedie())
+  }
+  fit
 }
-
-ret <- split(d, d$lengthgroup) |> lapply(ds, fit_maturity_group_svc)
-saveRDS(ret, file = "output/fit-trawl-svc-maturity-lognormal-mix.rds")
+# xx <- split(d, d$lengthgroup)
+ret <- split(d, d$lengthgroup) |> lapply(fit_maturity_group_svc)
+purrr::walk(ret, sanity)
+saveRDS(ret, file = "output/fit-trawl-svc-maturity.rds")
 
 # IPHC -----------------------------------------------------------------
 

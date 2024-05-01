@@ -52,6 +52,8 @@ for (i in seq_along(groups)) {
     data = dd,
     time = "year",
     offset = "offset_km2",
+    # time_varying = ~ 1 + poly(log(depth_m), 2),
+    # time_varying_type = "rw0",
     mesh = this_mesh,
     spatial = "on",
     spatiotemporal = "rw",
@@ -137,8 +139,8 @@ names(indexes) <- groups
 indexes <- bind_rows(indexes, .id = "group")
 row.names(indexes) <- NULL
 glimpse(indexes)
-saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link.rds")
-saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link.rds")
+saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link-tv.rds")
+saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link-tv.rds")
 
 # SVC model by maturity: --------------------------------
 
@@ -198,6 +200,7 @@ for (i in seq_along(groups)) {
 }
 
 lapply(fits_svc, \(x) x$family$clean_name)
+lapply(fits_svc, print)
 groups
 names(predictions_svc) <- groups
 names(fits_svc) <- groups
