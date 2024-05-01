@@ -3,6 +3,39 @@ library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
 
 source("analysis/999-colours-etc.R")
+
+# map -----------------------------------------------------------------------
+
+source("analysis/999-prep-overall-trawl.R")
+sf::sf_use_s2(FALSE)
+map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
+coast <- sf::st_crop(
+  map_data,
+  c(xmin = -175, ymin = 20, xmax = -115, ymax = 70)
+)
+
+coast_proj <- sf::st_transform(coast, crs = 32612)
+df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
+  filter(!survey_name %in% c("msa bc")) |>
+  mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
+  mutate(survey_name = gsub("Triennial", "NWFSC", survey_name)) |>
+  mutate(survey_name = gsub("NWFSC.Combo.pass1", "NWFSC", survey_name)) |>
+  mutate(survey_name = gsub("NWFSC.Combo.pass2", "NWFSC", survey_name))
+
+pnw <- ggplot() +
+  geom_point(data = filter(df, year %in% c(2003, 2004)), aes(X, Y,
+    col = (survey_name))) +
+  scale_size_continuous(range = c(1, 10)) +
+  geom_sf(data = coast_proj, colour = "grey70", fill = "grey90") +
+  xlim(range(df$X) + c(-300000, 10000)) +
+  ylim(range(df$Y) + c(-10000, 1000000)) +
+  theme_void() +
+  guides(fill = "none", colour = "none") +
+  scale_colour_manual(values = cols_region2) +
+  annotate("text", x = min(df$X) - 100000, y = max(df$Y) + 1000000, label = "(a)")
+
+# trawl index ---------------------------------------------------------------
+
 ind <- readRDS("output/trawl-coast-indexes.rds")
 
 ind <- ind |>
@@ -36,15 +69,14 @@ glmdf <- ind |> filter(year >= 2006, model == "Combined") |>
 
 lab_pos <- ind |> group_by(region) |>
   summarise(max_y = max(upr)) |>
-  mutate(region_lab = paste0("(", letters[1:4], ") ", region))
+  mutate(region_lab = paste0("(", letters[2:5], ") ", region))
   # mutate(region_lab = paste0("(", letters[1:4], ") "))
 
-# theme_set(theme_light())
 theme_set(ggsidekick::theme_sleek())
 gg_trawl <- filter(ind, model == "Combined") |>
   ggplot(aes(year, est, group = model, colour = region, ymin = lwr, ymax = upr)) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
-  scale_colour_manual(values = cols_region) +
+  scale_colour_manual(values = cols_region3) +
   geom_pointrange(data = filter(ind, model != "Combined"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey40", alpha = 0.6) +
   geom_pointrange(
     # position = position_jitter(width = 0.2, height = 0),
@@ -61,7 +93,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
 gg_trawl
 # ggsave("figs/fig1.pdf", width = 2.8, height = 7)
 
-# pull in IPHC:
+# IPHC index ----------------------------------------------------------------
 
 ind_ll <- readRDS("output/indexes-iphc-nb2-coastwide.rds")
 ind_ll$region <- gsub("^Coast$", "Coastwide", ind_ll$region)
@@ -93,12 +125,12 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
 
 lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
-  mutate(region_lab = paste0("(", letters[5:8], ") ", region))
+  mutate(region_lab = paste0("(", letters[6:9], ") ", region))
   # mutate(region_lab = paste0("(", letters[5:8], ") "))
 
 gg_iphc <- ind_ll |>
   ggplot(aes(year, est, colour = region)) +
-  scale_colour_manual(values = cols_region) +
+  scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1996, 2023)) +
@@ -111,8 +143,13 @@ gg_iphc <- ind_ll |>
   theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))
 gg_iphc
 
-g <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2, align = "h")
+
+ii <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
+
+# pnw2 <- cowplot::plot_grid(pnw, ggplot() + theme_void(), ncol = 1L)
+
+g <- cowplot::plot_grid(pnw, ii, rel_widths = c(1.2, 3))
 print(g)
 
-ggsave("figs/overall-survey-trends.pdf", width = 4.8, height = 5.5)
-ggsave("figs/overall-survey-trends.png", width = 4.8, height = 5.5)
+ggsave("figs/overall-survey-trends.pdf", width = 5.9, height = 5.2)
+ggsave("figs/overall-survey-trends.png", width = 5.9, height = 5.2)

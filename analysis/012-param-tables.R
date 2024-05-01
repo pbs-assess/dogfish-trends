@@ -47,17 +47,18 @@ coefs |>
   mutate(term = firstup(term)) |>
   ggplot(aes(estimate, y = region, xmin = conf.low, xmax = conf.high,
     colour = as.factor(linear_predictor))) +
-  geom_pointrange(position = position_dodge(width = 0.2)) +
+  geom_pointrange(position = position_dodge(width = 0.2), pch = 21) +
   facet_wrap(~term, scales = "free_x", nrow = 2) +
   scale_color_brewer(palette = "Dark2") +
   labs(x = "Estimate", y = "Region", colour = "Linear predictor") +
   ggsidekick::theme_sleek()
+ggsave("figs/coefs.pdf", width = 8, height = 5)
 
 # depth plots ---------------------------------------------------------------
 
 dd <- c(
-  seq(min(dat$depth_m), 500, length.out = 120),
-  seq(500, 1000, length.out = 50)
+  seq(min(dat$depth_m), 400, length.out = 110),
+  seq(400, 1000, length.out = 50)
 )
 nd <- data.frame(depth_m = dd, year = 2003L)
 

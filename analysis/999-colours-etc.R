@@ -2,6 +2,39 @@
 cols_region <- c("grey30", RColorBrewer::brewer.pal(3L, "Set2"))
 names(cols_region) <- c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast")
 
+# pal <- PNWColors::pnw_palette("Cascades", 3)
+
+cols_region2 <- c(
+  "GOA" = "#516823",
+  "BC" = "#e2e260",
+  "NWFSC" = "#88a2b9"
+)
+cols_region3 <- c(
+  "Coastwide" = "grey30",
+  "Gulf of Alaska" = "#516823",
+  "British Columbia" = "#e2e260",
+  "US West Coast" = "#88a2b9"
+)
+
+if (FALSE) {
+  pal <- (viridisLite::plasma(3, begin = 0.25, end = 0.80));plot(1:3, cex = 19, col = pal, pch = 19)
+}
+pal <- viridisLite::plasma(3, begin = 0.25, end = 0.8)
+
+cols_region2 <- c(
+  "GOA" = pal[1],
+  "BC" = pal[2],
+  "NWFSC" = pal[3]
+)
+cols_region3 <- c(
+  "Coastwide" = "grey30",
+  "Gulf of Alaska" = pal[1],
+  "British Columbia" = pal[2],
+  "US West Coast" = pal[3]
+)
+cols_region <- cols_region3
+
+
 # cols_maturities <- rev(RColorBrewer::brewer.pal(5L, "Paired")[c(3, 4, 1, 2, 5)])
 cols_maturities <- c(
   "Immature" = "#FB9A99", # "#E31A1C"
