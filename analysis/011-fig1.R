@@ -59,7 +59,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
   theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))
 gg_trawl
-ggsave("figs/fig1.pdf", width = 2.8, height = 7)
+# ggsave("figs/fig1.pdf", width = 2.8, height = 7)
 
 # pull in IPHC:
 

@@ -1,48 +1,35 @@
 library(dplyr)
 library(ggplot2)
+theme_set(ggsidekick::theme_sleek())
+source("analysis/999-colours-etc.R")
 
 ret <- readRDS("output/biomass-weighted-depth.rds")
+ret <- rename(ret, group = maturity_group)
+ret <- add_maturity_group_clean_column(ret)
+ret <- clean_region_names(ret)
+ret$region <- forcats::fct_rev(ret$region)
 
-lu <- data.frame(
-  maturity_group = c("mm", "mf", "maturingm", "maturingf", "imm"),
-  group_clean = c("Mature males", "Mature females", "Maturing males", "Maturing females", "Immature"),
-  stringsAsFactors = FALSE
-)
-ret2 <- left_join(ret, lu)
-lvls <- rev(c(
-  "Immature", "Maturing females", "Maturing males",
-  "Mature males", "Mature females"
-))
-ret2$group_clean <- factor(ret2$group_clean, levels = lvls)
-
-lu <- data.frame(
-  region = c("GOA", "BC", "NWFSC"),
-  region_clean = c("Gulf of Alaska", "British Columbia", "US West Coast"),
-  stringsAsFactors = FALSE
-)
-ret2 <- left_join(ret2, lu)
-ret2$region_clean <- factor(ret2$region_clean,
-  levels = c("Gulf of Alaska", "British Columbia", "US West Coast")
-)
-
-pal <- "Paired"
-g <- ret2 |>
+g <- ret |>
   ggplot(aes(year, mean_depth, colour = group_clean, fill = group_clean)) +
   geom_line() +
   geom_ribbon(aes(ymin = mean_depth - sd_depth,
     ymax = mean_depth + sd_depth),
     colour = NA, alpha = 0.2
   ) +
-  facet_wrap(~region_clean) +
+  facet_wrap(~region) +
   scale_y_reverse() +
-  scale_colour_brewer(palette = pal) +
-  scale_fill_brewer(palette = pal) +
+  scale_colour_manual(values = cols_maturities) +
+  scale_fill_manual(values = cols_maturities) +
   labs(
     fill = "Group", colour = "Group", x = "Year",
     y = "Biomass-weighted mean depth (m)"
   ) +
-  theme(legend.position = "inside", legend.position.inside = c(0.11, 0.24))
-g
+  theme(legend.position = "inside", legend.position.inside = c(0.11, 0.24), axis.title.x = element_blank()) +
+  tagger::tag_facets(tag = "panel",
+    tag_prefix = "(", position = "tl"
+  ) +
+  theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
+print(g)
 
-ggsave("figs/biomass-weighted-depth.png", width = 7, height = 3.5)
-ggsave("figs/biomass-weighted-depth.pdf", width = 7, height = 3.5)
+ggsave("figs/biomass-weighted-depth.png", width = 6.5, height = 3.2)
+ggsave("figs/biomass-weighted-depth.pdf", width = 6.5, height = 3.2)
