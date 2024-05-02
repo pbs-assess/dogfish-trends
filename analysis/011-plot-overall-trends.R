@@ -78,7 +78,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
   geom_pointrange(data = filter(ind, model != "Combined"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey40", alpha = 0.6) +
   geom_pointrange(
     size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1996, 2023)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1994, 2023)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside", axis.title.x = element_blank()) +
   guides(colour = "none") +
@@ -123,7 +123,7 @@ gg_iphc <- ind_ll |>
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1996, 2023)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1994, 2023)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
