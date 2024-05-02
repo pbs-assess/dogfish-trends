@@ -2,6 +2,7 @@ if (FALSE) {
   remotes::install_github("pbs-assess/sdmTMB")
   remotes::install_github("seananderson/ggsidekick")
   remotes::install_github("ropensci/rnaturalearthhires")
+  remotes::install_github("eliocamp/tagger")
 }
 
 dir.create("output", showWarnings = FALSE)
