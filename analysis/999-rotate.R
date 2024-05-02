@@ -16,6 +16,7 @@ rotate_coords <- function(x, y, rotation_angle, rotation_center) {
 }
 
 splitrotatepolygon <- function(map, rotate, c1, c2) {
+  require(dplyr)
   require(sf)
   onefeature <- (map)[i, ]
   pts2 <-

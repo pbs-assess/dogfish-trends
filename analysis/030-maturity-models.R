@@ -66,7 +66,6 @@ for (i in seq_along(groups)) {
     silent = TRUE,
     share_range = FALSE,
     priors = sdmTMBpriors(
-      # b = normal(c(0, 0, 0), c(50, 1000, 1000)), # robustness
       matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
       matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
     ),
@@ -165,15 +164,9 @@ for (i in seq_along(groups)) {
     spatial = "on",
     spatiotemporal = "off",
     family = delta_lognormal(type = "poisson-link"),
-    # family = delta_gamma(type = "poiss
-    # control = sdmTMBcontrol(
-    #   start = list(logit_p_mix = qlogis(0.01), log_ratio_mix = -1),
-    #   map = list(logit_p_mix = factor(NA))
-    # ),
-    silent = T,
+    silent = TRUE,
     share_range = FALSE,
     priors = sdmTMBpriors(
-      # b = normal(c(0, 0, 0), c(50, 1000, 1000)), # robustness
       matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
       matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
     ),

@@ -17,7 +17,8 @@ cols_region3 <- c(
 )
 
 if (FALSE) {
-  pal <- (viridisLite::plasma(3, begin = 0.25, end = 0.80));plot(1:3, cex = 19, col = pal, pch = 19)
+  pal <- viridisLite::plasma(3, begin = 0.25, end = 0.80)
+  plot(1:3, cex = 19, col = pal, pch = 19)
 }
 pal <- viridisLite::plasma(3, begin = 0.25, end = 0.8)
 

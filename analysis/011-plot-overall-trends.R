@@ -15,7 +15,6 @@ coast <- sf::st_crop(
 )
 
 coast_proj <- sf::st_transform(coast, crs = 32612)
-# plot(coast_proj)
 df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
   filter(!survey_name %in% c("msa bc")) |>
   mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
@@ -26,7 +25,6 @@ df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
 pnw <- ggplot() +
   geom_point(data = filter(df, year %in% c(2003, 2004, 2006, 2007)), aes(X, Y,
     col = survey_name), size = 0.02) +
-  # scale_size_continuous(range = c(1, 10)) +
   geom_sf(data = coast_proj, colour = "grey70", fill = "grey90") +
   xlim(range(df$X) + c(-300000, 10000)) +
   ylim(range(df$Y) + c(-10000, 1000000)) +
@@ -71,7 +69,6 @@ glmdf <- ind |> filter(year >= 2006, model == "Combined") |>
 lab_pos <- ind |> group_by(region) |>
   summarise(max_y = max(upr)) |>
   mutate(region_lab = paste0("(", letters[2:5], ") ", region))
-  # mutate(region_lab = paste0("(", letters[1:4], ") "))
 
 theme_set(ggsidekick::theme_sleek())
 gg_trawl <- filter(ind, model == "Combined") |>
@@ -80,11 +77,9 @@ gg_trawl <- filter(ind, model == "Combined") |>
   scale_colour_manual(values = cols_region3) +
   geom_pointrange(data = filter(ind, model != "Combined"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey40", alpha = 0.6) +
   geom_pointrange(
-    # position = position_jitter(width = 0.2, height = 0),
     size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1996, 2023)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
-  # scale_colour_manual(values = c("Region-specific" = "grey60", "Combined" = blues[3])) +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside", axis.title.x = element_blank()) +
   guides(colour = "none") +
   labs(x = "Year", y = "Trawl survey biomass index", colour = "Model") +
@@ -92,7 +87,6 @@ gg_trawl <- filter(ind, model == "Combined") |>
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
   theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))
 gg_trawl
-# ggsave("figs/fig1.pdf", width = 2.8, height = 7)
 
 # IPHC index ----------------------------------------------------------------
 
@@ -108,11 +102,7 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
   group_split() |>
   purrr::map_dfr(\(x) {
     x$decade <- x$year / 10
-    # x$weights <- 1 / x$se
-    # x$weights <- x$weights / mean(x$weights)
-    # m <- glm(est ~ decade, data = x, family = Gamma(link = "log"))
     m <- mgcv::gam(est ~ s(decade, k = 6), data = x, family = Gamma(link = "log"))
-    # m <- sdmTMB::sdmTMB(est ~ s(decade), data = x, family = lognormal(link = "log"), spatial = "off")
     nd <- data.frame(year = seq(min(x$year), max(x$year), length.out = 200))
     nd$decade = nd$year / 10
     p <- predict(m, newdata = nd)
@@ -127,7 +117,6 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
 lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
   mutate(region_lab = paste0("(", letters[6:9], ") ", region))
-  # mutate(region_lab = paste0("(", letters[5:8], ") "))
 
 gg_iphc <- ind_ll |>
   ggplot(aes(year, est, colour = region)) +
@@ -146,8 +135,6 @@ gg_iphc
 
 
 ii <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
-
-# pnw2 <- cowplot::plot_grid(pnw, ggplot() + theme_void(), ncol = 1L)
 
 g <- cowplot::plot_grid(pnw, ii, rel_widths = c(1.2, 3))
 print(g)

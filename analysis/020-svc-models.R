@@ -116,7 +116,6 @@ fit_maturity_group_svc <- function(dd) {
   }
   fit
 }
-# xx <- split(d, d$lengthgroup)
 ret <- split(d, d$lengthgroup) |> lapply(fit_maturity_group_svc)
 purrr::walk(ret, sanity)
 saveRDS(ret, file = "output/fit-trawl-svc-maturity.rds")

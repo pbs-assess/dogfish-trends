@@ -119,7 +119,7 @@ rotated_coast <- list()
 for (i in seq_len(dim(coast_proj4)[1])) {
   rotated_coast[[i]] <- splitrotatepolygon(
     coast_proj4,
-    25, # for coast
+    25,
     mean(pr[[1]]$X),
     mean(pr[[1]]$Y)
   )

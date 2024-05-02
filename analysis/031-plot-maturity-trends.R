@@ -94,7 +94,6 @@ indexes |>
   facet_grid(region ~ group_clean, scales = "free_y") +
   ggsidekick::theme_sleek() +
   coord_cartesian(ylim = c(0, NA), expand = FALSE) +
-  # geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = 0.7, colour = "grey10", alpha = 0.8) +
   labs(y = "Biomass index", x = "Year", colour = "Group", fill = "Group") +
   scale_colour_manual(values = cols_maturities) +
   scale_fill_manual(values = cols_maturities) +
@@ -112,12 +111,6 @@ indexes |>
   filter(year >= 2003) |>
   # group_by(group_clean, region) |>
   mutate(geo_mean = exp(mean(log_est))) |>
-  # mutate(
-  # est = est / 1000,
-  # lwr = lwr / 1000,
-  # upr = upr / 1000
-  # ) |>
-
   mutate(
   est = est / geo_mean,
   lwr = lwr / geo_mean,
@@ -133,11 +126,9 @@ indexes |>
   facet_grid(~ group_clean, scales = "free_y") +
   ggsidekick::theme_sleek() +
   coord_cartesian(ylim = c(0, NA), expand = FALSE) +
-  # geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = 0.7, colour = "grey10", alpha = 0.8) +
   labs(y = "Biomass index", x = "Year", colour = "Region", fill = "Region") +
   scale_colour_manual(values = cols_region3) +
   scale_fill_manual(values = cols_region3) +
-  # guides(fill = "none", colour = "none") +
   theme(panel.spacing = unit(-0.1,'lines')) +
   scale_x_continuous(breaks = seq(2005, 2025, 10)) +
   tagger::tag_facets(tag = "panel",
