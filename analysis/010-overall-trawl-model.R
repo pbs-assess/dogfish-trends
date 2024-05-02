@@ -217,7 +217,7 @@ fit_trawl_region <- function(dd) {
   # RW field to stitch together
   # 1998 onwards there is the NWFSC Slope survey every year to help
   # i.e., 1998 onewards has a survey every year
-  if (nwfsc) dd <- filter(dd, year >= 1998)
+  if (nwfsc) dd <- filter(dd, year >= 1995)
 
   if (nwfsc || goa) {
     mesh3 <- fmesher::fm_mesh_2d_inla(
