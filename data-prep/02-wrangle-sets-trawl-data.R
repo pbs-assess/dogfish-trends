@@ -1,5 +1,4 @@
-# put US/Can data in same format
-
+# create on database of US/Can set survey data
 
 # notes -------------------------------------------------------------------
 # convert Fork Length to total length
@@ -23,13 +22,10 @@
 library(tidyverse)
 library(lubridate)
 library(gfplot)
-
+library(here)
 
 
 # Sets - load BC data see 01-load-Can-data.R------------------------------------------------------------
-
-#data_survey_samples <- readRDS("data-raw/data_survey_samples.rds")
-#data_surveysets <- readRDS("data-raw/data_surveysets.rds")
 
 x <- c("SYN HS", "SYN QCS", "SYN WCVI", "SYN WCHG", "HS MSA")
 
@@ -95,15 +91,15 @@ range(bc$cpue_kgkm2)
 range(bc$year)
 bc$bottom_temp_c
 glimpse(bc)
-#saveRDS(bc, "output/wrangled_bcdata.rds")
+# saveRDS(bc, "output/wrangled_bcdata.rds")
 
 bc <- bc |> drop_na(logbot_depth)
 
 # Sets - load GOA data ----
-#goa_all_sets <- readRDS("data-raw/goa-sets.rds")
-#goa_all_catch <- readRDS("data-raw/goa-catch.rds")
+goa_all_sets <- readRDS("data-raw/goa-sets.rds")
+goa_all_catch <- readRDS("data-raw/goa-catch.rds")
 
-goa_sets <- readRDS("data-raw/goa-sets.rds") |>
+goa_sets <-
   left_join(goa_all_sets, goa_all_catch) %>%
   mutate(
     fishing_event_id = as.character(event_id),
@@ -112,7 +108,7 @@ goa_sets <- readRDS("data-raw/goa-sets.rds") |>
       survey_name == "Aleutian Islands Bottom Trawl Survey" ~ "Aleutian",
       TRUE ~ "Other Alaska"
     ),
-    #date = as_datetime(date),
+    # date = as_datetime(date),
     date = as.Date(date, format = "%Y-%m-%d HH:MM:SS"),
     year = as.integer(lubridate::year(date)),
     month = as.integer(lubridate::month(date)),
@@ -124,7 +120,7 @@ goa_sets <- readRDS("data-raw/goa-sets.rds") |>
     latitude_end = lat_end,
     catch_count = catch_numbers,
     area_swept_m2 = effort * 10000, # was in hectares
-    #area_units = "m2",
+    # area_units = "m2",
     survey_abbrev = "GOA",
     cpue_kgkm2 = catch_weight / (area_swept_m2 / 1000000),
     logbot_depth = log(depth_m)
@@ -137,8 +133,8 @@ goa_sets <- readRDS("data-raw/goa-sets.rds") |>
     survey_name,
     survey_abbrev,
     vessel,
-    #cruise,
-    #haul,
+    # cruise,
+    # haul,
     # pass,
     latitude,
     julian,
@@ -158,13 +154,13 @@ filter(goa_sets, is.na(area_swept_m2) == TRUE)
 
 goa_sets[duplicated(goa_sets$fishing_event_id), ] ## check for duplication
 
-#saveRDS(goa_sets, "output/wrangled_afsc_setsdata.rds")
+# saveRDS(goa_sets, "output/wrangled_afsc_setsdata.rds")
 
 
 # Sets - load NWFSC data ----
 # download nwfsc_haul.rda from here to get bottom temp: https://github.com/DFO-NOAA-Pacific/surveyjoin/tree/main/data
-# load("data-raw/nwfsc_haul.rda")
-# glimpse(nwfsc_haul)
+load("data-raw/nwfsc_haul.rda")
+glimpse(nwfsc_haul)
 
 catch_nwfsc_combo <- readRDS("data-raw/nwfsc_sets_combo.rds")
 catch_nwfsc_triennial <- readRDS("data-raw/nwfsc_sets_triennial.rds")
@@ -184,15 +180,15 @@ nwfsc <- bind_rows(
     catch_weight = total_catch_wt_kg
   ) |>
   mutate(common_name = tolower(common_name)) %>%
-  #filter(common_name == "pacific spiny dogfish") %>%
+  # filter(common_name == "pacific spiny dogfish") %>%
   # filter(survey_name %in% c("NWFSC.Combo", "Triennial")) %>%
   mutate(date2 = as.Date(Date, format = "%Y%m%d")) %>%
   mutate(dmy = lubridate::ymd(date2)) %>%
   mutate(julian = lubridate::yday(dmy)) %>%
   mutate(survey_name = ifelse(survey_abbrev == "NWFSC.Combo" & julian <= 226, "NWFSC.Combo.pass1",
-                              ifelse(survey_abbrev == "NWFSC.Combo" & julian > 226, "NWFSC.Combo.pass2",
-                                     survey_abbrev
-                              )
+    ifelse(survey_abbrev == "NWFSC.Combo" & julian > 226, "NWFSC.Combo.pass2",
+      survey_abbrev
+    )
   )) %>%
   mutate(logbot_depth = log(Depth_m)) |>
   mutate(
@@ -219,18 +215,19 @@ nwfsc_sets <- nwfsc %>%
   # rename(survey_name = survey_name2) %>%
   dplyr::select(
     date2,
-    survey_name, year, julian, survey_abbrev, survey_name, fishing_event_id, longitude_dd, latitude_dd, cpue_kgkm2,
+    survey_name, year, julian, survey_abbrev, survey_name, fishing_event_id, longitude_dd, latitude_dd, cpue_kg_km2,
     catch_weight, catch_count, area_swept_m2, logbot_depth, bottom_temp_c
   ) %>%
   rename(
     # station = pass,
     date = date2,
+    cpue_kgkm2 = cpue_kg_km2,
     longitude = longitude_dd, latitude = latitude_dd
   )
 
 nwfsc_sets[duplicated(nwfsc_sets$fishing_event_id), ] ## check for duplication
 
-#saveRDS(nwfsc_sets, "output/wrangled_nwfsc_setsdata.rds")
+# saveRDS(nwfsc_sets, "output/wrangled_nwfsc_setsdata.rds")
 
 nwfsc_sets |>
   ggplot() +
@@ -239,16 +236,12 @@ nwfsc_sets |>
 
 # Sets - merge  ----------------------------------------------------
 
-#bc <- readRDS("output/wrangled_bcdata.rds") |> drop_na(logbot_depth)
+# bc <- readRDS("output/wrangled_bcdata.rds") |> drop_na(logbot_depth)
 
-#goa_sets <- readRDS("output/wrangled_afsc_setsdata.rds")
+# goa_sets <- readRDS("output/wrangled_afsc_setsdata.rds")
 nwfsc_sets$date
 goa_sets$date
 bc$date
-
-glimpse(goa_sets)
-glimpse(bc)
-glimpse(nwfsc_sets)
 
 range(bc$cpue_kgkm2)
 range(goa_sets$cpue_kgkm2)
@@ -310,10 +303,13 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
 
 unique(survey_sets$survey_abbrev)
 unique(survey_sets$survey_name)
-# unique(survey_sets$survey_name2)
 
 glimpse(survey_sets)
-saveRDS(survey_sets, "output/Wrangled_USCanData.rds")
+saveRDS(survey_sets, "output/Wrangled_USCan_trawldata.rds")
+
+
+# Exploratory figures -----------------------------------------------------
+
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_weight))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
@@ -331,6 +327,7 @@ ggplot(
   geom_violin() +
   facet_wrap(~survey_abbrev, ncol = 1) # , scales = "free")
 
+
 dir.create("Figures", showWarnings = FALSE)
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_weight))) +
@@ -339,7 +336,7 @@ ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_we
   facet_wrap(~survey_name, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
-ggsave("Figures/ExtremeCatchEvents.jpg", width = 10, height = 8)
+# ggsave("Figures/ExtremeCatchEvents.jpg", width = 10, height = 8)
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), logbot_depth)) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
@@ -347,7 +344,7 @@ ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), logbot_depth
   facet_wrap(~survey_name, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
-#ggsave("Figures/catch_weight_bydepth.jpg", width = 10, height = 8)
+# ggsave("Figures/catch_weight_bydepth.jpg", width = 10, height = 8)
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
@@ -355,18 +352,18 @@ ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
   facet_wrap(~survey_abbrev, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
-#ggsave("Figures/catch_weight_byjulian.jpg", width = 10, height = 8)
+# ggsave("Figures/catch_weight_byjulian.jpg", width = 10, height = 8)
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (bottom_temp_c))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
+  # geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
   facet_wrap(~survey_abbrev, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
+  # geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
   facet_wrap(~survey_name, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
@@ -391,11 +388,11 @@ ggplot(x, aes(year, n, colour = depthsplit)) +
   geom_point() +
   geom_line() +
   facet_wrap(~survey_abbrev, scales = "free")
-#ggsave("Figures/zeros_by_depth.jpg", width = 10, height = 8)
+# ggsave("Figures/zeros_by_depth.jpg", width = 10, height = 8)
 
 
 # add depth to merged observational data ----------------------------------
-survey_sets <- readRDS("output/Wrangled_USCanData.rds")
+survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
 survey_sets$logbot_depth_raw <- survey_sets$logbot_depth
 survey_sets <- survey_sets |> dplyr::select(-logbot_depth)
 max(survey_sets$longitude)
@@ -414,19 +411,20 @@ survey_sets3 <- marmap::get.depth(b, survey_sets2[, c("longitude", "latitude")],
   right_join(survey_sets, by = c("longitude" = "longitude", "latitude" = "latitude"))
 
 survey_sets3[duplicated(survey_sets3), ]
-survey_sets3 |> filter(is.na(logbot_depth) == TRUE) |> tally()
-#replace NAs depths with the depth that was in the observational database
-#it's 17 points so negligible, these have positive logbot depths
+survey_sets3 |>
+  filter(is.na(logbot_depth) == TRUE) |>
+  tally()
+# replace NAs depths with the depth that was in the observational database
+# it's 17 points so negligible, these have positive logbot depths
+
 # TODO NOTE IN PAPER
-survey_sets3 <- survey_sets3 |> mutate(logbot_depth = ifelse(is.na(logbot_depth) == TRUE,
-                                                            logbot_depth_raw, logbot_depth)) |>
-  mutate(bot_depth = ifelse(bot_depth < 0 , exp(logbot_depth_raw), bot_depth ))
 
-ggplot(survey_sets3, aes(logbot_depth_raw, logbot_depth, colour = survey_abbrev)) + geom_point()
-saveRDS(survey_sets3, "output/Wrangled_USCanData.rds")
+survey_sets3 <- survey_sets3 |>
+  mutate(logbot_depth = ifelse(is.na(logbot_depth) == TRUE,
+    logbot_depth_raw, logbot_depth
+  )) |>
+  mutate(bot_depth = ifelse(bot_depth < 0, exp(logbot_depth_raw), bot_depth))
 
-# Figure of time and data variability -------------------------------------
-df <- readRDS("output/Wrangled_USCanData.rds")
-glimpse(df)
-ggplot(df, aes(year, julian)) + geom_point() + facet_wrap(~survey_abbrev)
-
+ggplot(survey_sets3, aes(logbot_depth_raw, logbot_depth, colour = survey_abbrev)) +
+  geom_point()
+saveRDS(survey_sets3, "output/Wrangled_USCan_trawldata_marmapdepth.rds")
