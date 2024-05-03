@@ -17,9 +17,17 @@ p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
 p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
 p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
 
+# instead of intercept at scaled year = 0 (i.e., 2010), take prediction at an
+# early time step
+
+p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+p$combined_intercept <- p_start$est1 + p_start$est2
+
 # maturity svc fits -------------------------------------------------------
 
 fits <- readRDS("output/fit-trawl-svc-maturity.rds")
+
+lapply(fits, \(x) x$family)
 
 grab_svc_pred <- function(fit) {
   p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
@@ -29,12 +37,17 @@ grab_svc_pred <- function(fit) {
     z1 <- b1$estimate[b1$term == "year_scaled"]
     z2 <- b2$estimate[b1$term == "year_scaled"]
     p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
-    p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
+    # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
+    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+    p$combined_intercept <- p_start$est1 + p_start$est2
+
   } else {
     b1 <- tidy(fit)
     z1 <- b1$estimate[b1$term == "year_scaled"]
     p$svc <- z1 + p$zeta_s_year_scaled
-    p$combined_intercept <- p$est_non_rf + p$omega_s
+    # p$combined_intercept <- p$est_non_rf + p$omega_s
+    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+    p$combined_intercept <- p_start$est
   }
   p
 }
@@ -219,5 +232,5 @@ g2 <- prs3 |>
 
 g <- cowplot::plot_grid(g2, g1, nrow = 2, align = "v", labels = c("(a)", "(b)"), label_fontface = "plain", label_colour = "grey30", label_size = 12)
 
-ggsave("figs/svc-trawl-stacked.pdf", width = 6.1, height = 10)
-ggsave("figs/svc-trawl-stacked.png", width = 6.1, height = 10)
+ggsave("figs/svc-trawl-stacked-start.pdf", width = 6.1, height = 10)
+ggsave("figs/svc-trawl-stacked-start.png", width = 6.1, height = 10)
