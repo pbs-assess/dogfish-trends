@@ -1,10 +1,9 @@
-
+# create on database of US/Can sample survey data
 
 # Samples - BC ----------------------------------------------------------------
 
-#pull from 01_load-Can-data.R
-bcsets <- readRDS("output/data_surveysets.rds")
-data_survey_samples <- readRDS("output/data_survey_samples.rds")
+bcsets <- readRDS("data-raw/data_surveysets.rds")
+data_survey_samples <- readRDS("data-raw/data_survey_samples.rds")
 
 samps_bc <- filter(data_survey_samples, survey_abbrev %in% c("SYN HS", "SYN QCS", "SYN WCVI", "SYN WCHG")) %>%
   mutate(geartype = "trawl",  length_type = "extended") %>%
@@ -35,19 +34,15 @@ samps_bc2 <- samps_bc |>
                 survey_name, survey_abbrev, date, maturity_code, maturity_convention_code, usability_code, weight_grams = weight
   )
 
-#some samples don't have set information bc of NAsin depth etc.
+#some samples don't have set information bc of NAs in depth etc.
 saveRDS(samps_bc2, "output/bc_samps.rds")
 
 
 # Samples - load GOA data -----------------------------------------------------------
 
-# sample data from here: https://github.com/afsc-gap-products/data-requests/issues/62
-# set data from 07_USTrawlStich.R but downloaded from: https://github.com/afsc-gap-products/gap_public_data#access-the-data
-# see here for defintion of the codes: https://repository.library.noaa.gov/view/noaa/31570
-
 goa_sets <- readRDS("output/wrangled_afsc_setsdata.rds")
 
-goa_samps2 <- read.csv("data-raw/surveyjoin/goa_dogfish_sex_length.csv")
+goa_samps2 <- read.csv("data-raw/goa_dogfish_sex_length.csv")
 names(goa_samps2) <- tolower(names(goa_samps2))
 
 goa_samps2 <- goa_samps2 |> #haul join is event_id or fishing_event_id
@@ -109,6 +104,13 @@ x <-
   #dplyr::select(fishing_event_id) |>
   filter(catch_weight !=0) |>
   tally()
+goa_sets |>  #8026, 359 of those are ones with catch_weights > 0 surveys without samples
+  right_join( goa_samps3, by = c(
+    "fishing_event_id" = "hauljoin")) |>
+  #dplyr::select(fishing_event_id) |>
+  filter(catch_weight !=0) |>
+  tally()
+
 range(x$catch_weight)
 mean(x$catch_weight)
 
