@@ -6,13 +6,13 @@ names(cols_region) <- c("Coastwide", "Gulf of Alaska", "British Columbia", "US W
 
 cols_region2 <- c(
   "GOA" = "#516823",
-  "BC" = "#e2e260",
+  "BC" = "#FCA636FF", # "#e2e260",
   "NWFSC" = "#88a2b9"
 )
 cols_region3 <- c(
   "Coastwide" = "grey30",
   "Gulf of Alaska" = "#516823",
-  "British Columbia" = "#e2e260",
+  "British Columbia" = "#FCA636FF", # "#e2e260",
   "US West Coast" = "#88a2b9"
 )
 
@@ -33,8 +33,8 @@ cols_region3 <- c(
   "British Columbia" = pal[2],
   "US West Coast" = pal[3]
 )
-cols_region <- cols_region3
 
+cols_region <- cols_region3
 
 # cols_maturities <- rev(RColorBrewer::brewer.pal(5L, "Paired")[c(3, 4, 1, 2, 5)])
 cols_maturities <- c(
