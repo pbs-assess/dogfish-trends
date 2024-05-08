@@ -31,7 +31,7 @@ pnw <- ggplot() +
   theme_void() +
   guides(fill = "none", colour = "none") +
   scale_colour_manual(values = cols_region2) +
-  annotate("text", x = min(df$X) - 100000, y = max(df$Y) + 1000000, label = "(a)")
+  annotate("text", x = min(df$X) - 100000 + 90000, y = max(df$Y) + 1000000, label = "(b)")
 
 # trawl index ---------------------------------------------------------------
 
@@ -50,7 +50,7 @@ ind <- ind |>
   mutate(region = factor(region,
     levels = c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast")))
 
-glmdf <- ind |> filter(year >= 2006, model == "Combined") |>
+glmdf <- ind |> filter(year >= 2005, model == "Combined") |>
   group_by(region) |>
   group_split() |>
   purrr::map_dfr(\(x) {
@@ -63,12 +63,15 @@ glmdf <- ind |> filter(year >= 2006, model == "Combined") |>
     row.names(ret) <- NULL
     ret$region <- x$region[1]
     ret$slope <- coef(m)[[2]]
+    ci <- confint(m)
+    ret$lwr <- ci[2, 1]
+    ret$upr <- ci[2, 2]
     ret
   })
 
 lab_pos <- ind |> group_by(region) |>
   summarise(max_y = max(upr)) |>
-  mutate(region_lab = paste0("(", letters[2:5], ") ", region))
+  mutate(region_lab = paste0("(", letters[4:7], ") ", region))
 
 theme_set(ggsidekick::theme_sleek())
 gg_trawl <- filter(ind, model == "Combined") |>
@@ -80,12 +83,13 @@ gg_trawl <- filter(ind, model == "Combined") |>
     size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1994, 2023)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
-  theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside", axis.title.x = element_blank()) +
+  theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
   labs(x = "Year", y = "Trawl survey biomass index", colour = "Model") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
-  theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))
+  theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))+
+  theme(axis.title.x.bottom = element_text(size = 9))
 gg_trawl
 
 # IPHC index ----------------------------------------------------------------
@@ -116,7 +120,7 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
 
 lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
-  mutate(region_lab = paste0("(", letters[6:9], ") ", region))
+  mutate(region_lab = paste0("(", letters[8:11], ") ", region))
 
 gg_iphc <- ind_ll |>
   ggplot(aes(year, est, colour = region)) +
@@ -127,16 +131,44 @@ gg_iphc <- ind_ll |>
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
-  theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside", axis.title.x = element_blank()) +
+  theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
   labs(x = "Year", y = "IPHC longline survey abundance index", colour = "Model") +
-  theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))
+  theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))+
+  theme(axis.title.x.bottom = element_text(size = 9))
 gg_iphc
 
+g_coefs <- glmdf |> select(region, slope, lwr, upr) |> distinct() |>
+  mutate(slope = exp(slope), lwr = exp(lwr), upr = exp(upr)) |>
+  mutate(region = forcats::fct_rev(region)) |>
+  ggplot(aes(slope, 1, xmin = lwr, xmax = upr, colour = region)) +
+  geom_vline(xintercept = 1, lty = 2, colour = "grey70") +
+  geom_pointrange(position = position_dodge(width = 0.3), pch = 21) +
+  scale_colour_manual(values = cols_region, guide = guide_legend(reverse = TRUE)) +
+  ggsidekick::theme_sleek() +
+  # scale_x_log10(breaks = c(0.3, 0.5, 0.7, 1)) +
+  theme(axis.title.y.left = element_blank()) +
+  xlab("Proportional change per decade") +
+  labs(colour = "Region") +
+  guides(colour = "none") +
+  coord_cartesian(xlim = c(0.3, 1.01)) +
+  theme(axis.text.y.left = element_blank(), axis.ticks.y.left = element_blank()) +
+  theme(axis.title.x.bottom = element_text(size = 9)) +
+  annotate("text", x = 0.32, y = 1.1, label = "(c)")
 
-ii <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
+g_trend_panels <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
 
-g <- cowplot::plot_grid(pnw, ii, rel_widths = c(1.2, 3))
+img <- magick::image_read("~/Downloads/Spiny_dogfish.jpg")
+dog_image <- magick::image_ggplot(img) +
+  # theme(axis.text = element_text()) +
+  annotate("text", x = 115, y = 410, label = "(a)", colour = "white")
+
+g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heights = c(1.4, 3, 1))
+
+
+g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
 print(g)
 
-ggsave("figs/overall-survey-trends.pdf", width = 6.3, height = 5.2)
+
+ggsave("figs/overall-survey-trends2.pdf", width = 6.7, height = 5.4)
+# ggsave("figs/overall-survey-trends2.pdf", width = 6.3, height = 5.2)
