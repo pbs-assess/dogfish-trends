@@ -15,9 +15,9 @@ domain <- fmesher::fm_nonconvex_hull_inla(
 )
 mesh3 <- fmesher::fm_mesh_2d_inla(
   boundary = domain,
-  max.edge = c(150, 2000),
-  offset = c(150, 300),
-  cutoff = 50
+  max.edge = c(100, 2000),
+  offset = c(100, 300),
+  cutoff = 40
 )
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
