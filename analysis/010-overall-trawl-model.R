@@ -71,23 +71,37 @@ fit1$sd_report
 
 set.seed(1)
 s1 <- simulate(fit1, 500L, type = "mle-mvn")
+
 dh1 <- dharma_residuals(s1, fit1, return_DHARMa = TRUE)
 plot(dh1)
 DHARMa::plotQQunif(dh1, testDispersion = FALSE)
+
 
 tictoc::tic()
 fit4 <- update(fit1, family = delta_lognormal_mix(type = "poisson-link"))
 tictoc::toc()
 
+saveRDS(fit4, file = "output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+fit4 <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+
 AIC(fit1, fit4)
 
-set.seed(1)
-s4 <- simulate(fit4, 500L, type = "mle-mvn")
+set.seed(123)
+s4 <- simulate(fit4, 400L, type = "mle-mvn")
+
+r <- dharma_residuals(s4, fit4)
+ggplot(r, aes(expected, observed)) +
+  geom_point(size = 2) +
+  geom_abline(intercept = 0, slope = 1, colour = "red") +
+  labs(x = "Expected", y = "Observed") +
+  coord_equal(expand = FALSE, xlim = c(0, 1), ylim = c(0, 1))
+ggsave("figs/qq-trawl-main.png", width = 4, height = 4)
+
 dh4 <- dharma_residuals(s4, fit4, return_DHARMa = TRUE)
 DHARMa::plotQQunif(dh4, testOutliers = FALSE, testDispersion = FALSE)
 
 if (FALSE) {
-  fit2 <- update(fit1, family = delta_lognormal())
+  fit2 <- update(fit4, family = delta_lognormal())
   fit2
   sanity(fit2)
   AIC(fit1, fit2)
@@ -113,6 +127,38 @@ if (FALSE) {
   DHARMa::testResiduals(dh3)
 }
 
+# compare to including survey catchability effects:
+
+dat_coast$survey_name <- factor(dat_coast$survey_name,
+  levels = c("syn bc", "GOA", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2"))
+
+fitq <- sdmTMB(
+  formula = catch_weight_t ~ 1 + poly(log(depth_m), 2) + factor(survey_name),
+  data = dat_coast,
+  time = "year",
+  offset = "offset_km2",
+  mesh = mesh,
+  spatial = "on",
+  spatiotemporal = "rw",
+  family = delta_lognormal_mix(),
+  control = sdmTMBcontrol(
+    start = list(logit_p_mix = qlogis(0.01)),
+    map = list(logit_p_mix = factor(NA))
+  ),
+  silent = FALSE,
+  share_range = FALSE,
+  # do_fit = F,
+  priors = sdmTMBpriors(
+    matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
+    matern_st = pc_matern(range_gt = 250, sigma_lt = 2),
+    b = normal(c(NA, NA, NA, 0, 0, 0), c(NA, NA, NA, 1, 1, 1))
+  ),
+)
+AIC(fit4, fitq)
+sanity(fitq)
+fitq
+fitq$sd_report
+
 grid <- filter(grid, year %in% dat_coast$year)
 grid$survey_name <- factor("syn bc", levels = levels(dat_coast$survey_name))
 
@@ -124,9 +170,6 @@ chunk_years <- function(x, chunks) {
 yrs <- unique(dat_coast$year)
 yy <- chunk_years(yrs, 2)
 yy
-
-saveRDS(fit4, file = "output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
-fit4 <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
 
 fit <- fit4 # !!
 
@@ -140,8 +183,15 @@ index_l <- lapply(yy, \(y) {
 })
 index <- do.call(rbind, index_l)
 
-ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) +
-  geom_pointrange()
+index_l <- lapply(yy, \(y) {
+  cat(y, "\n")
+  nd <- dplyr::filter(grid, year %in% y)
+  pred <- predict(fit4, newdata = nd, return_tmb_object = TRUE)
+  ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+  gc()
+  ind
+})
+indexq <- do.call(rbind, index_l)
 
 # apply coast model to regions ----------------------------------------------
 
@@ -149,16 +199,47 @@ ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) +
 regions <- unique(grid$region)
 
 gc()
-index_reg_l <- lapply(regions, \(r) {
-  cat(r, "\n")
-  nd <- dplyr::filter(grid, region %in% r)
-  pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
-  ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
-  ind$region <- r
-  gc()
-  ind
-})
+
+do_expanions <- function(model) {
+  lapply(regions, \(r) {
+    cat(r, "\n")
+    nd <- dplyr::filter(grid, region %in% r)
+    pred <- predict(model, newdata = nd, return_tmb_object = TRUE)
+    ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+    ind$region <- r
+    gc()
+    ind
+  })
+}
+index_reg_l <- do_expanions(fit)
+index_reg_lq <- do_expanions(fitq)
 index_reg <- do.call(rbind, index_reg_l)
+index_regq <- do.call(rbind, index_reg_lq)
+
+bind_rows(
+  mutate(index, model = "No catchability effects", region = "Coastwide"),
+  mutate(indexq, model = "With catchability effects", region = "Coastwide"),
+  mutate(index_reg, model = "No catchability effects"),
+  mutate(index_regq, model = "With catchability effects")
+) |>
+  mutate(region = gsub("NWFSC", "US West Coast", region)) |>
+  mutate(region = factor(region, levels = c("Coastwide", "GOA", "BC", "US West Coast"))) |>
+  group_by(model, region) |>
+  mutate(geo_mean = exp(mean(log_est[year >= 2003]))) |>
+  mutate(
+    est = est / geo_mean,
+    lwr = lwr / geo_mean,
+    upr = upr / geo_mean
+  ) |>
+  ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = model, fill = model)) +
+  geom_pointrange(position = position_dodge(width = 0.5)) +
+  xlab("Year") +
+  ylab("Standardized relative biomass") +
+  labs(colour = "Model", fill = "Model") +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = range(index$year) + c(-0.5, 0.5)) +
+  scale_color_brewer(palette = "Set2") +
+  facet_wrap(~region, ncol = 1)
+ggsave("figs/index-trawl-main-by-region-catchability-effects.pdf", width = 5.5, height = 10)
 
 ind <- bind_rows(mutate(index, region = "Coast"), index_reg)
 
