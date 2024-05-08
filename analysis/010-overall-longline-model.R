@@ -56,6 +56,15 @@ fit <- readRDS("output/fit-iphc-nb2-coastwide.rds")
 set.seed(1)
 test_resids_sim(fit)
 
+s <- simulate(fit, 400L, type = "mle-mvn")
+r <- dharma_residuals(s, fit)
+ggplot(r, aes(expected, observed)) +
+  geom_point(size = 2) +
+  geom_abline(intercept = 0, slope = 1, colour = "red") +
+  labs(x = "Expected", y = "Observed") +
+  coord_equal(expand = FALSE, xlim = c(0, 1), ylim = c(0, 1))
+ggsave("figs/qq-iphc-main.png", width = 4, height = 4)
+
 r1 <- residuals(fit, type = "mle-mvn")
 qqnorm(r1);abline(0, 1)
 ks.test(r1, pnorm)
@@ -64,6 +73,9 @@ s <- simulate(fit, nsim = 300)
 hist(apply(s, 2, sd), breaks = 100)
 sd(d$number.observed)
 abline(v = sd(d$number.observed), col = "red", lwd = 2)
+
+s <- simulate(x, .n, type = "mle-mvn")
+dh <- dharma_residuals(s, x, return_DHARMa = TRUE)
 
 if (FALSE) {
   # tic()
