@@ -20,7 +20,7 @@ p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
 
 fits <- readRDS("output/fit-trawl-svc-maturity.rds")
 
-fit <- fits$imm
+# fit <- fits$imm
 
 grab_svc_pred <- function(fit) {
   p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
