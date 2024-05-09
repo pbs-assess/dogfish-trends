@@ -19,12 +19,15 @@ fcopy <- function(x) {
 optipng()
 f <- c(
   "figs/overall-survey-trends2.pdf",
+  "figs/overall-survey-trends2.png",
   "figs/svc-trawl-stacked-start.png",
   "figs/qq-trawl-main.png",
   "figs/index-trawl-main-by-region-catchability-effects.pdf",
   "figs/qq-iphc-main.png",
   "figs/biomass-weighted-depth.pdf",
-  "figs/maturity-index-trends-combo.pdf"
+  "figs/biomass-weighted-depth.png",
+  "figs/maturity-index-trends-combo.pdf",
+  "figs/maturity-index-trends-combo.png"
 )
 
 sapply(f, fcopy)
