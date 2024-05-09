@@ -171,4 +171,4 @@ print(g)
 
 
 ggsave("figs/overall-survey-trends2.pdf", width = 6.7, height = 5.4)
-# ggsave("figs/overall-survey-trends2.pdf", width = 6.3, height = 5.2)
+ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)

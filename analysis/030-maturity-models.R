@@ -26,9 +26,9 @@ domain <- fmesher::fm_nonconvex_hull_inla(
 )
 mesh3 <- fmesher::fm_mesh_2d_inla(
   boundary = domain,
-  max.edge = c(200, 2000),
-  offset = c(200, 300),
-  cutoff = 60
+  max.edge = c(150, 2000),
+  offset = c(150, 300),
+  cutoff = 50
 )
 mesh <- make_mesh(example_dat, c("X", "Y"), mesh = mesh3)
 plot(mesh)
@@ -138,65 +138,65 @@ names(indexes) <- groups
 indexes <- bind_rows(indexes, .id = "group")
 row.names(indexes) <- NULL
 glimpse(indexes)
-saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link-tv.rds")
-saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link-tv.rds")
+saveRDS(indexes, file = "output/index-trawl-by-maturity-poisson-link.rds")
+saveRDS(fits, file = "output/fit-trawl-by-maturity-poisson-link.rds")
 
-# SVC model by maturity: --------------------------------
-
-d$decade <- (d$year - 2010) / 10
-grid$decade <- 0
-
-fits_svc <- list()
-predictions_svc <- list()
-
-for (i in seq_along(groups)) {
-  this_group <- groups[i]
-  cat("Fitting:", this_group, "\n")
-  dd <- filter(d, lengthgroup == this_group)
-  this_mesh <- make_mesh(dd, c("X", "Y"), mesh = mesh$mesh) # in case
-  fit <- sdmTMB(
-    formula = catch_weight_t ~ 1 + poly(log(depth_m), 2) + decade,
-    spatial_varying = ~ 0 + decade,
-    data = dd,
-    time = "year",
-    offset = "offset_km2",
-    mesh = this_mesh,
-    spatial = "on",
-    spatiotemporal = "off",
-    family = delta_lognormal(type = "poisson-link"),
-    silent = TRUE,
-    share_range = FALSE,
-    priors = sdmTMBpriors(
-      matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-      matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
-    ),
-  )
-  print(fit)
-  s <- sanity(fit)
-  if (!s$all_ok) {
-    fit <- update(fit, family = delta_gamma(type = "poisson-link"))
-  }
-
-  # predict coast wide -------------------------------------------------------
-
-  # pick any year:
-  p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
-
-  b1 <- tidy(fit)
-  b2 <- tidy(fit, model = 2)
-  z1 <- b1$estimate[b1$term == "decade"]
-  z2 <- b2$estimate[b1$term == "decade"]
-
-  p$svc <- z1 + z2 + p$zeta_s_decade1 + p$zeta_s_decade2
-  predictions_svc[[i]] <- p
-  fits_svc[[i]] <- fit
-}
-
-lapply(fits_svc, \(x) x$family$clean_name)
-lapply(fits_svc, print)
-groups
-names(predictions_svc) <- groups
-names(fits_svc) <- groups
-
-saveRDS(predictions_svc, file = "output/predictions-trawl-svc-by-maturity-poisson-link.rds")
-saveRDS(fits_svc, file = "output/fit-trawl-svc-by-maturity-poisson-link.rds")
+# # SVC model by maturity: --------------------------------
+#
+# d$decade <- (d$year - 2010) / 10
+# grid$decade <- 0
+#
+# fits_svc <- list()
+# predictions_svc <- list()
+#
+# for (i in seq_along(groups)) {
+#   this_group <- groups[i]
+#   cat("Fitting:", this_group, "\n")
+#   dd <- filter(d, lengthgroup == this_group)
+#   this_mesh <- make_mesh(dd, c("X", "Y"), mesh = mesh$mesh) # in case
+#   fit <- sdmTMB(
+#     formula = catch_weight_t ~ 1 + poly(log(depth_m), 2) + decade,
+#     spatial_varying = ~ 0 + decade,
+#     data = dd,
+#     time = "year",
+#     offset = "offset_km2",
+#     mesh = this_mesh,
+#     spatial = "on",
+#     spatiotemporal = "off",
+#     family = delta_lognormal(type = "poisson-link"),
+#     silent = TRUE,
+#     share_range = FALSE,
+#     priors = sdmTMBpriors(
+#       matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
+#       matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+#     ),
+#   )
+#   print(fit)
+#   s <- sanity(fit)
+#   if (!s$all_ok) {
+#     fit <- update(fit, family = delta_gamma(type = "poisson-link"))
+#   }
+#
+#   # predict coast wide -------------------------------------------------------
+#
+#   # pick any year:
+#   p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
+#
+#   b1 <- tidy(fit)
+#   b2 <- tidy(fit, model = 2)
+#   z1 <- b1$estimate[b1$term == "decade"]
+#   z2 <- b2$estimate[b1$term == "decade"]
+#
+#   p$svc <- z1 + z2 + p$zeta_s_decade1 + p$zeta_s_decade2
+#   predictions_svc[[i]] <- p
+#   fits_svc[[i]] <- fit
+# }
+#
+# lapply(fits_svc, \(x) x$family$clean_name)
+# lapply(fits_svc, print)
+# groups
+# names(predictions_svc) <- groups
+# names(fits_svc) <- groups
+#
+# saveRDS(predictions_svc, file = "output/predictions-trawl-svc-by-maturity-poisson-link.rds")
+# saveRDS(fits_svc, file = "output/fit-trawl-svc-by-maturity-poisson-link.rds")

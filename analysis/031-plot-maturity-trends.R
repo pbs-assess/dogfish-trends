@@ -314,5 +314,6 @@ g2 + th +
   g1 + th +
   plot_layout(design = layout)
 ggsave("figs/maturity-index-trends-combo.pdf", width = 9.2, height = 5)
+ggsave("figs/maturity-index-trends-combo.png", width = 9.2, height = 5)
 
 
