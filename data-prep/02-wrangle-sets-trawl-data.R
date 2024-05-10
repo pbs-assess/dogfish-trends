@@ -34,10 +34,6 @@ bc <- readRDS("data-raw/data_surveysets.rds") %>%
   filter(survey_abbrev %in% x) %>%
   mutate(julian = lubridate::yday(time_retrieved)) |>
   mutate(geartype = "trawl", fishing_event_id = as.character(fishing_event_id)) |>
-  # dplyr::select(
-  #   survey_abbrev, trip_id, year, depth_m, fishing_event_id, julina,
-  #   longitude, latitude, density_kgpm2, tow_length_m, doorspread_m, catch_weight, catch_count, speed_mpm, duration_min, species_common_name
-  # ) %>%
   mutate(
     density_kgkm2 = density_kgpm2 * 1000000,
     survey_name = "syn bc",
@@ -77,7 +73,6 @@ bc |>
   tally()
 
 x <- bc |> filter(is.na(doorspread_m) == TRUE)
-# nolonger  true? unique(x$survey_abbrev) # WCHG doesn't have doorspread so use a different way to calculate the area swept
 
 # calculate area swept
 bc <- bc |>
@@ -88,11 +83,6 @@ bc <- bc |>
   )
 
 bc[duplicated(bc$fishing_event_id), ] # check for duplication
-
-range(bc$cpue_kgkm2)
-range(bc$year)
-bc$bottom_temp_c
-glimpse(bc)
 
 bc <- bc |> drop_na(logbot_depth)
 
@@ -134,9 +124,6 @@ goa_sets <-
     survey_name,
     survey_abbrev,
     vessel,
-    # cruise,
-    # haul,
-    # pass,
     latitude,
     julian,
     longitude,
@@ -144,7 +131,6 @@ goa_sets <-
     # longitude_end,
     logbot_depth,
     # performance, # all are non-negative values and therefore considered "satisfactory”
-    # species_common_name,
     catch_weight,
     catch_count,
     area_swept_m2,
@@ -156,9 +142,7 @@ filter(goa_sets, is.na(area_swept_m2) == TRUE)
 goa_sets[duplicated(goa_sets$fishing_event_id), ] ## check for duplication
 
 # Load - NWFSC data ----
-# download nwfsc_haul.rda from here to get bottom temp: https://github.com/DFO-NOAA-Pacific/surveyjoin/tree/main/data
 load("data-raw/nwfsc_haul.rda")
-glimpse(nwfsc_haul)
 
 catch_nwfsc_combo <- readRDS("data-raw/nwfsc_sets_combo.rds")
 catch_nwfsc_triennial <- readRDS("data-raw/nwfsc_sets_triennial.rds")
@@ -199,18 +183,8 @@ names(nwfsc) <- tolower(names(nwfsc))
 nwfsc_haul$event_id <- as.character(nwfsc_haul$event_id)
 unique(nwfsc_haul$survey_name)
 nwfsc <- nwfsc |> inner_join(nwfsc_haul[, c("event_id", "bottom_temp_c")], by = c("fishing_event_id" = "event_id"))
-# saveRDS(nwfsc_sets, "output/nwfsc_spinydogfish.rds")
-# nwfsc_sets <- readRDS("output/nwfsc_spinydogfish.rds")
-glimpse(nwfsc)
-
-unique(nwfsc$survey_name2)
-unique(nwfsc$survey_abbrev)
-unique(nwfsc$survey_name)
-unique(nwfsc$Project)
 
 nwfsc_sets <- nwfsc %>%
-  # dplyr::select(-survey_name) |>
-  # rename(survey_name = survey_name2) %>%
   dplyr::select(
     date2,
     survey_name, year, julian, survey_abbrev, survey_name, fishing_event_id, longitude_dd, latitude_dd, cpue_kg_km2,
@@ -232,9 +206,6 @@ nwfsc_sets |>
 
 # Merge Sets  ----------------------------------------------------
 
-# bc <- readRDS("output/wrangled_bcdata.rds") |> drop_na(logbot_depth)
-
-# goa_sets <- readRDS("output/wrangled_afsc_setsdata.rds")
 nwfsc_sets$date
 goa_sets$date
 bc$date
@@ -279,92 +250,6 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
     area_swept_m2,
     bottom_temp_c
   )
-
-unique(survey_sets$survey_abbrev)
-unique(survey_sets$survey_name)
-
-saveRDS(survey_sets, "output/Wrangled_USCan_trawldata.rds")
-
-
-# Exploratory figures -----------------------------------------------------
-
-
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_weight))) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
-  facet_wrap(~survey_name, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-
-ggplot(
-  survey_sets,
-  aes(as.factor(year), area_swept_m2)
-) +
-  # aes(as.factor(year), cpue)) +
-  geom_jitter() +
-  geom_violin() +
-  facet_wrap(~survey_abbrev, ncol = 1) # , scales = "free")
-
-
-dir.create("Figures", showWarnings = FALSE)
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_weight))) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
-  facet_wrap(~survey_name, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-# ggsave("Figures/ExtremeCatchEvents.jpg", width = 10, height = 8)
-
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), logbot_depth)) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
-  facet_wrap(~survey_name, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-# ggsave("Figures/catch_weight_bydepth.jpg", width = 10, height = 8)
-
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
-  facet_wrap(~survey_abbrev, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-# ggsave("Figures/catch_weight_byjulian.jpg", width = 10, height = 8)
-
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (bottom_temp_c))) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  # geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
-  facet_wrap(~survey_abbrev, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-
-ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  facet_wrap(~survey_name, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-
-ggplot(filter(survey_sets, catch_weight == 0), aes(as.factor(year), logbot_depth)) +
-  geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  facet_wrap(~survey_abbrev, nrow = 4) +
-  scale_colour_viridis_c(trans = "log") +
-  theme_classic()
-
-range(survey_sets$logbot_depth, na.rm = TRUE)
-survey_sets <- survey_sets |>
-  group_by(survey_abbrev) |>
-  mutate(depthsplit = ifelse(logbot_depth < 3.5, "shallow", ifelse(logbot_depth >= 3.5 & logbot_depth < 4, "middle", "deep")))
-
-x <- survey_sets |>
-  group_by(year, depthsplit, survey_abbrev) |>
-  filter(catch_weight == 0) |>
-  tally()
-ggplot(x, aes(year, n, colour = depthsplit)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~survey_abbrev, scales = "free")
-# ggsave("Figures/zeros_by_depth.jpg", width = 10, height = 8)
-
 
 # Add depth to merged trawl survey data ----------------------------------
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
