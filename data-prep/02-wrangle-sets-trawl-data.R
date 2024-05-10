@@ -6,15 +6,16 @@
 # LF to LText 876 2·17 (1·35–2·98) 1·10 (1·09–1·11) 0·98
 # LTnat to LText 953 1·64 (0·97–2·31) 1·02 (1·01–1·03) 0·98
 # Tribuzio et al Life history characteristics of a lightly exploited stock of squalus suckleyi
-# BC tail extended
-# IPHC and AFSC LL lengths are taken in PCL
-# AFSC BTS is supposed to be FL (despite their database saying FL or TL) and no one at AFSC will specify what type of TL (extended or natural?)
+
+# BC Total Length, tail extended
+# IPHC and AFSC Longline lengths are taken in PCL
+# AFSC bottom trawl survey is supposed to be FL (despite their database saying FL or TL) and no one at AFSC will specify what type of TL (extended or natural?)
 
 # From Gertserva et al:
 # WCGBT survey: Lengths in WCGBT Survey are total length
-# Triennial (2001 and 2004): legnths are total length
+# Triennial (2001 and 2004): lengths are total length
 # AFSC Slope Survey: Fork lengths
-# 1998 Triennial Survey: folk lengths
+# 1998 Triennial Survey: Fork lengths
 # IPHC Survey, the samples were measured as precaudal length (LPC)
 
 
@@ -25,7 +26,7 @@ library(gfplot)
 library(here)
 
 
-# Sets - load BC data see 01-load-Can-data.R------------------------------------------------------------
+# Load - BC data see 01_load-trawl-data.R------------------------------------------------------------
 
 x <- c("SYN HS", "SYN QCS", "SYN WCVI", "SYN WCHG", "HS MSA")
 
@@ -55,17 +56,17 @@ bc <- readRDS("data-raw/data_surveysets.rds") %>%
 
 bc %>%
   group_by(year) %>%
-  summarize(cpue_kgkm2_sum = sum(as.numeric(cpue_kgkm2))) |>
+  reframe(cpue_kgkm2_sum = sum(as.numeric(cpue_kgkm2))) |>
   ggplot() +
   geom_point(aes(as.numeric(year), cpue_kgkm2_sum)) +
   geom_line(aes(as.numeric(year), cpue_kgkm2_sum))
 
 # check the values are consistent
 range(bc$area_swept1_m2, na.rm = TRUE)
-x <- bc |>
+bc |>
   filter(is.na(area_swept1_m2) == TRUE) |>
-  summarize(print(range(area_swept_m2)))
-x
+  reframe(print(range(area_swept_m2)))
+
 ggplot(bc, aes(year, area_swept1_m2)) +
   geom_jitter() +
   geom_jitter(data = bc, aes(year, area_swept_m2), col = "red")
@@ -74,8 +75,9 @@ ggplot(bc, aes(year, area_swept1_m2)) +
 bc |>
   filter(is.na(area_swept1_m2) == TRUE) |>
   tally()
+
 x <- bc |> filter(is.na(doorspread_m) == TRUE)
-unique(x$survey_abbrev) # WCHG doesn't have doorspread so use a different way to calcule the area swept
+# nolonger  true? unique(x$survey_abbrev) # WCHG doesn't have doorspread so use a different way to calculate the area swept
 
 # calculate area swept
 bc <- bc |>
@@ -91,11 +93,10 @@ range(bc$cpue_kgkm2)
 range(bc$year)
 bc$bottom_temp_c
 glimpse(bc)
-# saveRDS(bc, "output/wrangled_bcdata.rds")
 
 bc <- bc |> drop_na(logbot_depth)
 
-# Sets - load GOA data ----
+# Load - GOA data ----
 goa_all_sets <- readRDS("data-raw/goa-sets.rds")
 goa_all_catch <- readRDS("data-raw/goa-catch.rds")
 
@@ -154,10 +155,7 @@ filter(goa_sets, is.na(area_swept_m2) == TRUE)
 
 goa_sets[duplicated(goa_sets$fishing_event_id), ] ## check for duplication
 
-# saveRDS(goa_sets, "output/wrangled_afsc_setsdata.rds")
-
-
-# Sets - load NWFSC data ----
+# Load - NWFSC data ----
 # download nwfsc_haul.rda from here to get bottom temp: https://github.com/DFO-NOAA-Pacific/surveyjoin/tree/main/data
 load("data-raw/nwfsc_haul.rda")
 glimpse(nwfsc_haul)
@@ -227,14 +225,12 @@ nwfsc_sets <- nwfsc %>%
 
 nwfsc_sets[duplicated(nwfsc_sets$fishing_event_id), ] ## check for duplication
 
-# saveRDS(nwfsc_sets, "output/wrangled_nwfsc_setsdata.rds")
-
 nwfsc_sets |>
   ggplot() +
   geom_point(aes(year, log(catch_weight), colour = survey_name))
 
 
-# Sets - merge  ----------------------------------------------------
+# Merge Sets  ----------------------------------------------------
 
 # bc <- readRDS("output/wrangled_bcdata.rds") |> drop_na(logbot_depth)
 
@@ -259,20 +255,9 @@ range(bc$logbot_depth, na.rm = TRUE)
 range(goa_sets$logbot_depth)
 range(nwfsc_sets$logbot_depth)
 
-range(bc$year)
-range(unique(nwfsc_sets$year))
-
-range(nwfsc_sets$area_swept_m2)
-range(bc$area_swept_m2)
-
 range(nwfsc_sets$catch_weight)
 range(bc$catch_weight)
-
-range(nwfsc_sets$cpue_kgkm2)
-range(bc$cpue_kgkm2)
-
-str(goa_sets)
-str(bc)
+range(goa_sets$catch_weight)
 
 survey_sets <- bind_rows(bc, nwfsc_sets) |>
   bind_rows(goa_sets) |>
@@ -280,7 +265,6 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
   dplyr::select(
     fishing_event_id,
     survey_abbrev,
-    # vessel,
     cpue_kgkm2,
     year, # month, day,
     julian,
@@ -290,21 +274,15 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
     # latitude_end,
     # longitude_end,
     logbot_depth,
-    # species_common_name,
     catch_weight,
     catch_count,
-    # density_kgpm2,
-    # density_kgkm2,
     area_swept_m2,
     bottom_temp_c
-    # Subsample_count,
-    # Subsample_wt_kg
   )
 
 unique(survey_sets$survey_abbrev)
 unique(survey_sets$survey_name)
 
-glimpse(survey_sets)
 saveRDS(survey_sets, "output/Wrangled_USCan_trawldata.rds")
 
 
@@ -329,7 +307,6 @@ ggplot(
 
 
 dir.create("Figures", showWarnings = FALSE)
-
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), log(catch_weight))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
   geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
@@ -363,14 +340,12 @@ ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (bottom_temp
 
 ggplot(filter(survey_sets, catch_weight != 0), aes(as.factor(year), (julian))) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  # geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
   facet_wrap(~survey_name, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
 
 ggplot(filter(survey_sets, catch_weight == 0), aes(as.factor(year), logbot_depth)) +
   geom_jitter(aes(size = catch_weight, colour = catch_weight)) +
-  geom_violin(alpha = 0.5, draw_quantiles = c(0.5)) +
   facet_wrap(~survey_abbrev, nrow = 4) +
   scale_colour_viridis_c(trans = "log") +
   theme_classic()
@@ -391,10 +366,11 @@ ggplot(x, aes(year, n, colour = depthsplit)) +
 # ggsave("Figures/zeros_by_depth.jpg", width = 10, height = 8)
 
 
-# add depth to merged observational data ----------------------------------
+# Add depth to merged trawl survey data ----------------------------------
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
 survey_sets$logbot_depth_raw <- survey_sets$logbot_depth
 survey_sets <- survey_sets |> dplyr::select(-logbot_depth)
+
 max(survey_sets$longitude)
 min(survey_sets$longitude)
 max(survey_sets$latitude)
@@ -409,15 +385,15 @@ survey_sets3 <- marmap::get.depth(b, survey_sets2[, c("longitude", "latitude")],
   rename(longitude = lon, latitude = lat) %>%
   mutate(logbot_depth = log(bot_depth)) %>%
   right_join(survey_sets, by = c("longitude" = "longitude", "latitude" = "latitude"))
+# NAs are ok, fixing here
 
 survey_sets3[duplicated(survey_sets3), ]
+
 survey_sets3 |>
   filter(is.na(logbot_depth) == TRUE) |>
   tally()
 # replace NAs depths with the depth that was in the observational database
-# it's 17 points so negligible, these have positive logbot depths
-
-# TODO NOTE IN PAPER
+# it's 17 points so negligible,
 
 survey_sets3 <- survey_sets3 |>
   mutate(logbot_depth = ifelse(is.na(logbot_depth) == TRUE,
@@ -425,6 +401,8 @@ survey_sets3 <- survey_sets3 |>
   )) |>
   mutate(bot_depth = ifelse(bot_depth < 0, exp(logbot_depth_raw), bot_depth))
 
+
 ggplot(survey_sets3, aes(logbot_depth_raw, logbot_depth, colour = survey_abbrev)) +
   geom_point()
+
 saveRDS(survey_sets3, "output/Wrangled_USCan_trawldata_marmapdepth.rds")
