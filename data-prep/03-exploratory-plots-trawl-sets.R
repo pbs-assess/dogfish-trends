@@ -1,9 +1,5 @@
-#create exploratory plots of the wranged trawl set data
-
-
 library(tidyverse)
 library(ggplot2)
-
 
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
 dir.create("Figures", showWarnings = FALSE)
@@ -72,10 +68,11 @@ survey_sets <- survey_sets |>
   group_by(survey_abbrev) |>
   mutate(depthsplit = ifelse(logbot_depth < 3.5, "shallow", ifelse(logbot_depth >= 3.5 & logbot_depth < 4, "middle", "deep")))
 
-x <- survey_sets |>
+survey_sets |>
   group_by(year, depthsplit, survey_abbrev) |>
   filter(catch_weight == 0) |>
   tally()
+
 ggplot(x, aes(year, n, colour = depthsplit)) +
   geom_point() +
   geom_line() +
