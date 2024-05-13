@@ -35,11 +35,11 @@ get_stuff <- function(x, tag, tag2 = "") {
     mesh_vertices = x$spde$mesh$n,
     stringsAsFactors = FALSE
     )
-  out$family <- ifelse(grepl("delta_lognormal\\(", out$family), "delta_lognormal", out$family)
-  out$family <- ifelse(grepl("delta_gamma\\(", out$family), "delta_gamma", out$family)
-  out$family <- ifelse(grepl("delta_lognormal_mix\\(", out$family), "delta_lognormal_mix", out$family)
-  out$family <- ifelse(grepl("nbinom2\\(", out$family), "nbinom2", out$family)
-  out$family <- ifelse(grepl("tweedie\\(", out$family), "tweedie", out$family)
+  out$family <- ifelse(grepl("delta_lognormal\\(", out$family), "delta-lognormal", out$family)
+  out$family <- ifelse(grepl("delta_gamma\\(", out$family), "delta-gamma", out$family)
+  out$family <- ifelse(grepl("delta_lognormal_mix\\(", out$family), "delta-lognormal-mix", out$family)
+  out$family <- ifelse(grepl("nbinom2\\(", out$family), "NB2", out$family)
+  out$family <- ifelse(grepl("tweedie\\(", out$family), "Tweedie", out$family)
   out$svc <- ifelse(grepl("year_scaled", out$svc), "year", out$svc)
   out$tag <- tag
   if (tag2 != "") out$tag <- paste0(out$tag, "- ", tag2)
@@ -65,5 +65,9 @@ x[[5]] <- purrr::map_dfr(fits_svc_mat, get_stuff, tag = "Coastwide SVC") |> muta
 bind_rows(x) |>
   mutate(pc_spatial = paste(spatial_range_prior, spatial_sd_prior, sep = ", ")) |>
   mutate(pc_spatiotemporal = paste(spatial_range_prior, spatial_sd_prior, sep = ", ")) |>
-  select(model = tag, family, spatial, spatiotemporal, svc, pc_spatial, pc_spatiotemporal, mesh_vertices) |>
-  knitr::kable()
+  select(model = tag, family, spatial, spatiotemporal, svc, mesh_vertices) |>
+  knitr::kable(format = "latex", col.names = c("Model", "Family", "Spatial", "Spatiotemporal", "SVC", "Mesh vertices"), booktabs = TRUE, align = "llllll", caption = "TODO", label = "model-configs") |>
+  kableExtra::column_spec(1, width = "4.4cm") |>
+  kableExtra::column_spec(2, width = "2.4cm")
+
+
