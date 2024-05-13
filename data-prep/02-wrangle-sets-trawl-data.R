@@ -141,6 +141,9 @@ filter(goa_sets, is.na(area_swept_m2) == TRUE)
 
 goa_sets[duplicated(goa_sets$fishing_event_id), ] ## check for duplication
 
+saveRDS(goa_sets, "data-raw/wrangled_afsc_setsdata.rds")
+
+
 # Load - NWFSC data ----
 load("data-raw/nwfsc_haul.rda")
 
@@ -162,8 +165,6 @@ nwfsc <- bind_rows(
     catch_weight = total_catch_wt_kg
   ) |>
   mutate(common_name = tolower(common_name)) %>%
-  # filter(common_name == "pacific spiny dogfish") %>%
-  # filter(survey_name %in% c("NWFSC.Combo", "Triennial")) %>%
   mutate(date2 = as.Date(Date, format = "%Y%m%d")) %>%
   mutate(dmy = lubridate::ymd(date2)) %>%
   mutate(julian = lubridate::yday(dmy)) %>%
@@ -202,6 +203,7 @@ nwfsc_sets[duplicated(nwfsc_sets$fishing_event_id), ] ## check for duplication
 nwfsc_sets |>
   ggplot() +
   geom_point(aes(year, log(catch_weight), colour = survey_name))
+
 
 
 # Merge Sets  ----------------------------------------------------
