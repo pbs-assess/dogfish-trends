@@ -31,6 +31,12 @@ mesh <- make_mesh(d, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
 mesh$mesh$n
 
+ggplot() + inlabru::gg(mesh$mesh) +
+  geom_point(data = d, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.07, pch = 21) +
+  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+ggsave("figs/iphc-model-mesh.pdf", width = 6, height = 6)
+ggsave("figs/iphc-model-mesh.png", width = 6, height = 6)
+
 tic()
 fit <- sdmTMB(
   formula = number.observed ~ poly(log(depth_m), 2),
