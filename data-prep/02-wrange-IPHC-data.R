@@ -1,54 +1,18 @@
+
+bccrs <- 32609
+
 # load libraries ----------------------------------------------------------
-packages <- c(
-  "sf",
-  "wesanderson",
-  "dplyr",
-  "PBSdata",
-  "ggplot2",
-  "tidyr",
-  "here",
-  "rnaturalearthhires",
-  "ggsidekick",
-  "gfdata",
-  "gfplot",
-  "sp",
-  "sdmTMB",
-  "gfiphc",
-  "tidyverse",
-  "marmap",
-  "RColorBrewer",
-  "gridExtra"
-)
-
-new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
-if (length(new_packages)) install.packages(new_packages)
-
 library(sf)
-library(wesanderson)
-library(dplyr)
 library(PBSdata)
 library(ggplot2)
-library(tidyr)
 library(here)
-library(rnaturalearthhires)
-library(ggsidekick)
-library(gfdata)
-library(gfplot)
-theme_set(ggsidekick::theme_sleek())
-library(sp)
-library(sdmTMB)
 library(gfiphc)
 library(tidyverse)
 library(marmap)
-library(RColorBrewer)
-library(gridExtra)
-devtools::install_github("jakelawlor/PNWColors")
+library(sdmTMB)
 
 
 # Clean data --------------------------------------------------------------
-
-
-bccrs <- 32609
 
 # from 01-load-IPHC-data.R
 # https://www.iphc.int/data/fiss-data-query
@@ -166,18 +130,19 @@ iphc2 |>
   tally()
 
 ggplot(iphc2, aes(depth_m, depth_m_raw)) +
-  geom_point() # remove that outlier
+  geom_point()
 
 # replace NAs depths with the depth that was in the observational database
-# it's 15 points so negligible, these have positive logbot depths
+# it's 15 points, these have positive logbot depths
 iphc3 <- iphc2 |>
   mutate(depth_m_log = ifelse(is.na(depth_m_log) == TRUE,
     depth_m_log_raw, depth_m_log
   )) |>
   mutate(depth_m = ifelse(depth_m < 0, exp(depth_m_log_raw), depth_m)) |>
-  filter(depth_m < 3199.3723) |>
+  filter(depth_m < 3199.3723) |> #remove this outlier
   mutate(diff = depth_m - depth_m_raw)
+
 ggplot(iphc3, aes(depth_m, depth_m_raw)) +
-  geom_point() # remove that outlier
+  geom_point()
 
 saveRDS(iphc3, "output/IPHC_coastdata.rds")
