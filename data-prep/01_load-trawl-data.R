@@ -67,7 +67,7 @@ if (!file.exists("data-raw/nwfsc_samp_slope_AFSC.rds")) {
     Name = "Pacific spiny dogfish",
     SurveyName = "NWFSC.Combo"
   )
-  # correct apparent typo by matching to other samples from set with matching characteristics
+  # typo in date (1978?) found TrawlID in sets data - date should be 2012-Sep-14, changed here
   nwfsc_samp_combo[nwfsc_samp_combo$Date == "1978-May-04", ]$Date <- "2012-Sep-14"
   nwfsc_samp_combo <- nwfsc_samp_combo %>% mutate(date = as.Date(Date))
   saveRDS(nwfsc_samp_combo, "data-raw/nwfsc_samp_combo.rds")
@@ -106,11 +106,11 @@ saveRDS(nwfsc_samples_raw, "data-raw/NWFSC_sampledata.rds")
 # from surveyjoin github
 # https://github.com/DFO-NOAA-Pacific/surveyjoin/tree/main/data
 
-load("data-raw/surveyjoin/afsc_haul.rda")
-load("data-raw/surveyjoin/afsc_catch.rda")
+load("data-raw/afsc_haul.rda")
+load("data-raw/afsc_catch.rda")
 
 goa_all_sets <- afsc_haul %>% filter(survey_name %in% c(
-  # "Aleutian Islands Bottom Trawl Survey", #excluded due to few catches
+  # "Aleutian Islands Bottom Trawl Survey" excluded due to few catches
   "Gulf of Alaska Bottom Trawl Survey"
 ))
 
@@ -129,4 +129,4 @@ saveRDS(goa_all_catch, "data-raw/goa-catch.rds")
 # set data from: https://github.com/afsc-gap-products/gap_public_data#access-the-data
 # see here for definition of the codes: https://repository.library.noaa.gov/view/noaa/31570
 
-goa_samps <- read.csv("data-raw/surveyjoin/goa_dogfish_sex_length.csv")
+goa_samps <- read.csv("data-raw/goa_dogfish_sex_length.csv")
