@@ -27,7 +27,11 @@ f <- c(
   "figs/biomass-weighted-depth.pdf",
   "figs/biomass-weighted-depth.png",
   "figs/maturity-index-trends-combo.pdf",
-  "figs/maturity-index-trends-combo.png"
+  "figs/maturity-index-trends-combo.png",
+  "figs/coefs.pdf",
+  "figs/depth-effects.pdf",
+  "figs/trawl-model-mesh.png",
+  "figs/iphc-model-mesh.png"
 )
 
 sapply(f, fcopy)
