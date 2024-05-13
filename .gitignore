@@ -2,5 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-/data-raw
-/output
+Figures/
+data-raw/
