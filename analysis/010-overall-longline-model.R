@@ -6,7 +6,9 @@ library(tictoc)
 
 d <- readRDS("output/IPHC_coastdata.rds")
 d$offset <- log(d$hooksobserved2) # no hook comp
-grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds")
+grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #two options, full
+grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") #this on doesn't extend as far south in the NW US
+
 grid$depth_m <- grid$bot_depth
 
 test_resids_sim <- function(x, .n = 300) {
