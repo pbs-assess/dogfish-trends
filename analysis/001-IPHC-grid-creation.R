@@ -1,6 +1,11 @@
 # create a IPHC grid
 
+#params
 Coastalcrs <- 32609
+gridsize <- 3000
+buffersize <- 25000
+mindepth <- 11
+maxdepth <- 1096
 
 # library -----------------------------------------------------------------
 install.packages('spatialEco')
@@ -15,33 +20,50 @@ library(gfiphc)
 
 # Create prediction grid from hull  --------------------------------------------------
 
+#version 1
 iphc <- readRDS("output/IPHC_coastdata.rds") %>%
   mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
-name <-
+#path <- "output/PredictionGrid_IPHCcoast.shp"
+path_center <- "output/PredictionGridCentres_IPHCcoast.shp"
+path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths.rds"
+path_final <-  "output/PredictionGridCentres_IPHCcoast_regarea.rds"
+# this file is from the website: https://www.iphc.int/data/geospatial-data/
+iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 
+
+
+#version 2 with NW US trimmed as it extends far in a couple years and starts a year later
+iphc <- readRDS("output/IPHC_coastdata.rds") %>%
+  mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
 iphc <- iphc |>
   mutate(FID = seq(1,n(),1))
 trim <- iphc |>
   filter(iphc.reg.area =="2A" & year %in% c(2017, 2013, 2014))
-iphctrim <- filter(iphc, !iphc$FID %in% trim$FID)
+iphc <- filter(iphc, !iphc$FID %in% trim$FID)
+path_center <- "output/PredictionGridCentres_IPHCcoast_trim.shp"
+path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths_trim.rds"
+path_final <-  "output/PredictionGridCentres_IPHCcoast_regarea_trim.rds"
+# this file is from the website: https://www.iphc.int/data/geospatial-data/
+iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 
 
-x <- function{
-#make this a function
-iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32609)
+
+#make the grid function
+iphcgridfunc <- function(iphc, iphcreg){
+
+iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs) #change to coastalcrs object
 plot(st_geometry(iphcgrid_sf))
 hullsa <- concaveman::concaveman(filter(iphcgrid_sf, iphc.reg.area %in% c("2A", "2B", "2C")))
 hulls3a <- concaveman::concaveman(filter(iphcgrid_sf, iphc.reg.area %in% c("3A", "3B", "2C")))
 hulls <- rbind(hullsa, hulls3a)
 
-hullsb <- st_buffer(hulls, dist = 25000) # 2.5 km buffer
+hullsb <- st_buffer(hulls, dist = buffersize) # 25 km buffer
 hullsb <- spatialEco::sf_dissolve(hullsb)
 plot(st_geometry(hullsb), col = "blue")
 plot(st_geometry(hulls), col = "red", add = TRUE)
 
 # change resolution here
-grid_spacing <- 3000 # 3 kilometers define the size
-polygony <- st_make_grid(hullsb, square = T, cellsize = c(grid_spacing, grid_spacing)) %>%
+polygony <- st_make_grid(hullsb, square = T, cellsize = c(gridsize, gridsize)) %>%
   st_sf() %>%
   mutate(cell_ID = row_number())
 center <- st_centroid(polygony)
@@ -53,27 +75,25 @@ grid_extent <- st_sf(grid_extent)
 grid_extent$area_km <- st_area(grid_extent) / 1000000 # m to km
 range(grid_extent$area_km)
 
-st_write(grid_extent, "output/PredictionGrid_IPHCcoast.shp", append = FALSE)
-st_write(test_center, "output/PredictionGridCentres_IPHCcoast.shp", append = FALSE)
+st_write(test_center, path_center, append = FALSE)
+testcentre <- st_read(path_center)
 
-testcentre <- st_read("output/PredictionGridCentres_IPHCcoast.shp")
-
-plot(st_geometry(testcentre))
 testcentre2 <- st_transform(testcentre, crs = "+proj=latlon +datum=WGS84")
-testcentre3 <- testcentre2 %>%
+df <- testcentre2 %>%
   mutate(
     lat = unlist(purrr::map(testcentre2$geometry, 2)),
     long = unlist(purrr::map(testcentre2$geometry, 1))
-  )
-df <- st_drop_geometry(testcentre3)
+  ) |>
+  st_drop_geometry()
 
 # Use get.depth to get the depth for each point
-bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1)
+suppressWarnings(bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1)
+)
 
 df_depths <- marmap::get.depth(bio_depth, df[, c("long", "lat")], locator = FALSE) %>%
   mutate(bot_depth = (depth * -1)) %>%
   rename(longitude = lon, latitude = lat) %>%
-  filter(bot_depth > 11 & bot_depth < 1096) %>%
+  filter(bot_depth > mindepth & bot_depth < maxdepth) %>%
   mutate(logbot_depth = log(bot_depth)) %>%
   inner_join(df, by = c("longitude" = "long", "latitude" = "lat")) |>
   dplyr::select(-FID) |>
@@ -96,38 +116,24 @@ grid2 <- st_join(grid_extent,
   drop_na(depth) %>%
   st_drop_geometry()
 
-saveRDS(grid2, "output/PredictionGridCentres_IPHCcoast_wdepths.rds")
-grid2 <- readRDS("output/PredictionGridCentres_IPHCcoast_wdepths.rds") |>
+grid2 <- grid2 |>
   mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
 
-grid2[duplicated(grid2), ] # just checking
+#grid2[duplicated(grid2), ] # just checking
 
 # intersect with plot of IPHC regulation areas
-# this file is from the website: https://www.iphc.int/data/geospatial-data/
-iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
-st_crs(iphcreg)
+# # this file is from the website: https://www.iphc.int/data/geospatial-data/
 iphcreg_p <- st_transform(iphcreg, crs = Coastalcrs)
 
 grid3 <- st_as_sf(grid2, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs)
 grid4 <- st_intersection(grid3, iphcreg_p) |>
   filter(ET_ID != "4A") |>
-  mutate(depth_m_log = log(depth), area_km = as.numeric(area_km))
-
-ggplot(grid4, aes(UTM.lon, UTM.lat, col = ET_ID)) +
-  geom_point(size = 0.25)
+  mutate(depth_m_log = log(bot_depth), area_km = as.numeric(area_km))
 
 grid4_ras <- grid4 %>%
   mutate(across(c(UTM.lon, UTM.lat), round, digits = 2))
+saveRDS(grid4_ras, path_final)
+}
 
-ggplot(iphcreg_p) +
-  geom_sf() +
-  geom_raster(data = grid4_ras, aes(UTM.lon * 1000, UTM.lat * 1000, fill = ET_ID))
-
-ggplot(iphcreg_p) +
-  geom_sf() +
-  geom_raster(data = grid4_ras, aes(UTM.lon * 1000, UTM.lat * 1000, fill = depth))
-
-saveRDS(grid4_ras, "output/PredictionGridCentres_IPHCcoast_regarea.rds")
-grid_final <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds")
-
-
+#run the grid function
+iphcgridfunc (iphc, iphcreg)
