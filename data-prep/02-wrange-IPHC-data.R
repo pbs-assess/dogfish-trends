@@ -95,21 +95,16 @@ iphc_coast6 <- iphc_coast5 %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326) %>%
   st_transform(crs = bccrs)
 
-iphc_coast7 <- st_intersection(iphc_coast6, st_geometry(gma)) %>%
-  st_drop_geometry() %>%
-  dplyr::select(-dmy) %>%
-  mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000) |>
-  bind_rows(filter(iphc_coast6, iphc.reg.area != "2B"))
-
-x <- iphc_coast7 %>%
+iphc_coast6 %>%
   dplyr::select(station, year) %>%
-  filter(n() > 1) # some duplicates in the database
+  filter(n() > 1)
 
 
 # add depth from marmap ---------------------------------------------------
-iphc <- iphc_coast7 |>
+iphc <- iphc_coast6 |>
   mutate(depth_m_raw = exp(depth_m_log), depth_m_log_raw = depth_m_log) |>
-  dplyr::select(-c(depth_m_log, depth_m_log))
+  dplyr::select(-c(depth_m_log, depth_m_log, geometry))
+iphc <- st_drop_geometry(iphc)
 
 b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
 x <- iphc |> dplyr::select(longitude, latitude)
