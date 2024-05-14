@@ -442,5 +442,5 @@ ggplot() +
     ),
     size = 0.25, shape = 19
   ) +
-  scale_colour_manual(values = c("red", "black"))
+  scale_colour_manual(values = c("black"))
 ggsave("Figures/time_variability_both.png", width = 13, height = 2)
