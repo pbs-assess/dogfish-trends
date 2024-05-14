@@ -40,6 +40,7 @@ iphc <- iphc |>
 trim <- iphc |>
   filter(iphc.reg.area =="2A" & year %in% c(2017, 2013, 2014))
 iphc <- filter(iphc, !iphc$FID %in% trim$FID)
+path_extent <-  "output/PredictionGridExtent_IPHCcoast_trim.shp"
 path_center <- "output/PredictionGridCentres_IPHCcoast_trim.shp"
 path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths_trim.rds"
 path_final <-  "output/PredictionGridCentres_IPHCcoast_regarea_trim.rds"
@@ -75,6 +76,7 @@ grid_extent <- st_sf(grid_extent)
 grid_extent$area_km <- st_area(grid_extent) / 1000000 # m to km
 range(grid_extent$area_km)
 
+st_write(grid_extent, path_extent, append = FALSE)
 st_write(test_center, path_center, append = FALSE)
 testcentre <- st_read(path_center)
 
@@ -137,3 +139,4 @@ saveRDS(grid4_ras, path_final)
 
 #run the grid function
 iphcgridfunc (iphc, iphcreg)
+
