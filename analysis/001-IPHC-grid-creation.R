@@ -17,6 +17,17 @@ library(gfiphc)
 
 iphc <- readRDS("output/IPHC_coastdata.rds") %>%
   mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
+name <-
+
+iphc <- iphc |>
+  mutate(FID = seq(1,n(),1))
+trim <- iphc |>
+  filter(iphc.reg.area =="2A" & year %in% c(2017, 2013, 2014))
+iphctrim <- filter(iphc, !iphc$FID %in% trim$FID)
+
+
+x <- function{
+#make this a function
 iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32609)
 plot(st_geometry(iphcgrid_sf))
 hullsa <- concaveman::concaveman(filter(iphcgrid_sf, iphc.reg.area %in% c("2A", "2B", "2C")))
@@ -118,4 +129,5 @@ ggplot(iphcreg_p) +
 
 saveRDS(grid4_ras, "output/PredictionGridCentres_IPHCcoast_regarea.rds")
 grid_final <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds")
+
 
