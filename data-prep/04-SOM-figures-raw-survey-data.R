@@ -1,4 +1,4 @@
-#Summary plots of surveys for SOM
+# Summary plots of surveys for SOM
 
 
 # library -----------------------------------------------------------------
@@ -9,137 +9,51 @@ library(sf)
 sf_use_s2(FALSE)
 
 
-# IPHC psf# IPHC plot ---------------------------------------------------------------
+# load data ---------------------------------------------------------------
+
+d <- readRDS("output/IPHC_coastdata.rds")
+tl <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
+
 # Load coast maps ---------------------------------------------------------------------
 
 map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
-goa_coast <- st_crop(
-  map_data,
-  c(xmin = -175, ymin = 50, xmax = -130, ymax = 65)
-)
-goa_coast_proj <- sf::st_transform(goa_coast, crs = 32607)
-
-
-map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
-coast <- st_crop(
-  map_data,
-  c(xmin = -170, ymin = 35, xmax = -120, ymax = 65))
-
-coast_proj <- sf::st_transform(coast, crs = 32611)
-ggplot(coast_proj) +
-  geom_sf()
-
 
 coastwide <- st_crop(
   map_data,
-  c(xmin = -170, ymin = 20, xmax = -100, ymax = 70)
+  c(xmin = -170, ymin = 30, xmax = -120, ymax = 65)
 )
 
 coast_proj2 <- sf::st_transform(coastwide, crs = 32609)
 ggplot(coast_proj2) +
   geom_sf()
 
-coast_proj3 <- sf::st_transform(coastwide, crs = 32607)
-ggplot(coast_proj3) +
-  geom_sf()
 
-# Rotate the land map
-#rotate the map
-#to have this match the trawl map use the same coordinates to rotate
-#this is from 07_UStrawlstitch
-predcoastal_svc2 <- readRDS("output/predcoastal_trawl_svc2.rds")
-names(coast_proj2)
-ggplot(coast_proj2) +
-  geom_sf(aes(fill = rownames(coast_proj2)), color = "black") +
-  theme(legend.position = "none")
+# GOA
+goa_coast <- st_crop(
+  map_data,
+  c(xmin = -175, ymin = 50, xmax = -130, ymax = 75)
+)
+#goa_coast_proj <- sf::st_transform(goa_coast, crs = 32607) # UTM zone 7
 
-coast_proj3 <-
-  st_cast(
-    coast_proj2,
-    "POLYGON"
-  )
-# View(st_geometry(coast_proj3))
-plot(st_geometry(coast_proj3))
-# plot(st_geometry(coast_proj3)[[1]])
+# WC
+ws_coast <- st_crop(
+  map_data,
+  c(xmin = -150, ymin = 25, xmax = -110, ymax = 55)
+)
+#ws_coast_proj <- sf::st_transform(ws_coast, crs = 32610) # utm zone 10
 
-final2 <- st_sf(st_sfc())
-for (i in 1:dim(coast_proj3)[1]) {
-  rotate_coast3 <- splitrotatepolygon(coast_proj3, 30,
-                                      mean(predcoastal_svc2$UTM.lon) * 1000,
-                                      mean(predcoastal_svc2$UTM.lat) * 1000)
-  final2 <- rbind(final2, rotate_coast3)
-}
+# BC
+bc_coast <- st_crop(
+  map_data,
+  c(xmin = -134, ymin = 46, xmax = -120, ymax = 57)
+)
+#bc_coast_proj <- sf::st_transform(bc_coast, crs = 26909)
 
 
-#this is the rotated map that matches the rotate est and svc maps in 02_TrawlStitch.R
-prediction_region <- readRDS("output/prediction_stitchedtrawlmodel.rds")
-#pred<- (prediction_region$data)
+# IPHC Summary raw by region -----------------------------------------
 
-ggplot() +
-  geom_sf(data = coast_proj3, aes(fill = rownames(coast_proj3)), color = "black") +
-  theme(legend.position = "none") +
-  geom_point(data = prediction_region$data, aes(UTM.lon*1000, UTM.lat*1000))
-
-# make them in the right format
-coast_proj4 <-
-  st_cast(
-    coast_proj3,
-    "POLYGON"
-  )
-# View(st_geometry(coast_proj4))
-plot(st_geometry(coast_proj4))
-# plot(st_geometry(coast_proj4)[[1]])
-
-final2 <- st_sf(st_sfc())
-for (i in 1:dim(coast_proj4)[1]) {
-  rotate_coast3 <- splitrotatepolygon(
-    coast_proj4,
-    30, # for coast
-    mean(prediction_region$data$UTM.lon)*1000,
-    mean(prediction_region$data$UTM.lat)*1000
-  )
-  final2 <- rbind(final2, rotate_coast3)
-}
-
-rotatelon <- mean(prediction_region$data$UTM.lon)*1000
-rotatelat <- mean(prediction_region$data$UTM.lat)*1000
-
-
-# get the maps on the same scale at the trawl --------------------------------------
-#from trawl
-prediction_region <- readRDS("output/prediction_stitchedtrawlmodel.rds")
-
-ras_df <- prediction_region$data %>%
-  mutate(across(c(UTM.lon, UTM.lat), round, digits = 2)) |>
-  dplyr::select(-UTM.lat, -UTM.lon) |>
-  add_utm_columns(
-    ll_names = c("longitude", "latitude"),
-    utm_names = c("UTM.lon", "UTM.lat"), units = "km",
-    utm_crs = 32609
-  )
-
-# rotate maps so that we get true offshore movement
-predimm3 <- rotate_coords(
-  ras_df$UTM.lon, ras_df$UTM.lat, 30,
-  c(mean(prediction_region$data$UTM.lon),
-    mean(prediction_region$data$UTM.lat)
-  )) |>
-  cbind(ras_df)
-
-plot(final2)
-points(predimm3$x*1000, predimm3$y*1000, col = "red")
-
-predimm3$est2 <- round(predimm3$est2, 2)
-
-minlon <- min(predimm3$x)*1000 + 10000
-maxlon <- max(predimm3$x)*1000 - 10000
-minlat <- min(predimm3$y)*1000 + 8000
-maxlat <- max(predimm3$y)*1000 - 10000
-
-
-# Summary raw survey area for SOM -----------------------------------------
-
-d <- readRDS("output/IPHCdata.rds")
+# d <- readRDS("output/IPHCdata.rds")
+d <- readRDS("output/IPHC_coastdata.rds")
 d <- d |> dplyr::select(-UTM.lat, -UTM.lon)
 
 # figure for SOM
@@ -149,9 +63,8 @@ df_forplotting <- add_utm_columns(d, units = "km", utm_crs = 32612) %>%
 coast_proj <- sf::st_transform(coast, crs = 32612)
 
 
-
 df_forplotting$iphc.reg.area <- factor(df_forplotting$iphc.reg.area,
-                                       levels = c("3B", "3A", "2C", "2B", "2A")
+  levels = c("3B", "3A", "2C", "2B", "2A")
 )
 
 
@@ -170,10 +83,115 @@ ggplot() +
   ) +
   labs(colour = "Catch weight\n(log, kg)") +
   scale_y_continuous("Latitude",
-                     breaks = c(35, 45, 55),
-                     labels = c(35, 45, 55)
+    breaks = c(35, 45, 55),
+    labels = c(35, 45, 55)
   ) +
   theme(axis.text = element_text(size = 10))
+
 ggsave("Figures/SummaryPlot_surveyarea_iphc.jpg", width = 5, height = 8)
 
 
+
+
+
+# IPHC summary data raw figures -------------------------------------------
+
+ggplot(d, aes(UTM.lon * 1000, UTM.lat * 1000,
+  fill = number.observed, colour = number.observed,
+  size = number.observed
+)) +
+  geom_sf(data = coast_proj2, inherit.aes = FALSE) +
+  coord_sf(expand = FALSE) +
+  geom_point(alpha = 0.3) +
+  scale_size_continuous(range = c(0.025, 2)) +
+  facet_wrap(vars(year)) +
+  theme(
+    legend.position = "bottom",
+    panel.spacing = unit(0, "in"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5)
+  ) +
+  scale_x_continuous(
+    breaks = c(-160, -150, -140, -130, -120)
+  ) +
+  # scale_colour_viridis_c() +
+  # scale_fill_viridis_c() +
+  scale_colour_viridis_c(trans = "log") +
+  scale_fill_viridis_c(trans = "log") +
+  # labs(x = "Longitude", y = "Latitude", fill = "Adjusted CPUE", colour = "Adjusted CPUE")
+  labs(x = "Longitude", y = "Latitude", fill = "Count (log)", colour = "Count (log)")
+
+ggsave("Figures/SummaryPlot_surveyarea_iphc.jpg", width = 5, height = 8)
+
+
+
+
+# Trawl summary figure ----------------------------------------------------
+
+tl <- add_utm_columns(tl, units = "km", utm_crs = 32609) %>%
+  rename("UTM.lon" = "X", "UTM.lat" = "Y")
+
+# coast_proj <- sf::st_transform(coast, crs = 32612)
+
+
+ggplot(tl, aes(longitude, latitude,
+  fill = cpue_kgkm2, colour = cpue_kgkm2,
+  size = cpue_kgkm2
+)) +
+  geom_sf(data = coast, inherit.aes = FALSE) +
+  coord_sf(expand = FALSE) +
+  geom_point(alpha = 0.3) +
+  scale_size_continuous(range = c(0.5, 5)) +
+  facet_wrap(vars(year)) +
+  theme(
+    legend.position = "bottom",
+    panel.spacing = unit(0, "in"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5)
+  ) +
+  scale_x_continuous(
+    breaks = c(-180, -160, -150, -140, -130, -120)
+  ) +
+  scale_colour_viridis_c() +
+  scale_fill_viridis_c() +
+  # scale_colour_viridis_c(trans = "log") +
+  # scale_fill_viridis_c(trans = "log") +
+  labs(x = "Longitude", y = "Latitude", fill = "Adjusted CPUE", colour = "Adjusted CPUE")
+
+
+# trawl summary by region -----------------------------------
+
+
+df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
+  # filter(survey_abbrev %in% c("GOA"))
+  # filter(survey_name %in% c("syn bc"))
+   filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope","NWFSC.Combo.pass2", "NWFSC.Combo.pass1"))
+
+ggplot() +
+  geom_point(data = df, aes(longitude, latitude,
+    col = (cpue_kgkm2),
+    size = (cpue_kgkm2)
+  ), alpha = 0.75) +
+  facet_wrap(vars(year)) +
+  theme(
+    legend.position = "bottom",
+    panel.spacing = unit(0, "in"),
+    axis.text.x = element_text(angle = 45, vjust = 0.5)
+  ) +
+  labs(x = "Longitude", y = "Latitude",
+       #fill = expression(paste("CPUE (kg/",km^"2",")")) ,
+       colour = expression(paste("CPUE (kg/",km^"2",")")) ,
+       size = expression(paste("CPUE (kg/",km^"2",")")))  +
+  scale_size_continuous(range = c(0.5, 5)) +
+  #geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
+  #geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
+  geom_sf(data = ws_coast, colour = "grey70", fill = "grey90") +
+  scale_color_viridis_c(trans = "log") +
+  scale_x_continuous(
+    "Longitude"
+  ) +
+  labs(colour = expression(paste("CPUE (kg/",km^"2",")"))) +
+  theme(axis.text = element_text(size = 6))
+
+
+# ggsave("Figures/SummaryPlot_rawtrawl_goa.jpg", width = 10, height = 8)
+# ggsave("Figures/SummaryPlot_rawtrawl_bc.jpg", width = 10, height = 8)
+ ggsave("Figures/SummaryPlot_rawtrawl_nwus.jpg", width = 10, height = 8)
