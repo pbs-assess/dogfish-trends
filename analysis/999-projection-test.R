@@ -113,11 +113,4 @@ df <- data.frame(a,b,c, d)
 colnames(df) = c('proj32605', "proj32609", "proj32610", "proj32612")
 rownames(df) <- c('GOA/BC','GOA/NW US','BC/NW US')
 
-#plot
-grid_extent <- st_drop_geometry(grid_extent)
-ip07 <- st_drop_geometry(ip07)
-
-all <- left_join(grid_extent, ip07, by = c ("FID" = "FID"))
-ggplot(all, aes(area_km_07, area_km.x)) + geom_point()
-all <- all |> mutate(difference = area_km.x - area_km_07)
 
