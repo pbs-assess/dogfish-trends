@@ -141,16 +141,17 @@ saveRDS(goa_samps3, "data-raw/goa_samps.rds")
 
 nwfsc_samples_raw <- readRDS("data-raw/NWFSC_sampledata.rds")
 glimpse(nwfsc_samples_raw)
+names(nwfsc_samples_raw) <- tolower(names(nwfsc_samples_raw))
 
-ggplot(nwfsc_samples_raw, aes(Age, Length_cm)) +
-  facet_wrap(~Sex + Project     ) +
+ggplot(nwfsc_samples_raw, aes(age, length_cm)) +
+  facet_wrap(~sex + project     ) +
   geom_point()
-ggplot(nwfsc_samples_raw, aes(Length_cm, Weight , col = Project)) +
-  facet_wrap(~Sex ) +
+ggplot(nwfsc_samples_raw, aes(length_cm, weight , col = project)) +
+  facet_wrap(~sex ) +
   geom_point()
-ggplot(nwfsc_samples_raw, aes(Length_cm)) +
+ggplot(nwfsc_samples_raw, aes(length_cm)) +
   geom_density() +
-  facet_wrap(~Sex + Project, ncol = 2     )
+  facet_wrap(~sex + Project, ncol = 2)
 names(nwfsc_samples_raw) <- tolower(names(nwfsc_samples_raw))
 
 # data from here: https://www.webapps.nwfsc.noaa.gov/data/map
@@ -182,10 +183,10 @@ nwfsc_samps <- nwfsc_samples_raw |>
   # Triennial (2001 and 2004): lengths are total length
   # AFSC Slope Survey: Fork lengths
   # 1998 Triennial Survey: Fork lengths
-mutate(total_length_mmt = ifelse(survey_name == "NWFSC.Combo", "TLnat",
-                                 ifelse(survey_name == "Triennial" & year %in% c(2001, 2004), "TLnat",
-                                        ifelse(survey_name == "AFSC.Slope", "FL",
-                                               ifelse(survey_name == "Triennial" & year == 1998, "FL",
+mutate(total_length_mmt = ifelse(survey_name == "Groundfish Slope and Shelf Combination Survey", "TLnat",
+                                 ifelse(survey_name == "Groundfish Triennial Shelf Survey" & year %in% c(2001, 2004), "TLnat",
+                                        ifelse(survey_name == "AFSC/RACE Slope Survey", "FL",
+                                               ifelse(survey_name == "Groundfish Triennial Shelf Survey" & year <= 1998, "FL",
                                                       NA
                                                )
                                         )
