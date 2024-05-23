@@ -55,9 +55,6 @@ samps <- readRDS("output/samps_CoastalTrawl.rds") |>
     survey_abbrev,
     survey_name
   ))
-unique(samps$survey_name)
-unique(samps$survey_abbrev)
-unique(samps$survey_name2)
 
 
 # SOM Figure for manuscript: density figure of IPHC and trawl, regions combined -------------------------------
@@ -72,13 +69,13 @@ sampsTL <- readRDS("output/samps_CoastalTrawl.rds") |>
   )) |>
   filter(!survey_name %in% c("Triennial", "AFSC.Slope"))
 
-samps_histtl <- sampsTL %>%
+samps_hist<- sampsTL %>%
   mutate(year_group = findInterval(year, breakpts)) |>
   drop_na(length_ext_cm) |>
   filter(!sex %in% c(0, 3)) |>
-  mutate(survey_name2 = ifelse(survey_name2 == "BC", "BC",
-    ifelse(survey_name == "GOA", "GOA",
-      "WC"
+  mutate(survey_name2 = ifelse(survey_name2 == "BC", "British Columbia",
+    ifelse(survey_name == "GOA", "Gulf of Alaska",
+      "US West Coast"
     )
   )) |>
   mutate(survey_name3 = ifelse(survey_name2 == "BC", "BC",
@@ -94,15 +91,15 @@ samps_histtl <- sampsTL %>%
 
 
 samps_hist$survey_name2 <- factor(samps_hist$survey_name2,
-  levels = c("GOA", "BC", "WC")
+  levels = c("Gulf of Alaska", "British Columbia", "US West Coast")
 )
 
 year.labs <- c("'96-02", "'03-'13", "'14-'22")
 names(year.labs) <- c("1", "3", "4")
 
 
-survey.labs <- c("WC", "BC", "GOA")
-names(survey.labs) <- c("WC", "BC", "GOA")
+survey.labs <- c("US West Coast", "British Columbia", "Gulf of Alaska")
+names(survey.labs) <- c("US West Coast", "British Columbia", "Gulf of Alaska")
 
 sex.labs <- c("Males", "Females")
 names(sex.labs) <- c("1", "2")
@@ -129,7 +126,6 @@ ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as
     data = samps_hist,
     aes(xintercept = immature), colour = "grey70"
   ) +
-  # geom_vline (xintercept = samps_hist$mature, group = as.factor(samps_hist$sex) )+
   geom_density(alpha = 0.6, size = 0.25) + # , bins = 50) +
   facet_grid(
     rows = vars(survey_group),
@@ -144,12 +140,10 @@ ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as
     breaks = c(0, 0.02, 0.04, 0.06, 0.08),
     labels = c(0, 0.02, 0.04, 0.06, 0.08), name = "Density"
   ) +
-  scale_fill_manual("Region", values = x) + # , labels = c("'96-02", "'03-'13", "'14-'22")) +
-  # scale_colour_manual(values = "black") +
-  # scale_fill_grey("Region") +
+  scale_fill_manual("Region", values = cols_region3) +
+  scale_colour_manual(values = cols_region3) +
   theme(
     plot.background = element_rect(fill = "NA", colour = "NA"),
-    # text = element_text(family= "Gill Sans MT"),
     axis.line.x = element_line(colour = "grey60"),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
