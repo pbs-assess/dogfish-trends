@@ -6,7 +6,7 @@ library(tidyr)
 library(sdmTMB)
 
 prep_trawl_dat_and_grid <- function() {
-  df <- readRDS("output/Wrangled_USCanData.rds") |>
+  df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
     drop_na(area_swept_m2) |>
     mutate(offset_km2 = log(area_swept_m2 / (1000 * 1000))) |>
     mutate(survey_name = ifelse(
