@@ -24,6 +24,7 @@ library(tidyverse)
 library(lubridate)
 library(gfplot)
 library(here)
+library(gfdata)
 
 
 # Load - BC data see 01_load-trawl-data.R------------------------------------------------------------
@@ -39,7 +40,7 @@ bc <- readRDS("data-raw/data_surveysets.rds") %>%
     survey_name = "syn bc",
     logbot_depth = log(depth_m)
   ) |>
-  dplyr::select(
+  dplyr::select(survey_series_id,
     survey_name, year, logbot_depth, fishing_event_id,
     longitude, latitude,
     cpue_kgkm2 = density_kgkm2,
@@ -74,9 +75,30 @@ bc |>
 
 x <- bc |> filter(is.na(doorspread_m) == TRUE)
 
+# missing temp data, pull that informaiton in
+unique(bc$survey_series_id)
+d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
+
+d |> group_by(fishing_event_id) |>
+  reframe( n = n()) |>
+  filter(n >1) #some events have 2 temperatures
+d |> distinct(fishing_event_id) |>
+  tally()
+
+d2 <- d %>% group_by(fishing_event_id) %>% slice(which.max(avg)) #some fishing events have two sensors and therefore 2 values, get rid of one
+d2$fishing_event_id <- as.numeric(d2$fishing_event_id)
+d2 <- d2 |> dplyr::select(fishing_event_id, year, avg) |>
+  rename(bottom_temp_c = avg) #used the average bottom temperature
+
+d2 |> group_by(fishing_event_id) |>
+  reframe( n = n()) |>
+  filter(n >1) #2 events are nolonger in the dataframe
+
+bc$fishing_event_id <- as.numeric(bc$fishing_event_id)
+bc <- left_join(bc, d2)
+
 # calculate area swept
 bc <- bc |>
-  mutate(bottom_temp_c = NA) |>
   dplyr::select(
     survey_name, julian, survey_abbrev, year, logbot_depth, fishing_event_id, longitude, latitude,
     cpue_kgkm2, catch_weight, catch_count, area_swept_m2, bottom_temp_c
@@ -212,6 +234,12 @@ nwfsc_sets$date
 goa_sets$date
 bc$date
 
+bc$fishing_event_id <- as.character(bc$fishing_event_id)
+
+range(bc$bottom_temp_c, na.rm = TRUE)
+range(goa_sets$bottom_temp_c, na.rm = TRUE)
+range(nwfsc_sets$bottom_temp_c, na.rm = TRUE)
+
 range(bc$cpue_kgkm2)
 range(goa_sets$cpue_kgkm2)
 range(nwfsc_sets$cpue_kgkm2)
@@ -252,6 +280,8 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
     area_swept_m2,
     bottom_temp_c
   )
+
+saveRDS(survey_sets, "output/Wrangled_USCan_trawldata.rds")
 
 # Add depth to merged trawl survey data ----------------------------------
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
