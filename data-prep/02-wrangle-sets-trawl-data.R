@@ -78,17 +78,19 @@ x <- bc |> filter(is.na(doorspread_m) == TRUE)
 # missing temp data, pull that informaiton in
 unique(bc$survey_series_id)
 d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
-
 d |> group_by(fishing_event_id) |>
   reframe( n = n()) |>
-  filter(n >1) #some events have 2 temperatures
+  filter(n >1) #some events have 2 temperatures due to two sensors
 d |> distinct(fishing_event_id) |>
   tally()
 
-d2 <- d %>% group_by(fishing_event_id) %>% slice(which.max(avg)) #some fishing events have two sensors and therefore 2 values, get rid of one
-d2$fishing_event_id <- as.numeric(d2$fishing_event_id)
-d2 <- d2 |> dplyr::select(fishing_event_id, year, avg) |>
-  rename(bottom_temp_c = avg) #used the average bottom temperature
+d2 <- d %>% group_by(fishing_event_id) %>%
+  #slice(which.max(avg)) |> #some fishing events have two sensors and therefore 2 values, get rid of one
+  mutate(bottom_temp_c = mean(avg)) |>   #some fishing events have two sensors and therefore 2 values, get rid of one
+  distinct(fishing_event_id, .keep_all = TRUE) |>
+  #rename(bottom_temp_c = avg) |> #used the average bottom temperature
+  dplyr::select(fishing_event_id, year, bottom_temp_c) |>
+  mutate(fishing_event_id = as.numeric(fishing_event_id))
 
 d2 |> group_by(fishing_event_id) |>
   reframe( n = n()) |>
