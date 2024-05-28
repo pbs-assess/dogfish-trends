@@ -74,7 +74,7 @@ s1 <- simulate(fit1, 500L, type = "mle-mvn")
 
 dh1 <- dharma_residuals(s1, fit1, return_DHARMa = TRUE)
 plot(dh1)
-DHARMa::plotQQunif(dh1, testDispersion = FALSE)
+DHARMa::plotQQunif(dh1)
 
 
 tictoc::tic()
