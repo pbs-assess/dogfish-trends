@@ -3,4 +3,5 @@
 .RData
 .Ruserdata
 Figures/
-data-raw/
+output/
+.Rproj
