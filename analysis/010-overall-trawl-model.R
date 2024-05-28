@@ -89,7 +89,7 @@ AIC(fit1, fit4)
 set.seed(123)
 s4 <- simulate(fit4, 400L, type = "mle-mvn")
 
-r <- dharma_residuals(s4, fit4)
+r <- dharma_residuals(s4, fit4, plot = FALSE)
 ggplot(r, aes(expected, observed)) +
   geom_point(size = 2) +
   geom_abline(intercept = 0, slope = 1, colour = "red") +
