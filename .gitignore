@@ -6,4 +6,8 @@ Figures/
 data-raw/
 marmap_coord_*.csv
 output/Prediction*
+output/*.dbf
+output/*.shp
+output/*.shx
+output/*.prj
 
