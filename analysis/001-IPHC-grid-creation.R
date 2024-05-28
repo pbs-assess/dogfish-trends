@@ -8,7 +8,6 @@ mindepth <- 11
 maxdepth <- 1096
 
 # library -----------------------------------------------------------------
-install.packages("spatialEco")
 library(sf)
 library(sdmTMB)
 library(dplyr)
@@ -16,7 +15,6 @@ library(marmap)
 library(here)
 library(tidyverse)
 library(gfiphc)
-
 
 # Create prediction grid from hull  --------------------------------------------------
 
@@ -29,8 +27,6 @@ path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths.rds"
 path_final <- "output/PredictionGridCentres_IPHCcoast_regarea.rds"
 # this file is from the website: https://www.iphc.int/data/geospatial-data/
 iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
-
-
 
 # version 2 with NW US trimmed as it extends far in a couple years and starts a year later
 iphc <- readRDS("output/IPHC_coastdata.rds") %>%
@@ -47,8 +43,6 @@ path_final <- "output/PredictionGridCentres_IPHCcoast_regarea_trim.rds"
 # this file is from the website: https://www.iphc.int/data/geospatial-data/
 iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 
-
-
 # make the grid function
 iphcgridfunc <- function(iphc, iphcreg) {
   iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs) # change to coastalcrs object
@@ -63,7 +57,7 @@ iphcgridfunc <- function(iphc, iphcreg) {
   plot(st_geometry(hulls), col = "red", add = TRUE)
 
   # change resolution here
-  polygony <- st_make_grid(hullsb, square = T, cellsize = c(gridsize, gridsize)) %>%
+  polygony <- st_make_grid(hullsb, square = TRUE, cellsize = c(gridsize, gridsize)) %>%
     st_sf() %>%
     mutate(cell_ID = row_number())
   center <- st_centroid(polygony)
@@ -88,7 +82,7 @@ iphcgridfunc <- function(iphc, iphcreg) {
     st_drop_geometry()
 
   # Use get.depth to get the depth for each point
-  suppressWarnings(bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1))
+  suppressWarnings(bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1, keep = TRUE))
 
   df_depths <- marmap::get.depth(bio_depth, df[, c("long", "lat")], locator = FALSE) %>%
     mutate(bot_depth = (depth * -1)) %>%
@@ -131,7 +125,7 @@ iphcgridfunc <- function(iphc, iphcreg) {
     mutate(depth_m_log = log(bot_depth), area_km = as.numeric(area_km))
 
   grid4_ras <- grid4 %>%
-    mutate(across(c(UTM.lon, UTM.lat), round, digits = 2))
+    mutate(across(c(UTM.lon, UTM.lat), \(x) round(x, digits = 2)))
   saveRDS(grid4_ras, path_final)
 }
 
