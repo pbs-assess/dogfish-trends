@@ -13,11 +13,11 @@ library(ggsidekick)
 library(gfdata)
 library(gfplot)
 theme_set(ggsidekick::theme_sleek())
-
+library(sf)
 
 # Regional: create prediction grid GOA ---------------------------------------------------------------------
-# this grid is maybe too big? Could use it if we wanted to keep it consist with NOAA
-predgrid <- read.csv("data-raw/NOAA_predictiongrid/GOAThorsonGrid_Less700m.csv")
+# this grid is maybe too big? Could use it if we wanted to keep it consistent with NOAA
+predgrid <- readRDS("data-raw/GOAThorsonGrid_Less700m.rds")
 predgrid$Shape_Area / 1000000 # 13 km 2
 plot(predgrid$Longitude, predgrid$Latitude, col = "red")
 names(predgrid) <- tolower(names(predgrid))
@@ -44,7 +44,7 @@ st_geometry(predgrid2) <- NULL
 attr(predgrid2, "names.attrs") <- NULL
 str(predgrid2)
 
-b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
+b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE)
 
 grid <- marmap::get.depth(b, predgrid2[, c("longitude", "latitude")], locator = FALSE) %>%
   mutate(bot_depth = (depth * -1)) %>%
