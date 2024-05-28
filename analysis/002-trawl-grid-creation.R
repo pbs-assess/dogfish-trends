@@ -66,9 +66,9 @@ depthpoints_center[duplicated(depthpoints_center), ] # just checking
 grid$offset <- 0
 
 gridgoa <- add_utm_columns(grid,
-                           units = "km",
-                           ll_names = c("longitude", "latitude"),
-                           utm_crs = GOAcrs
+  units = "km",
+  ll_names = c("longitude", "latitude"),
+  utm_crs = GOAcrs
 ) %>%
   rename("UTM.lon" = "X", "UTM.lat" = "Y") %>%
   mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
@@ -89,7 +89,7 @@ ggplot(gridgoa2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
 
 saveRDS(gridgoa2, "output/predictiongrid_GoA_13km.rds")
 
-grid2 <-gridgoa2 |>
+grid2 <- gridgoa2 |>
   st_as_sf(coords = c("UTM.lon.m", "UTM.lat.m"), crs = GOAcrs)
 st_write(grid2, "output/grid_GOA_13km.shp", append = FALSE)
 
@@ -102,9 +102,9 @@ unique(availablecells$Depth.Range)
 
 # create grid that is 2km X 2 km
 predgrid_nwfsc0 <- add_utm_columns(availablecells,
-                                   units = "km",
-                                   ll_names = c("Cent.Long", "Cent.Lat"),
-                                   utm_crs = NWFSCcrs
+  units = "km",
+  ll_names = c("Cent.Long", "Cent.Lat"),
+  utm_crs = NWFSCcrs
 ) %>%
   rename("UTM.lon" = "X", "UTM.lat" = "Y") %>%
   mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
@@ -159,8 +159,8 @@ depthpoints_center[duplicated(depthpoints_center), ] # just checking
 
 # join the points back to the grid so I can predict on the grid
 grid2 <- st_join(grid_extent2,
-                 st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = NWFSCcrs),
-                 join = st_contains
+  st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = NWFSCcrs),
+  join = st_contains
 ) %>%
   drop_na(logbot_depth) %>%
   st_drop_geometry()
@@ -236,7 +236,7 @@ gridgoa <-
 
 # where is this from?
 bcpred <- gfplot::synoptic_grid |>
-  dplyr::select(X, Y, survey ) |>
+  dplyr::select(X, Y, survey) |>
   rename(survey_name = survey) |>
   mutate(longitude = X, latitude = Y, X = X * 1000, Y = Y * 1000) |>
   distinct(.keep_all = TRUE) |>
@@ -259,13 +259,13 @@ gridbc <- bcpred %>%
 coastalgrid <- rbind(gridnwfsc, gridbc, gridgoa) |>
   mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
 ggplot(data = coastalgrid, aes(UTM.lon, UTM.lat, colour = region)) +
-  geom_point(size  = 0.5)
+  geom_point(size = 0.5)
 
 coastalgrid_sf <- st_as_sf(coastalgrid, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607)
 hulls <- concaveman::concaveman(coastalgrid_sf)
 plot(hulls)
-#add a small buffer
-hullsb <- st_buffer(hulls, dist = 25000) #5 km buffer
+# add a small buffer
+hullsb <- st_buffer(hulls, dist = 25000) # 5 km buffer
 plot(hullsb)
 
 # convert to 4*4 km grid, here it's in m
@@ -313,8 +313,8 @@ depthpoints_center[duplicated(depthpoints_center), ] # just checking
 
 # join the points back to the grid so I can predict on the grid
 grid2 <- st_join(grid_extent2,
-                 st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607),
-                 join = st_contains
+  st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607),
+  join = st_contains
 ) %>%
   drop_na(logbot_depth) %>%
   st_drop_geometry()
@@ -350,7 +350,7 @@ ggplot(gridnew, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   facet_wrap(~survey_name)
 range(gridnew$depth)
 
-#put the region back in but there has to be a better way
+# put the region back in but there has to be a better way
 library(PBSdata)
 data(major) # from PBSdata
 
@@ -381,8 +381,10 @@ ggplot(gridregion, aes(UTM.lon, UTM.lat, col = region)) +
 
 gridregion <- gridregion |>
   mutate(region = ifelse(is.na(region) == TRUE & UTM.lat > 6085.07, "GOA",
-                         ifelse(is.na(region) == TRUE & UTM.lat < 5600, "nwfsc",
-                                region)))
+    ifelse(is.na(region) == TRUE & UTM.lat < 5600, "nwfsc",
+      region
+    )
+  ))
 
 ggplot(gridregion, aes(UTM.lon, UTM.lat, col = region)) +
   geom_tile()
