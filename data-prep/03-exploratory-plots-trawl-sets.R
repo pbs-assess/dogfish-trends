@@ -73,9 +73,9 @@ survey_sets |>
   filter(catch_weight == 0) |>
   tally()
 
-ggplot(x, aes(year, n, colour = depthsplit)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~survey_abbrev, scales = "free")
+# ggplot(x, aes(year, n, colour = depthsplit)) +
+#   geom_point() +
+#   geom_line() +
+#   facet_wrap(~survey_abbrev, scales = "free")
 # ggsave("Figures/zeros_by_depth.jpg", width = 10, height = 8)
 

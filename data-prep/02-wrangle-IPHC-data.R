@@ -106,7 +106,7 @@ iphc <- iphc_coast6 |>
   dplyr::select(-c(depth_m_log, depth_m_log, geometry))
 iphc <- st_drop_geometry(iphc)
 
-b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
+b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE)
 x <- iphc |> dplyr::select(longitude, latitude)
 
 survey_sets2 <- x[!duplicated(x), ] # get depth for the unique locations to save time
