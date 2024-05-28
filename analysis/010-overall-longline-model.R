@@ -3,11 +3,12 @@ library(ggplot2)
 library(sdmTMB)
 theme_set(ggsidekick::theme_sleek())
 library(tictoc)
+dir.create("figs", showWarnings = FALSE)
 
 d <- readRDS("output/IPHC_coastdata.rds")
 d$offset <- log(d$hooksobserved2) # no hook comp
-grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #two options, full
-grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") #this on doesn't extend as far south in the NW US
+# grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #two options, full
+grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") #this one doesn't extend as far south in the NW US
 
 grid$depth_m <- grid$bot_depth
 
