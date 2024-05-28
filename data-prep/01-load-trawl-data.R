@@ -1,15 +1,16 @@
 # load trawl survey data from Alaska, United States West Coast, and Canada
 
+if (FALSE) {
+  remotes::install_github("pbs-assess/gfdata")
+  remotes::install_github("DFO-NOAA-Pacific/surveyjoin")
+  remotes::install_github("pfmc-assessments/nwfscSurvey")
+}
 
 # library -----------------------------------------------------------------
 library(surveyjoin)
 library(gfdata)
 library(here)
 library(tidyverse)
-remotes::install_github("pbs-assess/gfdata")
-remotes::install_github("DFO-NOAA-Pacific/surveyjoin")
-remotes::install_github("pfmc-assessments/nwfscSurvey")
-
 
 # Sets and samps - Canada data ----------------------------------------------------
 
@@ -22,7 +23,6 @@ if (!file.exists("data-raw/data_surveysets.rds")) {
   data_surveysets <- get_survey_sets(species = "north pacific spiny dogfish")
   saveRDS(data_surveysets, "data-raw/data_surveysets.rds")
 }
-
 
 # Sets - US West Coast data  ---------------------------------------------------------
 
