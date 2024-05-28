@@ -78,6 +78,7 @@ x <- bc |> filter(is.na(doorspread_m) == TRUE)
 # missing temp data, pull that informaiton in
 unique(bc$survey_series_id)
 d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
+saveRDS(d, "data-raw/bc_temperature.rds")
 d |> group_by(fishing_event_id) |>
   reframe( n = n()) |>
   filter(n >1) #some events have 2 temperatures due to two sensors
