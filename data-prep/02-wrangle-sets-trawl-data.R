@@ -77,8 +77,8 @@ x <- bc |> filter(is.na(doorspread_m) == TRUE)
 
 # missing temp data, pull that informaiton in
 unique(bc$survey_series_id)
-d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
-saveRDS(d, "data-raw/bc_temperature.rds")
+# d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
+d <- readRDS("data-raw/bc_temperature.rds")
 d |> group_by(fishing_event_id) |>
   reframe( n = n()) |>
   filter(n >1) #some events have 2 temperatures due to two sensors
@@ -190,9 +190,6 @@ nwfsc <- bind_rows(
     catch_weight = total_catch_wt_kg
   ) |>
   mutate(common_name = tolower(common_name)) %>%
-  mutate(date2 = as.Date(Date, format = "%Y%m%d")) %>%
-  mutate(dmy = lubridate::ymd(date2)) %>%
-  mutate(julian = lubridate::yday(dmy)) %>%
   mutate(survey_name = ifelse(survey_abbrev == "NWFSC.Combo" & julian <= 226, "NWFSC.Combo.pass1",
     ifelse(survey_abbrev == "NWFSC.Combo" & julian > 226, "NWFSC.Combo.pass2",
       survey_abbrev
@@ -235,7 +232,7 @@ nwfsc_sets |>
 
 nwfsc_sets$date
 goa_sets$date
-bc$date
+# bc$date
 
 bc$fishing_event_id <- as.character(bc$fishing_event_id)
 
@@ -296,7 +293,7 @@ min(survey_sets$longitude)
 max(survey_sets$latitude)
 min(survey_sets$latitude)
 
-b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
+b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE)
 x <- survey_sets |> dplyr::select(longitude, latitude)
 survey_sets2 <- x[!duplicated(x), ]
 
@@ -326,3 +323,4 @@ ggplot(survey_sets3, aes(logbot_depth_raw, logbot_depth, colour = survey_abbrev)
   geom_point()
 
 saveRDS(survey_sets3, "output/Wrangled_USCan_trawldata_marmapdepth.rds")
+>>>>>>> 88041035f700e5a832c9e0bd572b9da8e7963073
