@@ -107,18 +107,19 @@ saveRDS(nwfsc_samples_raw, "data-raw/NWFSC_sampledata.rds")
 # https://github.com/DFO-NOAA-Pacific/surveyjoin/tree/main/data
 
 load("data-raw/afsc_haul.rda")
-load("data-raw/afsc_catch.rda")
+# load("data-raw/afsc_catch.rda")
+# goa_all_catch <- afsc_catch %>%
+#   filter(
+#     scientific_name %in% c("Squalus suckleyi")
+#   ) %>%
+#   mutate(species_common_name = "north pacific spiny dogfish")
+# saveRDS(goa_all_catch, "data-raw/afsc_catch.rds")
+goa_all_catch <- readRDS("data-raw/afsc_catch.rds")
 
 goa_all_sets <- afsc_haul %>% filter(survey_name %in% c(
   # "Aleutian Islands Bottom Trawl Survey" excluded due to few catches
   "Gulf of Alaska Bottom Trawl Survey"
 ))
-
-goa_all_catch <- afsc_catch %>%
-  filter( # catch_weight > 0 &
-    scientific_name %in% c("Squalus suckleyi")
-  ) %>%
-  mutate(species_common_name = "north pacific spiny dogfish")
 
 saveRDS(goa_all_sets, "data-raw/goa-sets.rds")
 saveRDS(goa_all_catch, "data-raw/goa-catch.rds")
@@ -129,4 +130,4 @@ saveRDS(goa_all_catch, "data-raw/goa-catch.rds")
 # set data from: https://github.com/afsc-gap-products/gap_public_data#access-the-data
 # see here for definition of the codes: https://repository.library.noaa.gov/view/noaa/31570
 
-goa_samps <- read.csv("data-raw/goa_dogfish_sex_length.csv")
+# goa_samps <- read.csv("data-raw/goa_dogfish_sex_length.csv")
