@@ -15,6 +15,10 @@ library(gfplot)
 theme_set(ggsidekick::theme_sleek())
 library(sf)
 
+NWFSCcrs <- 32610
+GOAcrs <- 32607
+BCcrs <- 32609
+
 # Regional: create prediction grid GOA ---------------------------------------------------------------------
 # this grid is maybe too big? Could use it if we wanted to keep it consistent with NOAA
 predgrid <- readRDS("data-raw/GOAThorsonGrid_Less700m.rds")
@@ -53,8 +57,6 @@ grid <- marmap::get.depth(b, predgrid2[, c("longitude", "latitude")], locator = 
   mutate(logbot_depth = log(bot_depth)) %>%
   inner_join(predgrid2, by = c("longitude" = "longitude", "latitude" = "latitude"))
 
-depthpoints_center[duplicated(depthpoints_center), ] # just checking
-
 # # join the points back to the grid so I can predict on the grid
 # grid2 <- st_join(grid_extent2,
 #                  st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = GOAcrs),
@@ -65,7 +67,7 @@ depthpoints_center[duplicated(depthpoints_center), ] # just checking
 
 grid$offset <- 0
 
-gridgoa <- add_utm_columns(grid,
+gridgoa <- sdmTMB::add_utm_columns(grid,
   units = "km",
   ll_names = c("longitude", "latitude"),
   utm_crs = GOAcrs
@@ -79,9 +81,9 @@ ggplot(gridgoa, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_point()
 
 gridgoa2 <- gridgoa %>%
-  mutate(across(c(UTM.lon, UTM.lat), round, digits = 2)) # make them evenly spaced
-ggplot(gridgoa2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
-  geom_raster()
+  mutate(across(c(UTM.lon, UTM.lat), \(x) round(x, digits = 2))) # make them evenly spaced
+# ggplot(gridgoa2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
+#   geom_raster()
 
 # gridgoa2$shape_area <- as.numeric(gridgoa2$shape_area)
 # gridgoa2$UTM.lon <- as.numeric(gridgoa2$UTM.lon)
@@ -101,7 +103,7 @@ availablecells
 unique(availablecells$Depth.Range)
 
 # create grid that is 2km X 2 km
-predgrid_nwfsc0 <- add_utm_columns(availablecells,
+predgrid_nwfsc0 <- sdmTMB::add_utm_columns(availablecells,
   units = "km",
   ll_names = c("Cent.Long", "Cent.Lat"),
   utm_crs = NWFSCcrs
@@ -146,7 +148,7 @@ st_geometry(center_extent5) <- NULL
 attr(center_extent5, "names.attrs") <- NULL
 str(center_extent5)
 
-b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
+b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE)
 
 depthpoints_center <- marmap::get.depth(b, center_extent5[, c("longitude", "latitude")], locator = FALSE) %>%
   mutate(bot_depth = (depth * -1)) %>%
@@ -203,7 +205,10 @@ unique(availablecells$Depth.Range)
 plot(availablecells$Cent.Long, availablecells$Cent.Lat)
 # gridnwfsc <- readRDS("output/prediction_grid_nwfsc2km.rds")
 #
-goagrid <- read.csv("data-raw/NOAA_predictiongrid/GOAThorsonGrid_Less700m.csv") |> # from Lewis
+
+goagrid <- readRDS("data-raw/GOAThorsonGrid_Less700m.rds") # from Lewis
+
+goagrid <- goagrid |>
   rename(Cent.Long = Longitude, Cent.Lat = Latitude) |> mutate(region = "GOA")
 glimpse(goagrid)
 plot(goagrid$Cent.Long, goagrid$Cent.Lat, col = "red")
@@ -213,7 +218,7 @@ gridnwfsc <-
   mutate(survey_name = "NWFSC") %>%
   dplyr::select(Cent.Long, Cent.Lat, survey_name) %>%
   distinct(.keep_all = TRUE) %>%
-  add_utm_columns(
+  sdmTMB::add_utm_columns(
     ll_names = c("Cent.Long", "Cent.Lat"),
     units = "km", utm_crs = 32607
   ) %>%
@@ -226,7 +231,7 @@ gridgoa <-
   mutate(survey_name = "GOA") %>%
   dplyr::select(Cent.Long, Cent.Lat, survey_name) %>%
   distinct(.keep_all = TRUE) %>%
-  add_utm_columns(
+  sdmTMB::add_utm_columns(
     ll_names = c("Cent.Long", "Cent.Lat"),
     units = "km", utm_crs = 32607
   ) %>%
@@ -271,7 +276,7 @@ plot(hullsb)
 # convert to 4*4 km grid, here it's in m
 grid_spacing <- 4000
 
-polygony <- st_make_grid(hulls, square = T, cellsize = c(grid_spacing, grid_spacing)) %>%
+polygony <- st_make_grid(hulls, square = TRUE, cellsize = c(grid_spacing, grid_spacing)) %>%
   st_sf() %>%
   mutate(cell_ID = row_number())
 
@@ -301,7 +306,7 @@ st_geometry(center_extent5) <- NULL
 attr(center_extent5, "names.attrs") <- NULL
 str(center_extent5)
 
-b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1)
+# b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE)
 
 depthpoints_center <- marmap::get.depth(b, center_extent5[, c("longitude", "latitude")], locator = FALSE) %>%
   mutate(bot_depth = (depth * -1)) %>%
@@ -351,6 +356,7 @@ ggplot(gridnew, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
 range(gridnew$depth)
 
 # put the region back in but there has to be a better way
+# https://github.com/pbs-software/pbs-data
 library(PBSdata)
 data(major) # from PBSdata
 
