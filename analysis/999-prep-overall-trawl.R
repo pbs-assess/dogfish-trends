@@ -62,6 +62,7 @@ prep_trawl_dat_and_grid <- function() {
     ggplot(grid, aes(UTM.lon, UTM.lat, colour = area_km)) +
       geom_point()
   }
+  grid$region <- toupper(grid$region)
 
   ggplot(df2, aes(UTM.lon, UTM.lat, colour = depth_m)) +
     geom_point()
