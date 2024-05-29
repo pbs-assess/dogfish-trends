@@ -117,7 +117,6 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
     ret
   })
 
-
 lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
   mutate(region_lab = paste0("(", letters[8:11], ") ", region))
@@ -168,7 +167,6 @@ g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heig
 
 g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
 print(g)
-
 
 ggsave("figs/overall-survey-trends2.pdf", width = 6.7, height = 5.4)
 ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
