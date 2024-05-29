@@ -15,6 +15,7 @@ library(kableExtra)
 library(sf)
 theme_set(ggsidekick::theme_sleek())
 
+source("analysis/999-colours-etc.R")
 
 # notes -------------------------------------------------------------------
 
@@ -115,50 +116,39 @@ samps_hist$survey_group <- factor(samps_hist$survey_group,
   levels = c("trawl", "iphc")
 )
 
+line_dat_mature <- select(samps_hist, mature) |>
+  distinct()
+line_dat_immature <- select(samps_hist, immature) |>
+  distinct() |> rename(mature = immature)
+line_dat <- bind_rows(line_dat_mature, line_dat_immature) |>
+  filter(mature != 76.7)
+
 ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as.factor(survey_name2)),
   colour = as.factor(survey_name2)
 ) +
-  geom_vline(
-    data = samps_hist,
-    aes(xintercept = mature), colour = "grey70"
-  ) +
-  geom_vline(
-    data = samps_hist,
-    aes(xintercept = immature), colour = "grey70"
-  ) +
   geom_density(alpha = 0.6, size = 0.25) + # , bins = 50) +
-  facet_grid(
-    rows = vars(survey_group),
-    cols = vars(sex), # , scales = "free",
-    labeller = ggplot2::labeller(sex = sex.labs, survey_name2 = survey.labs)
+  geom_vline(
+    data = line_dat,
+    aes(xintercept = mature), colour = "grey40"
   ) +
+  # facet_grid(
+  #   rows = vars(survey_group),
+  #   cols = vars(sex), # , scales = "free",
+  #   labeller = ggplot2::labeller(sex = sex.labs, survey_name2 = survey.labs)
+  # ) +
+  coord_cartesian(expand = FALSE, ylim = c(0, 0.05), xlim = c(0, 126)) +
   scale_x_continuous(
-    breaks = c(0, 25, 75, 125), labels = c(0, 25, 75, 125),
-    limits = c(0, 125), name = "Length (cm)"
+    breaks = c(0, 25, 75, 125),
+    limits = c(0, 125), name = "Length (cm)",
   ) +
   scale_y_continuous(
     breaks = c(0, 0.02, 0.04, 0.06, 0.08),
     labels = c(0, 0.02, 0.04, 0.06, 0.08), name = "Density"
+    # expand = expansion(mult = c(0, 0.03))
   ) +
   scale_fill_manual("Region", values = cols_region3) +
   scale_colour_manual(values = cols_region3) +
-  theme(
-    plot.background = element_rect(fill = "NA", colour = "NA"),
-    axis.line.x = element_line(colour = "grey60"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_blank(),
-    plot.margin = margin(1, 0, 1, 0.5, "cm"),
-    panel.background = element_rect(fill = "white", colour = "grey60"),
-    axis.text.x = element_text(size = 12, vjust = 1, colour = "grey20"),
-    axis.text.y = element_text(size = 12, colour = c("grey20")),
-    axis.title.x = element_text(size = 12, colour = "grey20"),
-    axis.title.y = element_text(size = 12, colour = "grey20"),
-    axis.ticks.length = unit(0.15, "cm"),
-    strip.text = element_text(size = 12),
-    axis.ticks.x = element_line(colour = "grey60"),
-    axis.ticks.y = element_line(colour = "grey60")
-  )
-ggsave("Figures/length_summary_trawl.png", width = 5, height = 4)
-
-
+  ggsidekick::theme_sleek() +
+  theme(legend.position.inside = c(0.2, 0.8), legend.position = "inside")
+ggsave("figs/length-distributions-trawl.pdf", width = 5, height = 4)
+ggsave("figs/length-distributions-trawl.png", width = 5, height = 4)
