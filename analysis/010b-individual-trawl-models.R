@@ -147,5 +147,7 @@ aa$region <- gsub("Coast", "Coastwide", aa$region)
 aa$region <- gsub("GOA", "Gulf of Alaska", aa$region)
 aa$region <- gsub("BC", "British Columbia", aa$region)
 aa$region <- gsub("NWFSC", "US West Coast", aa$region)
+aa$region <- gsub("nwfsc", "US West Coast", aa$region)
+row.names(aa) <- NULL
 
 saveRDS(aa, "output/trawl-coast-indexes.rds")
