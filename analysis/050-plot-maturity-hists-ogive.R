@@ -70,7 +70,7 @@ sampsTL <- readRDS("output/samps_CoastalTrawl.rds") |>
   )) |>
   filter(!survey_name %in% c("Triennial", "AFSC.Slope"))
 
-samps_hist<- sampsTL %>%
+samps_hist <- sampsTL %>%
   mutate(year_group = findInterval(year, breakpts)) |>
   drop_na(length_ext_cm) |>
   filter(!sex %in% c(0, 3)) |>
@@ -105,10 +105,8 @@ names(survey.labs) <- c("US West Coast", "British Columbia", "Gulf of Alaska")
 sex.labs <- c("Males", "Females")
 names(sex.labs) <- c("1", "2")
 
-
-samps_hist$mature <- ifelse(samps_hist$sex == 2, 95.5, 76.7) # see split-index_byregionsandmaturity.R for maturity ogive
-samps_hist$immature <- ifelse(samps_hist$sex == 2, 77, 65.1)
-
+samps_hist$mature <- ifelse(samps_hist$sex == 2, 95.5, 76.7) # see 999-split-index_by-region-maturity.R for maturity ogive
+samps_hist$immature <- ifelse(samps_hist$sex == 2, 76.7, 64.9)
 
 
 x <- PNWColors::pnw_palette("Cascades", 3)
@@ -116,14 +114,15 @@ samps_hist$survey_group <- factor(samps_hist$survey_group,
   levels = c("trawl", "iphc")
 )
 
-line_dat_mature <- select(samps_hist, mature) |>
+line_dat_mature <- dplyr::select(samps_hist, mature) |>
   distinct()
-line_dat_immature <- select(samps_hist, immature) |>
-  distinct() |> rename(mature = immature)
+line_dat_immature <- dplyr::select(samps_hist, immature) |>
+  distinct() |>
+  rename(mature = immature)
 line_dat <- bind_rows(line_dat_mature, line_dat_immature) |>
   filter(mature != 76.7)
 
-ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as.factor(survey_name2)),
+hist <- ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as.factor(survey_name2)),
   colour = as.factor(survey_name2)
 ) +
   geom_density(alpha = 0.6, size = 0.25) + # , bins = 50) +
@@ -131,11 +130,11 @@ ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as
     data = line_dat,
     aes(xintercept = mature), colour = "grey40"
   ) +
-  # facet_grid(
-  #   rows = vars(survey_group),
-  #   cols = vars(sex), # , scales = "free",
-  #   labeller = ggplot2::labeller(sex = sex.labs, survey_name2 = survey.labs)
-  # ) +
+  facet_grid(
+    rows = vars(survey_group),
+    cols = vars(sex), # , scales = "free",
+    labeller = ggplot2::labeller(sex = sex.labs, survey_name2 = survey.labs)
+  ) +
   coord_cartesian(expand = FALSE, ylim = c(0, 0.05), xlim = c(0, 126)) +
   scale_x_continuous(
     breaks = c(0, 25, 75, 125),
@@ -150,5 +149,132 @@ ggplot(samps_hist, aes(length_ext_cm, group = as.factor(survey_name2), fill = as
   scale_colour_manual(values = cols_region3) +
   ggsidekick::theme_sleek() +
   theme(legend.position.inside = c(0.2, 0.8), legend.position = "inside")
+hist
 ggsave("figs/length-distributions-trawl.pdf", width = 5, height = 4)
 ggsave("figs/length-distributions-trawl.png", width = 5, height = 4)
+
+
+# maturity ogive ----------------------------------------------------------
+# pull output from 999-split-index-by-region-maturity.R
+object <- readRDS("output/survey_samples_codedmaturity.rds")
+gfplot::plot_mat_ogive(m)
+
+x <- m$pred_data
+n_re <- length(unique(nd_re$sample_id)) / 5
+n_re2 <- ifelse(n_re < 15, 15, n_re)
+
+# tally by length group and calculate weight of each group
+m$pred_data <- m$pred_data |>
+  mutate(cat = ifelse(female == 1 & glmm_fe >= 0.95, 1,
+    ifelse(female == 0 & glmm_fe >= 0.95, 2,
+      ifelse(female == 1 & glmm_fe < 0.05, 3,
+        ifelse(female == 0 & glmm_fe < 0.05, 4,
+          NA
+        )
+      )
+    )
+  ))
+m$pred_data <- m$pred_data |>
+  group_by(cat) |>
+  mutate(matlength = ifelse(cat %in% c(1, 2), min(age_or_length),
+    ifelse(cat %in% c(3, 4), max(age_or_length),
+      ifelse(is.na(cat == TRUE), NA, NA)
+    )
+  ))
+data <- m$pred_data |>
+  group_by(female, cat) |>
+  summarize(unique = unique(matlength))
+data
+ann_text <- data.frame(
+  age_or_length = c(40, 40, 40, 40), glmm_re = c(0.75, 0.68, 0.60, 0.53),
+  lab = c("F05 = 76.7", "F95 = 95.6", "M05 = 64.9", "M95 = 76.7"),
+  female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
+)
+
+g <- ggplot() +
+  geom_line(
+    data = nd_re, aes_string("age_or_length",
+      "glmm_re",
+      group = "paste(sample_id, female)",
+      colour = "female"
+    ), inherit.aes = FALSE, alpha = 1 / n_re2,
+    show.legend = FALSE
+  ) +
+  geom_line(size = 1) +
+  geom_rug(
+    data = filter(m$pred_data, glmm_re < 0.5), aes(age_or_length, glmm_re,
+      colour = female
+    ),
+    sides = "b",
+    alpha = 0.05, lty = 1, show.legend = FALSE
+  ) +
+  geom_rug(
+    data = filter(m$pred_data, glmm_re >= 0.5), aes(age_or_length, glmm_re,
+      colour = female
+    ),
+    sides = "t",
+    alpha = 0.05, lty = 1, show.legend = FALSE
+  ) +
+  labs(x = "Length (cm)", y = "Probability mature") +
+  geom_vline(
+    data = m$pred_data, aes(xintercept = matlength, colour = female),
+    show.legend = FALSE
+  ) +
+  facet_wrap(~female) +
+  theme(strip.text.x = element_blank())#
+#          theme(plot.margin = unit(c(0,-3,0,-3), "cm")) )
+
+g + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab))
+ggsave("Figures/maturityogive.png", width = 7, height = 3)
+
+
+p <- ggplot() +
+  geom_line(
+    data = nd_re, aes_string("age_or_length",
+                             "glmm_re",
+                             group = "paste(sample_id, female)",
+                             colour = "female"
+    ), inherit.aes = FALSE, alpha = 1 / n_re2,
+    show.legend = FALSE
+  ) +
+  geom_line(size = 1) +
+  geom_rug(
+    data = filter(m$pred_data, glmm_re < 0.5), aes(age_or_length, glmm_re,
+                                                   colour = female
+    ),
+    sides = "b",
+    alpha = 0.05, lty = 1, show.legend = FALSE
+  ) +
+  geom_rug(
+    data = filter(m$pred_data, glmm_re >= 0.5), aes(age_or_length, glmm_re,
+                                                    colour = female
+    ),
+    sides = "t",
+    alpha = 0.05, lty = 1, show.legend = FALSE
+  ) +
+  labs(x = "Length (cm)", y = "Probability mature") +
+  geom_vline(
+    data = m$pred_data, aes(xintercept = matlength, colour = female),
+    show.legend = FALSE
+  ) +
+  #facet_wrap(~female) +
+  theme(strip.text.x = element_blank())
+
+p + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab))
+ggsave("Figures/maturityogive_nofacet.png", width = 4, height = 3)
+
+
+# cowplot both figures ----------------------------------------------------
+
+p
+hist
+g
+
+cowplot::plot_grid(p, hist,
+                   labels=c("(a)","(b)"),
+                   rel_heights = c(1, 1),
+                   nrow = 1,
+                   ncol = 2,
+                   label_size = 12,
+                   rel_widths = c(1,2),
+                   label_fontfamily = "sans")
