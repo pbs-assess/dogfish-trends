@@ -28,106 +28,136 @@ library(TMB)
 
 
 
-# Source code   --------
-source("source_functions.R")
+# function code   --------
 
 
-# Load coast maps ---------------------------------------------------------------------
+# assumptions male/female are coded as 1 and 2 respectively
+# assumptions weight is collected in g
+# specimens with no sex information are given a predicted weight that is the average of the male and female predictions.
 
-map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
-goa_coast <- sf::st_crop(
-  map_data,
-  c(xmin = -175, ymin = 50, xmax = -130, ymax = 65)
-)
-goa_coast_proj <- sf::st_transform(goa_coast, crs = 32607)
+predict_weight <- function(x) {
+  # 1. check if this is necessary
+  if (!anyNA(x$weight)) {
+    stop("All weights are included in your dataset, no need to predict weights.", call. = FALSE)
+  }
+
+  # 2 . check sex codes are correct
+  y <- c(0, 1, 2)
+  if (!any(unique(x$sex) %in% y)) {
+    stop("codes do not match 0,1,2", call. = FALSE)
+  }
+
+  # 3. convert 0 to males
+  xy <- 0
+  if (any(unique(x$sex) %in% xy)) {
+    print(paste(nrow(filter(x, sex == 0)), "samples are missing sex information (coded as 0), the predicted weight for these individuals will be the average of male and female predicted weights."))
+    xy <- filter(x, sex == 0 | sex == 1)
+    xy$sex <- replace(xy$sex, xy$sex == 0, 1) # males are 1
+    maletw <- fit_length_weight(
+      xy,
+      sex = "male",
+      downsample = Inf,
+      min_samples = 50L,
+      method = c("tmb"),
+      usability_codes = NULL,
+      scale_weight = 1 / 1000
+    )
+
+    trawl_m <- filter(x, sex == 0)
+    trawl_m$weight_predicted_m <- exp(maletw$pars$log_a +
+      maletw$pars$b * log(trawl_m$length)) * 1000
+
+    xx <- filter(x, sex == 2 | sex == 0)
+    xx$sex <- replace(xx$sex, xx$sex == 0, 2) # females are 2
+    femaletw <- fit_length_weight(
+      xx,
+      sex = ("female"),
+      downsample = Inf,
+      min_samples = 50L,
+      method = c("tmb"), # method = c("tmb", "rlm", "lm"),
+      # df = 3,
+      # too_high_quantile = 1,
+      usability_codes = NULL,
+      scale_weight = 1 / 1000 # grams to kgs
+    )
+
+    trawl_f <- filter(x, sex == 0)
+    trawl_f$weight_predicted_f <- exp(femaletw$pars$log_a +
+      femaletw$pars$b * log(trawl_f$length)) * 1000
+
+    predicted_weight_tw <- inner_join(trawl_m, trawl_f)
+    predicted_weight_tw <- predicted_weight_tw %>% mutate(weight_predicted = rowSums(across(weight_predicted_f:weight_predicted_f)) / 2)
+    predicted_weight_nosex <- dplyr::select(predicted_weight_tw, year, survey_abbrev, fishing_event_id, survey_id, species_code, sample_id, sex, length, weight, specimen_id, weight_predicted)
+  }
+
+  # check if there are codes for male and female, if only one sex then run one, otherwise run both.
+  mf <- c(1, 2)
+  if (any(unique(x$sex) %in% mf)) {
+    # 2. run fit_length_weight for males and females separately.
+    print(paste(nrow(filter(x, sex == 1)), "samples are male (coded as 1)"))
+    print(paste(nrow(filter(x, sex == 2)), "samples are female (coded as 2)"))
+    xx <- filter(x, sex == 2)
+    femaletw <- fit_length_weight(
+      xx,
+      sex = ("female"),
+      downsample = Inf,
+      min_samples = 50L,
+      method = c("tmb"), # method = c("tmb", "rlm", "lm"),
+      # df = 3,
+      # too_high_quantile = 1,
+      usability_codes = NULL,
+      scale_weight = 1 / 1000 # grams to kgs
+    )
+
+    xy <- filter(x, sex == 1)
+    maletw <- fit_length_weight(
+      xy,
+      sex = ("male"),
+      downsample = Inf,
+      min_samples = 50L,
+      method = c("tmb"), # method = c("tmb", "rlm", "lm"),
+      # df = 3,
+      # too_high_quantile = 1,
+      usability_codes = NULL,
+      scale_weight = 1 / 1000
+    )
+
+    trawl_f <- filter(xx, sex == 2)
+    trawl_f$weight_predicted <- exp(femaletw$pars$log_a +
+      femaletw$pars$b * log(trawl_f$length)) * 1000
+
+    trawl_m <- filter(xy, sex == 1)
+    trawl_m$weight_predicted <- exp(maletw$pars$log_a +
+      maletw$pars$b * log(trawl_m$length)) * 1000
 
 
-map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
-coast <- st_crop(
-  map_data,
-  c(xmin = -170, ymin = 35, xmax = -120, ymax = 60)
-)
-
-coast_proj <- sf::st_transform(coast, crs = 32611)
-ggplot(coast_proj) +
-  geom_sf()
-
-
-coastwide <- st_crop(
-  map_data,
-  c(xmin = -170, ymin = 25, xmax = -100, ymax = 70)
-)
-
-coast_proj2 <- sf::st_transform(coastwide, crs = 32609)
-ggplot(coast_proj2) +
-  geom_sf()
-
-
-
+    predicted_weight_tw <- rbind(trawl_m, trawl_f)
+    predicted_weight_tw2 <- dplyr::select(predicted_weight_tw, year, survey_abbrev, fishing_event_id, survey_id, species_code, sample_id, sex, length, weight, specimen_id, weight_predicted)
+  }
+  predicted_weight_tw3 <- rbind(predicted_weight_nosex, predicted_weight_tw2)
+  return(predicted_weight_tw3)
+}
 
 
 # load raw data ---------------------------------------------------------------
 
-# 01-wrangle-US-data.R
 survey_samples <- readRDS("output/samps_CoastalTrawl.rds") |>
   drop_na(length_ext_cm) |>
   # some earlier surveys I didn't know the conversion for
-  mutate(survey_name2 = ifelse(survey_name == "NWFSC.Combo",
-                               survey_abbrev,
-                               survey_abbrev
-  )) |>
   mutate(fishing_event_id = as.numeric(fishing_event_id)) |>
-  mutate(julian = lubridate::yday(date))
+  mutate(julian = lubridate::yday(date)) |>
+  mutate(survey_abbrev = ifelse(survey_abbrev == "Groundfish Slope and Shelf Combination Survey" & julian <= 226, "NWFSC.Combo.pass1",
+    ifelse(survey_abbrev == "Groundfish Slope and Shelf Combination Survey" & julian > 226, "NWFSC.Combo.pass2", survey_abbrev)
+  ))
 
-survey_sets <- readRDS("output/Wrangled_USCanData.rds") |>
+
+survey_sets <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
   mutate(survey_name2 = ifelse(survey_abbrev == "NWFSC.Combo",
-                               survey_name,
-                               survey_abbrev
+    survey_name,
+    survey_abbrev
   )) |>
   mutate(fishing_event_id = as.numeric(fishing_event_id)) |>
   filter(year != 1993)
-
-
-
-# exploratory plots -----------------------------------------------------------
-
-# interesting, a shift in the TRIENNIAL size distribution but could be variability in the sampling dates
-# the survey dates are fairly consistent but the sampling dates aren't
-survey_samples |>
-  filter(survey_name2 == "Triennial") |>
-  ggplot() +
-  geom_density(aes(length_ext_cm)) +
-  facet_wrap(~year) +
-  geom_vline(xintercept = c(60, 80))
-
-tri <- survey_samples |>
-  filter(survey_name2 == "Triennial") |>
-  mutate(julian = lubridate::yday(date))
-
-x <- tri |> filter(year == 1998)
-
-tri |>
-  filter(julian %in% c(161:197)) |>
-  ggplot() +
-  geom_point(aes(year, julian))
-
-tri |>
-  filter(julian %in% c(161:180)) |>
-  ggplot() +
-  geom_density(aes(length_ext_cm)) +
-  facet_wrap(~year) +
-  geom_vline(xintercept = c(60, 80))
-# end of triennial
-
-survey_samples |>
-  filter(survey_name2 == "GOA") |>
-  ggplot() +
-  geom_point(aes(longitude, latitude))
-
-test <- survey_samples |>
-  filter(survey_name2 == "GOA") |>
-  filter(year %in% c(1993, 1996))
-
 
 
 # remove sets with no samples (but non-zero catches) ----------------------------------------------
@@ -140,166 +170,85 @@ test <- survey_samples |>
 sampsFEI <- survey_samples |>
   distinct(survey_samples$fishing_event_id, .keep_all = TRUE)
 
-dim(filter(
-  survey_sets,
-  fishing_event_id %in% sampsFEI$fishing_event_id
-)) # 6,000 fishing events with samples
-
-dim(filter(
-  survey_sets,
-  !(fishing_event_id %in% sampsFEI$fishing_event_id)
-)) # 28000 without but some of these will be zero catches
-
 # distinguish sets with samps/no catch; no samps/no catch; no samps/catch; no samps/catch
-survey_sets_withsamps2 <- survey_sets |>
+survey_sets_withsamps <- survey_sets |>
   mutate(nosamps = ifelse(fishing_event_id %in% sampsFEI$fishing_event_id, "samps", "nosamps")) |>
   mutate(catch = ifelse(catch_weight != 0, "catch", "no_catch")) |>
   mutate(samps_catch = ifelse(nosamps == "nosamps" & catch == "catch", "nosamps_catch",
-                              ifelse(nosamps == "nosamps" & catch == "no_catch", "nosamps_nocatch",
-                                     ifelse(nosamps == "samps" & catch == "catch", "samps_catch",
-                                            "samps_nocatch"
-                                     )
-                              )
+    ifelse(nosamps == "nosamps" & catch == "no_catch", "nosamps_nocatch",
+      ifelse(nosamps == "samps" & catch == "catch", "samps_catch",
+        "samps_nocatch"
+      )
+    )
   ))
-unique(survey_sets_withsamps2$samps_catch)
 
-x <- survey_sets_withsamps2 |>
-  group_by(year, survey_abbrev) |>
-  mutate(setcount = n()) |>
-  filter(samps_catch == "nosamps_catch") |>
-  group_by(year, survey_abbrev, setcount) |>
-  summarize(count = n()) |>
-  mutate(percent = count / setcount * 100)
+survey_sets_withsamps2 <- survey_sets_withsamps |>
+  filter( # get rid of nosamps_catch, and samps_nocatch
+    samps_catch %in% c("nosamps_nocatch", "samps_catch")
+  )
 
-survey_sets_withsamps <- filter(
-  survey_sets_withsamps2,
-  samps_catch == "nosamps_nocatch" |
-    samps_catch == "samps_catch"
-)
-
-survey_sets_NOsamps <- survey_sets_withsamps2 |>
-  filter(survey_name %in% c("syn bc", "GOA", "NWFSC")) |>
+survey_sets_NOsamps <- survey_sets_withsamps |>
+  filter(survey_name %in% c("syn bc", "Gulf of Alaska Bottom Trawl Survey", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2")) |>
   filter(survey_abbrev != "HS MSA") |>
   filter(samps_catch == "nosamps_catch")
-dim(survey_sets_NOsamps)
-
-survey_sets_NOsamps |>
-  group_by(survey_abbrev) |>
-  tally()
-
-survey_sets_NOsamps |>
-  tally() # 2,158 surveys with catch but NO SAMPS
-
-# range and mean weight of catches of those without samps
-range(survey_sets_NOsamps$catch_weight)
-mean(survey_sets_NOsamps$catch_weight)
-range(survey_sets_NOsamps$year)
-
-# how does the index change without the FEI (fishing event ids) without samps but zero catches still kept
-x <- survey_sets |>
-  group_by(year, survey_name) |>
-  summarize(sum = sum(catch_weight))
-
-test2 <- survey_sets_withsamps |>
-  group_by(year, survey_name) |>
-  summarize(sum = sum(catch_weight))
-
-p <- ggplot() +
-  geom_line(data = test2, aes(year, sum)) +
-  geom_point(data = test2, aes(year, sum)) +
-  facet_wrap(~survey_name)
-p +
-  geom_line(data = x, aes(year, sum), col = "red") + geom_point(data = x, aes(year, sum)) +
-  facet_wrap(~survey_name, scales = "free")
-# triennial is different, early syn bc is different, rest of it looks ok
 
 # drop the first two years of the GOA survey as there aren't enough samples
 years <- c(1996, 1999)
 survey_sets_withsamps <- filter(survey_sets_withsamps, !(year %in% years))
-survey_sets_withsamps |>
-  distinct(year, fishing_event_id) |>
-  tally()
-x <- survey_sets |>
-  group_by(year, survey_name) |>
-  summarize(sum = sum(catch_weight))
 
-test2 <- survey_sets_withsamps |>
-  group_by(year, survey_name) |>
-  summarize(sum = sum(catch_weight))
-unique(test2$survey_name)
-
-p <- ggplot() +
-  geom_line(data = test2, aes(year, sum)) +
-  geom_point(data = test2, aes(year, sum)) +
-  facet_wrap(~survey_name, scales = "free")
-p +
-  geom_line(data = x, aes(year, sum), col = "red") + geom_point(data = x, aes(year, sum)) +
-  facet_wrap(~survey_name, scales = "free")
-
-survey_sets <- survey_sets_withsamps
-saveRDS(survey_sets, "output/Wrangled_USCanData_nosampssetsremoved.rds")
+saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 
-# summaries and diagnostics -----------------------------------------------
-
-survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
-
-## no samples were collected by "NWFSC.Slope" so use "AFSC.Slope" ratios for splitting this catch
-## check distribution of years for each survey
-survey_sets %>%
-  group_by(year, survey_abbrev) %>%
-  summarise(n = n()) %>%
-  pivot_wider(names_from = survey_abbrev, values_from = n) %>%
-  View()
-
-survey_samples %>%
-  group_by(sex, year, survey_name2) %>%
-  tally() |>
-  print(n = 131)
-
+# # summaries and diagnostics -----------------------------------------------
+#
+# survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
+#
+# ## no samples were collected by "NWFSC.Slope" so use "AFSC.Slope" ratios for splitting this catch
+# ## check distribution of years for each survey
+# survey_sets %>%
+#   group_by(year, survey_abbrev) %>%
+#   summarise(n = n()) %>%
+#   pivot_wider(names_from = survey_abbrev, values_from = n) %>%
+#   View()
+#
 # survey_samples %>%
+#   group_by(sex, year, survey_name2) %>%
+#   tally() |>
+#   print(n = 131)
+#
+# # survey_samples %>%
+# #   group_by(sex, year, survey_abbrev) %>%
+# #   summarise(n_by_sex = n()) %>%
+# #   ungroup() %>%
+# #   group_by(year, survey_abbrev) %>%
+# #   summarize(n = n()) %>%
+# #   pivot_wider(names_from = survey_abbrev, values_from = n) %>%
+# #   View()
+#
+# raw_sample_ratios <- survey_samples %>%
 #   group_by(sex, year, survey_abbrev) %>%
 #   summarise(n_by_sex = n()) %>%
 #   ungroup() %>%
 #   group_by(year, survey_abbrev) %>%
-#   summarize(n = n()) %>%
-#   pivot_wider(names_from = survey_abbrev, values_from = n) %>%
-#   View()
-
-raw_sample_ratios <- survey_samples %>%
-  group_by(sex, year, survey_abbrev) %>%
-  summarise(n_by_sex = n()) %>%
-  ungroup() %>%
-  group_by(year, survey_abbrev) %>%
-  mutate( # summarize
-    n = n(),
-    F_n = mean(ifelse(sex == 2, n_by_sex, NA), na.rm = TRUE),
-    M_n = mean(ifelse(sex == 1, n_by_sex, NA), na.rm = TRUE),
-    ratioF = F_n / (F_n + M_n)
-  )
-
-# saveRDS(raw_sample_ratios, "output/raw_sex_ratios_across_all_samples.rds")
-# raw_sample_ratios %>%
-#   pivot_wider(names_from = survey_abbrev, values_from = ratioF) %>% View()
-
-
+#   mutate( # summarize
+#     n = n(),
+#     F_n = mean(ifelse(sex == 2, n_by_sex, NA), na.rm = TRUE),
+#     M_n = mean(ifelse(sex == 1, n_by_sex, NA), na.rm = TRUE),
+#     ratioF = F_n / (F_n + M_n)
+#   )
+#
+# # saveRDS(raw_sample_ratios, "output/raw_sex_ratios_across_all_samples.rds")
+# # raw_sample_ratios %>%
+# #   pivot_wider(names_from = survey_abbrev, values_from = ratioF) %>% View()
+#
+#
 
 # clean data (sets with no samples (but non-zero catches)) ---------------------------------------------------
 
-survey_samples <- readRDS("output/samps_CoastalTrawl.rds") |>
-  drop_na(length_ext_cm) |>
-  # some earlier surveys I didn't know the conversion for
-  mutate(survey_name2 = ifelse(survey_name == "NWFSC.Combo",
-                               survey_abbrev,
-                               survey_abbrev
-  )) |>
-  mutate(fishing_event_id = as.numeric(fishing_event_id)) |>
-  mutate(julian = lubridate::yday(date))
-
 survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
 
-#nwfsc slope survey in 1998 has a very different julian date
-#I didnt' change anything about that but could by using this code
+# nwfsc slope survey in 1998 has a very different julian date
+# I didnt' change anything about that but could by using this code
 survey_sets <- survey_sets %>%
   mutate(
     survey_abbrev_true = survey_abbrev,
@@ -322,9 +271,9 @@ survey_sets <- survey_sets |>
   )
 
 survey_samples <- survey_samples |>
-  dplyr::select(-survey_abbrev) |>
+  # dplyr::select(-survey_abbrev) |>
   rename(
-    survey_abbrev = survey_name2,
+    # survey_abbrev = survey_name2,
     length = length_ext_cm
   ) |>
   # weight = weight_kg) |>
@@ -332,6 +281,10 @@ survey_samples <- survey_samples |>
     specimen_id = seq(1, n(), 1),
     species_common_name = "spiny dogfish"
   )
+
+unique(survey_samples$survey_abbrev)
+unique(survey_sets$survey_abbrev)
+
 
 # impute weights, calculate ratios, apply ratios   -----------------------------
 
@@ -341,20 +294,20 @@ surveys <- survey_sets |>
     logbot_depth, longitude, latitude
   ) |>
   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-                              survey_abbrev
+    survey_abbrev
   ))
 
 survey_sets <- survey_sets |>
   mutate(
     survey_name =
       ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-             survey_abbrev
+        survey_abbrev
       )
   )
 
 survey_samples <- survey_samples |>
   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-                              survey_abbrev
+    survey_abbrev
   ))
 
 # imput missing weights
@@ -380,9 +333,9 @@ count2 <- count2 |>
 
 # determine maturity length cutoffs
 m <- gfplot::fit_mat_ogive(survey_samples,
-                           type = "length",
-                           sample_id_re = TRUE,
-                           custom_maturity_at = c(NA, 55)
+  type = "length",
+  sample_id_re = TRUE,
+  custom_maturity_at = c(NA, 55)
 )
 gfplot::plot_mat_ogive(m)
 ggsave("Figures/maturityogives.jpg", width = 4, height = 3)
@@ -421,48 +374,25 @@ count3 <- count2 |>
   dplyr::select(-sumtotalweight) |>
   distinct(year, lengthgroup, sumweightsamps, .keep_all = TRUE)
 
-ggplot(count3, aes(year, log(ratio), group = lengthgroup, colour = lengthgroup)) +
-  geom_line() +
-  facet_wrap(~survey_abbrev)
-
-count3 |>
-  filter(survey_abbrev == "GOA") |>
-  group_by(year) |>
-  summarize(sum = sum(sumweightsamps) / 1000) |>
-  ggplot() +
-  geom_point(aes(year, sum)) +
-  geom_line(aes(year, sum))
-
-# join total catch weight for each year and divide year year by the above ratios
-unique(surveys$survey_abbrev)
-unique(sort(surveys$year))
-
 sets_summed <- surveys |>
   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-                              survey_abbrev)) |>
+    survey_abbrev
+  )) |>
   group_by(year, survey_abbrev, fishing_event_id, area_swept) |>
   summarize(sum_catch_weight_survey = sum(catch_weight))
-unique(sort(sets_summed$year))
 
-sets_summed |>
-  filter(survey_abbrev == "GOA") |>
-  group_by(year) |>
-  summarize(sum = sum(sum_catch_weight_survey)) |>
-  ggplot() +
-  geom_point(aes(year, sum)) +
-  geom_line(aes(year, sum))
 
 # now join
 df <- left_join(survey_sets, count3, by = c("year", "survey_abbrev", "fishing_event_id")) |>
   mutate(catch_weight_ratio = catch_weight * (ratio / 100))
-unique(df$survey_abbrev)
-unique(sort(df$year))
+# unique(df$survey_abbrev)
+# unique(sort(df$year))
 
 df2 <- df |>
   dplyr::select(year, survey_abbrev, lengthgroup, catch_weight_ratio, fishing_event_id) |>
   mutate(catch_weight_ratio = replace_na(catch_weight_ratio, 0)) |>
   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-                              survey_abbrev
+    survey_abbrev
   ))
 
 df2 |>
@@ -471,32 +401,6 @@ df2 |>
   ggplot() +
   geom_line(aes(year, (sum), group = lengthgroup, colour = lengthgroup), size = 2) +
   facet_wrap(~survey_name, scales = "free")
-
-# test GOA
-ratio <- df |>
-  filter(survey_abbrev_true == "GOA") |>
-  dplyr::select(year, fishing_event_id, catch_weight_ratio) |>
-  group_by(year) |>
-  drop_na(catch_weight_ratio) |>
-  mutate(sumratio = sum(catch_weight_ratio))
-
-ggplot(ratio, aes(year, sumratio)) +
-  geom_point() +
-  geom_line()
-
-cw <- df |>
-  filter(survey_abbrev_true == "GOA") |>
-  dplyr::select(year, fishing_event_id, catch_weight) |>
-  distinct() |>
-  group_by(year) |>
-  drop_na(catch_weight) |>
-  mutate(sumcw = sum(catch_weight))
-ggplot(cw, aes(year, sumcw)) +
-  geom_point() +
-  geom_line(col = "red")
-# end of test
-
-length(unique(df2$survey_name))
 
 vect <- unique(df2$survey_name)
 
@@ -536,7 +440,7 @@ unique(sort(final$year))
 final <- left_join(final, df2) |>
   mutate(catch_weight_ratio = ifelse(is.na(catch_weight_ratio) == TRUE, 0, catch_weight_ratio)) |>
   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-                              survey_abbrev
+    survey_abbrev
   ))
 
 final |>
@@ -550,6 +454,3 @@ df2 <- full_join(final, sets_summed, by = c("year", "area_swept", "fishing_event
 unique(sort(df2$year))
 saveRDS(df2, "output/splitbymaturityregion_df.rds")
 df <- readRDS("output/splitbymaturityregion_df.rds")
-
-
-
