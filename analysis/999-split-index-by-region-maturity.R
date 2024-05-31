@@ -3,11 +3,6 @@ data("maturity_assignment")
 data("maturity_short_names") # males maturity code = 90, female maturity code is >= 77
 View(maturity_assignment)
 View(maturity_short_names)
-# 94 cm tl for females is mature based on DFO assessment
-# born at 26 and 27 cm.
-# suggest growth of 1.5 cm per year.
-# 15 year old dogfish would be about ~50 cm
-# Males 70 cm mature
 # select 30 or higher for males and 55 or higher for females
 
 # Load libraries ----------------------------------------------------------
@@ -138,6 +133,19 @@ predict_weight <- function(x) {
   return(predicted_weight_tw3)
 }
 
+dfcomp <- function(df, num) {
+  x <- filter(df, survey_name == vect[num])
+  y <- as.integer(unique(x$year))
+  gr <- unique(x$lengthgroup)
+  fe <- unique(x$fishing_event_id)
+  d1 <- expand.grid(unique(x$survey_name), unique(y), gr) |>
+    rename(
+      "year" = "Var2",
+      "survey_name" = "Var1",
+      "lengthgroup" = "Var3"
+    )
+  return(d1)
+}
 
 # load raw data ---------------------------------------------------------------
 
@@ -199,50 +207,6 @@ survey_sets_withsamps <- filter(survey_sets_withsamps, !(year %in% years))
 saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 
-# # summaries and diagnostics -----------------------------------------------
-#
-# survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
-#
-# ## no samples were collected by "NWFSC.Slope" so use "AFSC.Slope" ratios for splitting this catch
-# ## check distribution of years for each survey
-# survey_sets %>%
-#   group_by(year, survey_abbrev) %>%
-#   summarise(n = n()) %>%
-#   pivot_wider(names_from = survey_abbrev, values_from = n) %>%
-#   View()
-#
-# survey_samples %>%
-#   group_by(sex, year, survey_name2) %>%
-#   tally() |>
-#   print(n = 131)
-#
-# # survey_samples %>%
-# #   group_by(sex, year, survey_abbrev) %>%
-# #   summarise(n_by_sex = n()) %>%
-# #   ungroup() %>%
-# #   group_by(year, survey_abbrev) %>%
-# #   summarize(n = n()) %>%
-# #   pivot_wider(names_from = survey_abbrev, values_from = n) %>%
-# #   View()
-#
-# raw_sample_ratios <- survey_samples %>%
-#   group_by(sex, year, survey_abbrev) %>%
-#   summarise(n_by_sex = n()) %>%
-#   ungroup() %>%
-#   group_by(year, survey_abbrev) %>%
-#   mutate( # summarize
-#     n = n(),
-#     F_n = mean(ifelse(sex == 2, n_by_sex, NA), na.rm = TRUE),
-#     M_n = mean(ifelse(sex == 1, n_by_sex, NA), na.rm = TRUE),
-#     ratioF = F_n / (F_n + M_n)
-#   )
-#
-# # saveRDS(raw_sample_ratios, "output/raw_sex_ratios_across_all_samples.rds")
-# # raw_sample_ratios %>%
-# #   pivot_wider(names_from = survey_abbrev, values_from = ratioF) %>% View()
-#
-#
-
 # clean data (sets with no samples (but non-zero catches)) ---------------------------------------------------
 
 survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
@@ -281,10 +245,6 @@ survey_samples <- survey_samples |>
     specimen_id = seq(1, n(), 1),
     species_common_name = "spiny dogfish"
   )
-
-unique(survey_samples$survey_abbrev)
-unique(survey_sets$survey_abbrev)
-
 
 # impute weights, calculate ratios, apply ratios   -----------------------------
 
@@ -338,7 +298,8 @@ m <- gfplot::fit_mat_ogive(survey_samples,
   custom_maturity_at = c(NA, 55)
 )
 gfplot::plot_mat_ogive(m)
-ggsave("Figures/maturityogives.jpg", width = 4, height = 3)
+saveRDS(m, "output/survey_samples_codedmaturity.rds")
+#ggsave("Figures/maturityogives.jpg", width = 4, height = 3)
 
 x <- m$pred_data
 x1 <- filter(x, female == 1 & glmm_fe > 0.94)
@@ -404,19 +365,6 @@ df2 |>
 
 vect <- unique(df2$survey_name)
 
-dfcomp <- function(df, num) {
-  x <- filter(df, survey_name == vect[num])
-  y <- as.integer(unique(x$year))
-  gr <- unique(x$lengthgroup)
-  fe <- unique(x$fishing_event_id)
-  d1 <- expand.grid(unique(x$survey_name), unique(y), gr) |>
-    rename(
-      "year" = "Var2",
-      "survey_name" = "Var1",
-      "lengthgroup" = "Var3"
-    )
-  return(d1)
-}
 cc <- dfcomp(df2, 1)
 c1 <- dfcomp(df2, 2)
 c2 <- dfcomp(df2, 3)
@@ -453,4 +401,3 @@ final |>
 df2 <- full_join(final, sets_summed, by = c("year", "area_swept", "fishing_event_id", "survey_abbrev"))
 unique(sort(df2$year))
 saveRDS(df2, "output/splitbymaturityregion_df.rds")
-df <- readRDS("output/splitbymaturityregion_df.rds")
