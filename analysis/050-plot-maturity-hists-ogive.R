@@ -105,8 +105,24 @@ names(survey.labs) <- c("US West Coast", "British Columbia", "Gulf of Alaska")
 sex.labs <- c("Males", "Females")
 names(sex.labs) <- c("1", "2")
 
-samps_hist$mature <- ifelse(samps_hist$sex == 2, 95.5, 76.7) # see 999-split-index_by-region-maturity.R for maturity ogive
-samps_hist$immature <- ifelse(samps_hist$sex == 2, 76.7, 64.9)
+m <- readRDS("output/survey_samples_codedmaturity.rds")
+fm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+fi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mi$age_or_length
+mm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mm$age_or_length
+
+samps_hist$mature <- ifelse(samps_hist$sex == 2, as.numeric(fm$age_or_length), as.numeric(mm$age_or_length)) # see 999-split-index_by-region-maturity.R for maturity ogive
+samps_hist$immature <- ifelse(samps_hist$sex == 2, as.numeric(fi$age_or_length), as.numeric(mi$age_or_length))
 
 
 x <- PNWColors::pnw_palette("Cascades", 3)
@@ -211,8 +227,8 @@ n_re2 <- ifelse(n_re < 15, 15, n_re)
 m$pred_data <- m$pred_data |>
   mutate(cat = ifelse(female == 1 & glmm_fe >= 0.95, 1,
     ifelse(female == 0 & glmm_fe >= 0.95, 2,
-      ifelse(female == 1 & glmm_fe < 0.05, 3,
-        ifelse(female == 0 & glmm_fe < 0.05, 4,
+      ifelse(female == 1 & glmm_fe <= 0.05, 3,
+        ifelse(female == 0 & glmm_fe <= 0.05, 4,
           NA
         )
       )
