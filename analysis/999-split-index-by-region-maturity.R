@@ -242,12 +242,12 @@ survey_sets_NOsamps <- survey_sets_withsamps |>
 years <- c(1996, 1999)
 survey_sets_withsamps <- filter(survey_sets_withsamps, !(year %in% years))
 
-saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
+#saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 
 # clean data (sets with no samples and non-zero catches) ---------------------------------------------------
 
-survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
+#survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 # nwfsc slope survey in 1998 has a very different julian date
 # I didnt' change anything about that but could by using this code
@@ -263,7 +263,7 @@ survey_samples <- survey_samples %>%
     species_common_name = "spiny dogfish"
   )
 
-survey_sets <- survey_sets |>
+survey_sets <- survey_sets_withsamps |>
   rename(
     area_swept = area_swept_m2
   )
