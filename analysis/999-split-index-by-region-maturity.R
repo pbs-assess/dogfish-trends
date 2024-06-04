@@ -1,9 +1,4 @@
 # loop over maturity class and region to create index for each maturity class and a depth plot
-data("maturity_assignment")
-data("maturity_short_names") # males maturity code = 90, female maturity code is >= 77
-View(maturity_assignment)
-View(maturity_short_names)
-# select 30 or higher for males and 55 or higher for females
 
 # Load libraries ----------------------------------------------------------
 library(here)
@@ -21,6 +16,15 @@ library(tidyverse)
 library(TMB)
 
 
+
+
+
+# notes -------------------------------------------------------------------
+data("maturity_assignment")
+data("maturity_short_names") # males maturity code = 90, female maturity code is >= 77
+View(maturity_assignment)
+View(maturity_short_names)
+# select 30 or higher for males and 55 or higher for females
 
 
 # function code   --------
@@ -154,21 +158,37 @@ survey_samples <- readRDS("output/samps_CoastalTrawl.rds") |>
   # some earlier surveys I didn't know the conversion for
   mutate(fishing_event_id = as.numeric(fishing_event_id)) |>
   mutate(julian = lubridate::yday(date)) |>
-  mutate(survey_abbrev = ifelse(survey_abbrev == "Groundfish Slope and Shelf Combination Survey" & julian <= 226, "NWFSC.Combo.pass1",
-    ifelse(survey_abbrev == "Groundfish Slope and Shelf Combination Survey" & julian > 226, "NWFSC.Combo.pass2", survey_abbrev)
-  ))
-
+  mutate(survey_name = survey_abbrev) |>
+  mutate(survey_abbrev =
+           case_when(survey_name == "Groundfish Slope and Shelf Combination Survey" & julian <= 226 ~ "NWFSC.Combo.pass1",
+                     survey_name == "Groundfish Slope and Shelf Combination Survey" & julian > 226 ~ "NWFSC.Combo.pass2",
+                     survey_name %in% c("HS MSA","SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG") ~ survey_name,
+                     survey_name == "AFSC/RACE Slope Survey" ~ "NWFSC.slope",
+                     survey_name == "Groundfish Triennial Shelf Survey" ~"Triennial",
+                     survey_name == "GOA" ~ "GOA")) |>
+  mutate(survey_name = #this could be simplied, just need bc changed
+           case_when(survey_name == "Groundfish Slope and Shelf Combination Survey" & julian <= 226 ~ "NWFSC.Combo.pass1",
+                     survey_name == "Groundfish Slope and Shelf Combination Survey" & julian > 226 ~ "NWFSC.Combo.pass2",
+                     survey_name %in% c("HS MSA","SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG") ~ "BC",
+                     survey_name == "AFSC/RACE Slope Survey" ~ "NWFSC.slope",
+                     survey_name == "Groundfish Triennial Shelf Survey" ~"Triennial",
+                     survey_name == "GOA" ~ "GOA"))
 
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
-  mutate(survey_name2 = ifelse(survey_abbrev == "NWFSC.Combo",
-    survey_name,
-    survey_abbrev
-  )) |>
+  mutate(survey_name =
+           case_when(survey_name == "Gulf of Alaska Bottom Trawl Survey" ~ "GOA",
+                     survey_name %in% c("syn bc") ~ "BC",
+                     survey_name %in% c("NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "Triennial", "NWFSC.Slope") ~ survey_name)) |>
+  mutate(survey_abbrev =
+           case_when(survey_abbrev %in% c("HS MSA","SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG") ~ survey_abbrev,
+                     survey_abbrev == "NWFSC.Combo" & julian <= 226 ~ "NWFSC.Combo.pass1",
+                     survey_abbrev == "NWFSC.Combo" & julian > 226 ~ "NWFSC.Combo.pass2",
+                     survey_abbrev %in% c("GOA", "Triennial", "NWFSC.Slope") ~ survey_abbrev)) |>
   mutate(fishing_event_id = as.numeric(fishing_event_id)) |>
   filter(year != 1993)
 
 
-# remove sets with no samples (but non-zero catches) ----------------------------------------------
+# remove sets with no samples and non-zero catches ----------------------------------------------
 
 ## early GOA years have no samples
 # see fishing id 881890 for example
@@ -182,13 +202,13 @@ sampsFEI <- survey_samples |>
 survey_sets_withsamps <- survey_sets |>
   mutate(nosamps = ifelse(fishing_event_id %in% sampsFEI$fishing_event_id, "samps", "nosamps")) |>
   mutate(catch = ifelse(catch_weight != 0, "catch", "no_catch")) |>
-  mutate(samps_catch = ifelse(nosamps == "nosamps" & catch == "catch", "nosamps_catch",
-    ifelse(nosamps == "nosamps" & catch == "no_catch", "nosamps_nocatch",
-      ifelse(nosamps == "samps" & catch == "catch", "samps_catch",
-        "samps_nocatch"
+  mutate(samps_catch =
+      case_when(nosamps == "nosamps" & catch == "catch" ~ "nosamps_catch",
+      nosamps == "nosamps" & catch == "no_catch" ~ "nosamps_nocatch",
+      nosamps == "samps" & catch == "catch" ~ "samps_catch",
+      nosamps == "samps" & catch == "no_catch" ~ "samps_nocatch"
       )
     )
-  ))
 
 survey_sets_withsamps2 <- survey_sets_withsamps |>
   filter( # get rid of nosamps_catch, and samps_nocatch
@@ -196,7 +216,7 @@ survey_sets_withsamps2 <- survey_sets_withsamps |>
   )
 
 survey_sets_NOsamps <- survey_sets_withsamps |>
-  filter(survey_name %in% c("syn bc", "Gulf of Alaska Bottom Trawl Survey", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2")) |>
+  filter(survey_name %in% c("BC", "Gulf of Alaska Bottom Trawl Survey", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2")) |>
   filter(survey_abbrev != "HS MSA") |>
   filter(samps_catch == "nosamps_catch")
 
@@ -207,68 +227,32 @@ survey_sets_withsamps <- filter(survey_sets_withsamps, !(year %in% years))
 saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 
-# clean data (sets with no samples (but non-zero catches)) ---------------------------------------------------
+# clean data (sets with no samples and non-zero catches) ---------------------------------------------------
 
 survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 # nwfsc slope survey in 1998 has a very different julian date
 # I didnt' change anything about that but could by using this code
-survey_sets <- survey_sets %>%
-  mutate(
-    survey_abbrev_true = survey_abbrev,
-    # # if using all data, this worked, but all the pre 1998 AFSC samples were from julian > 300
-    # survey_abbrev = ifelse(year <= 1998 & survey_abbrev == "NWFSC.Slope", "AFSC.Slope",
-    #                        ifelse(year > 1998 & survey_abbrev == "AFSC.Slope", "NWFSC.Slope", survey_abbrev))
-    survey_abbrev = ifelse(survey_abbrev == "NWFSC.Slope", "AFSC.Slope", survey_abbrev)
-  )
 
 survey_samples <- survey_samples %>%
   mutate(trip_start_date = date) |>
   mutate(julian = lubridate::yday(date))
 
-
 survey_sets <- survey_sets |>
-  dplyr::select(-survey_abbrev) |>
   rename(
-    area_swept = area_swept_m2,
-    survey_abbrev = survey_name2
+    area_swept = area_swept_m2
   )
 
 survey_samples <- survey_samples |>
-  # dplyr::select(-survey_abbrev) |>
   rename(
-    # survey_abbrev = survey_name2,
     length = length_ext_cm
   ) |>
-  # weight = weight_kg) |>
   mutate(
     specimen_id = seq(1, n(), 1),
     species_common_name = "spiny dogfish"
   )
 
 # impute weights, calculate ratios, apply ratios   -----------------------------
-
-surveys <- survey_sets |>
-  dplyr::select(
-    year, survey_abbrev, fishing_event_id, catch_weight, survey_name, area_swept,
-    logbot_depth, longitude, latitude
-  ) |>
-  mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-    survey_abbrev
-  ))
-
-survey_sets <- survey_sets |>
-  mutate(
-    survey_name =
-      ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-        survey_abbrev
-      )
-  )
-
-survey_samples <- survey_samples |>
-  mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-    survey_abbrev
-  ))
 
 # imput missing weights
 count <- survey_samples |>
@@ -287,8 +271,7 @@ count2 <- count2 |>
     survey_abbrev == "NWFSC.Combo.pass1" ~ "NWFSC.Combo.pass1",
     survey_abbrev == "NWFSC.Combo.pass2" ~ "NWFSC.Combo.pass2",
     survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG") ~ "BC",
-    !(survey_abbrev %in% c("GOA", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG")) ~
-      survey_abbrev
+    .default = (survey_abbrev)
   ))
 
 # determine maturity length cutoffs
@@ -299,31 +282,32 @@ m <- gfplot::fit_mat_ogive(survey_samples,
 )
 gfplot::plot_mat_ogive(m)
 saveRDS(m, "output/survey_samples_codedmaturity.rds")
-#ggsave("Figures/maturityogives.jpg", width = 4, height = 3)
 
-x <- m$pred_data
-x1 <- filter(x, female == 1 & glmm_fe > 0.94)
-range(x1$age_or_length)
-xx <- filter(x, female == 1 & glmm_fe < 0.05)
-range(xx$age_or_length)
+m$pred_data
+
+fm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+fi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
 
 # tally by length group and calculate weight of each group
-fmat <- filter(x, female == 1 & glmm_fe >= 0.95)
-min(fmat$age_or_length)
-fimm <- filter(x, female == 1 & glmm_fe < 0.05)
-max(fimm$age_or_length)
-mmat <- filter(x, female == 0 & glmm_fe > 0.94)
-mimm <- filter(x, female == 0 & glmm_fe < 0.05)
-
 count3 <- count2 |>
   filter(sex != 0) |>
   mutate(lengthgroup = case_when(
-    length >= max(fimm$age_or_length) & length < min(fmat$age_or_length) & sex == 2 ~ "maturingf",
-    length >= max(mimm$age_or_length) & length < min(mmat$age_or_length) & sex == 1 ~ "maturingm",
-    length >= min(fmat$age_or_length) & sex == 2 ~ "mf",
-    length >= min(mmat$age_or_length) & sex == 1 ~ "mm",
-    length < max(fimm$age_or_length) & sex == 2 ~ "imm",
-    length < max(mimm$age_or_length) & sex == 1 ~ "imm"
+    length >= (as.numeric(fi$age_or_length)) & length < (as.numeric(fm$age_or_length)) & sex == 2 ~ "maturingf",
+    length >= (as.numeric(mi$age_or_length)) & length < (as.numeric(mm$age_or_length)) & sex == 1 ~ "maturingm",
+    length >= (as.numeric(fm$age_or_length)) & sex == 2 ~ "mf",
+    length >= (as.numeric(mm$age_or_length)) & sex == 1 ~ "mm",
+    length < (as.numeric(fi$age_or_length)) & sex == 2 ~ "imm",
+    length < (as.numeric(mi$age_or_length)) & sex == 1 ~ "imm"
   )) |>
   group_by(year, lengthgroup, survey_name, fishing_event_id) |>
   mutate(sumweightsamps = sum(weightcomplete)) |>
@@ -335,10 +319,13 @@ count3 <- count2 |>
   dplyr::select(-sumtotalweight) |>
   distinct(year, lengthgroup, sumweightsamps, .keep_all = TRUE)
 
+surveys <- survey_sets |>
+     dplyr::select(
+       year, survey_abbrev, fishing_event_id, catch_weight, survey_name, area_swept,
+       logbot_depth, longitude, latitude
+     )
+
 sets_summed <- surveys |>
-  mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-    survey_abbrev
-  )) |>
   group_by(year, survey_abbrev, fishing_event_id, area_swept) |>
   summarize(sum_catch_weight_survey = sum(catch_weight))
 
@@ -346,14 +333,12 @@ sets_summed <- surveys |>
 # now join
 df <- left_join(survey_sets, count3, by = c("year", "survey_abbrev", "fishing_event_id")) |>
   mutate(catch_weight_ratio = catch_weight * (ratio / 100))
-# unique(df$survey_abbrev)
-# unique(sort(df$year))
 
 df2 <- df |>
   dplyr::select(year, survey_abbrev, lengthgroup, catch_weight_ratio, fishing_event_id) |>
-  mutate(catch_weight_ratio = replace_na(catch_weight_ratio, 0)) |>
-  mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
-    survey_abbrev
+  mutate(catch_weight_ratio = replace_na(catch_weight_ratio, 0))  |>
+   mutate(survey_name = ifelse(survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"), "BC",
+     survey_abbrev
   ))
 
 df2 |>
