@@ -38,11 +38,11 @@ grid_extent <- grid_extent |> mutate(FID = seq(1, n(), 1))
 grid_extent$group <- "bcproj"
 grid_extent$area_km <- as.numeric(grid_extent$area_km)
 
-#####
+
+#####Calc areas with diff projections
 iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 iphcreg_p <- st_transform(iphcreg, crs = Coastalcrs)
 
-unique(grid_extent1$ET_ID)
 grid_extent1 <- st_intersection(grid_extent, iphcreg_p)
 grid_extent1 <- grid_extent1 |>
                 mutate(region = ifelse(ET_ID == "2B", "BC",
@@ -53,15 +53,15 @@ grid_extent1 <- grid_extent1 |>
 
 
 #area of grid in 32607 proj
-ip05 <- st_transform(grid_extent1, crs = 32605)
-ip05$area_km_05 <- st_area(ip05) / 1000000 # m to km
-ip05 <- ip05 |>
+ip04 <- st_transform(grid_extent1, crs = 32604)
+ip04$area_km_04 <- st_area(ip04) / 1000000 # m to km
+ip04 <- ip04 |>
         group_by(region) |>
-  reframe(area = sum(as.numeric(area_km_05))) |>
+  reframe(area = sum(as.numeric(area_km_04))) |>
   mutate(group = "Alaskaproj")
-ip05[1,]$area/ip05[2,]$area
-ip05[1,]$area/ip05[3,]$area
-ip05[2,]$area/ip05[3,]$area
+ip04[1,]$area/ip04[2,]$area
+ip04[1,]$area/ip04[3,]$area
+ip04[2,]$area/ip04[3,]$area
 
 #area of grid in 32609 proj
 ip09 <- st_transform(grid_extent1, crs = 32609)
@@ -85,32 +85,32 @@ ip10[1,]$area/ip10[2,]$area
 ip10[1,]$area/ip10[3,]$area
 ip10[2,]$area/ip10[3,]$area
 
-#area of grid in 32610 proj
-ip12 <- st_transform(grid_extent1, crs = 32612)
-ip12$area_km_12 <- st_area(ip12) / 1000000 # m to km
-ip12 <- ip12 |>
+#area of grid in 32611 proj (southern cali/mexico utm zone)
+ip11 <- st_transform(grid_extent1, crs = 32611)
+ip11$area_km_11 <- st_area(ip11) / 1000000 # m to km
+ip11 <- ip11 |>
   group_by(region) |>
-  reframe(area = sum(as.numeric(area_km_12))) |>
+  reframe(area = sum(as.numeric(area_km_11))) |>
   mutate(group = "NWUSproj")
-ip12[1,]$area/ip12[2,]$area
-ip12[1,]$area/ip12[3,]$area
-ip12[2,]$area/ip12[3,]$area
+ip11[1,]$area/ip11[2,]$area
+ip11[1,]$area/ip11[3,]$area
+ip11[2,]$area/ip11[3,]$area
 
-a <- c(ip05[1,]$area/ip05[2,]$area,
-       ip05[1,]$area/ip05[3,]$area,
-       ip05[2,]$area/ip05[3,]$area)
+a <- c(ip04[1,]$area/ip04[2,]$area,
+       ip04[1,]$area/ip04[3,]$area,
+       ip04[2,]$area/ip04[3,]$area)
 b <- c(ip09[1,]$area/ip09[2,]$area,
        ip09[1,]$area/ip09[3,]$area,
        ip09[2,]$area/ip09[3,]$area)
 c <- c(ip10[1,]$area/ip10[2,]$area,
        ip10[1,]$area/ip10[3,]$area,
        ip10[2,]$area/ip10[3,]$area)
-d <- c(ip12[1,]$area/ip12[2,]$area,
-       ip12[1,]$area/ip12[3,]$area,
-       ip12[2,]$area/ip12[3,]$area)
+d <- c(ip11[1,]$area/ip11[2,]$area,
+       ip11[1,]$area/ip11[3,]$area,
+       ip11[2,]$area/ip11[3,]$area)
 
 df <- data.frame(a,b,c, d)
-colnames(df) = c('proj32605', "proj32609", "proj32610", "proj32612")
+colnames(df) = c('proj32604', "proj32609", "proj32610", "proj32611")
 rownames(df) <- c('GOA/BC','GOA/NW US','BC/NW US')
-
+df
 
