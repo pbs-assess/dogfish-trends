@@ -12,12 +12,6 @@ library(raster)
 # remotes::install_github("pbs-assess/gfplot")
 library(gfplot)
 # install.packages("gfplot")
-library(tidyverse)
-library(TMB)
-
-
-
-
 
 # notes -------------------------------------------------------------------
 data("maturity_assignment")
@@ -26,9 +20,7 @@ data("maturity_short_names") # males maturity code = 90, female maturity code is
 # View(maturity_short_names)
 # select 30 or higher for males and 55 or higher for females
 
-
 # function code   --------
-
 
 # assumptions male/female are coded as 1 and 2 respectively
 # assumptions weight is collected in g
@@ -242,12 +234,12 @@ survey_sets_NOsamps <- survey_sets_withsamps |>
 years <- c(1996, 1999)
 survey_sets_withsamps <- filter(survey_sets_withsamps, !(year %in% years))
 
-#saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
+# saveRDS(survey_sets_withsamps2, "output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 
 # clean data (sets with no samples and non-zero catches) ---------------------------------------------------
 
-#survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
+# survey_sets <- readRDS("output/Wrangled_USCanData_nosampssetsremoved.rds")
 
 # nwfsc slope survey in 1998 has a very different julian date
 # I didnt' change anything about that but could by using this code
@@ -267,8 +259,6 @@ survey_sets <- survey_sets_withsamps |>
   rename(
     area_swept = area_swept_m2
   )
-
-
 
 # impute weights, calculate ratios, apply ratios   -----------------------------
 
@@ -291,7 +281,6 @@ count2 <- count2 |>
     survey_abbrev %in% c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG") ~ "BC",
     survey_abbrev %in% c("GOA", "Triennial", "NWFSC.Slope") ~ survey_abbrev
   ))
-
 
 # determine maturity length cutoffs
 m <- gfplot::fit_mat_ogive(survey_samples,
@@ -352,7 +341,6 @@ sets_summed <- surveys |>
   group_by(year, survey_abbrev, fishing_event_id, area_swept) |>
   summarize(sum_catch_weight_survey = sum(catch_weight))
 
-
 # now join
 df <- left_join(survey_sets, count3, by = c("year", "survey_abbrev", "fishing_event_id")) |>
   mutate(catch_weight_ratio = catch_weight * (ratio / 100))
@@ -389,9 +377,7 @@ uniq <- survey_sets |>
   distinct()
 cf2 <- left_join(cf, uniq)
 
-
 final <- left_join(cf2, surveys)
-
 
 final <- left_join(final, df2) |>
   mutate(catch_weight_ratio = ifelse(is.na(catch_weight_ratio) == TRUE, 0, catch_weight_ratio)) |>
