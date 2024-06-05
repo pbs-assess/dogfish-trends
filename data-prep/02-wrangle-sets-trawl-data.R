@@ -323,4 +323,4 @@ ggplot(survey_sets3, aes(logbot_depth_raw, logbot_depth, colour = survey_abbrev)
   geom_point()
 
 saveRDS(survey_sets3, "output/Wrangled_USCan_trawldata_marmapdepth.rds")
->>>>>>> 88041035f700e5a832c9e0bd572b9da8e7963073
+
