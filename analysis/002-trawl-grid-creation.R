@@ -18,6 +18,7 @@ library(sf)
 NWFSCcrs <- 32610 # do we need this? Is this info somewhere?
 GOAcrs <- 32607
 BCcrs <- 32609
+grid_spacing <- 4000
 
 # Regional: create prediction grid GOA ---------------------------------------------------------------------
 # this grid is maybe too big? Could use it if we wanted to keep it consistent with NOAA
@@ -195,7 +196,7 @@ grid <- readRDS("output/prediction_grid_nwfsc3km.rds")
 # Regional: create prediction grid BC ---------------------------------------------------
 grid <- gfplot::synoptic_grid
 
-# Stitched: Prediction grid all regions (don't run, time consuming) --------------------------------------------------
+# Stitched: Prediction grid all regions  --------------------------------------------------
 # Ones from github are different resolutions
 # create a grid across the entire region that is 4*4km and covers GOA, NWFSC, and BC
 
@@ -276,8 +277,6 @@ hullsb <- st_buffer(hulls, dist = 25000) # 5 km buffer
 plot(hullsb)
 
 # convert to 4*4 km grid, here it's in m
-grid_spacing <- 4000
-
 polygony <- st_make_grid(hulls, square = TRUE, cellsize = c(grid_spacing, grid_spacing)) |>
   st_sf() |>
   mutate(cell_ID = row_number())
