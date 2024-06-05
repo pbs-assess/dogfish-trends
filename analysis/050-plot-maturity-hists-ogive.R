@@ -300,6 +300,7 @@ p <- ggplot() +
     alpha = 0.05, lty = 1, show.legend = FALSE
   ) +
   labs(x = "Length (cm)", y = "Probability mature") +
+  theme(plot.margin = unit(c(5, 1, 1, 1), "lines")) +
   geom_vline(
     data = m$pred_data, aes(xintercept = matlength, colour = female),
     show.legend = FALSE
@@ -319,7 +320,8 @@ hist
 
 cowplot::plot_grid(p, hist,
                    labels=c("(a) "," (b)"),
-                   rel_heights = c(1, 1),
+                   rel_heights = c(5, 1),
+                   label_x = 0, label_y = 0.85,
                    nrow = 1,
                    ncol = 2,
                    label_size = 12,
