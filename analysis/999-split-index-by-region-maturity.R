@@ -22,8 +22,8 @@ library(TMB)
 # notes -------------------------------------------------------------------
 data("maturity_assignment")
 data("maturity_short_names") # males maturity code = 90, female maturity code is >= 77
-View(maturity_assignment)
-View(maturity_short_names)
+# View(maturity_assignment)
+# View(maturity_short_names)
 # select 30 or higher for males and 55 or higher for females
 
 
