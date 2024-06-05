@@ -45,25 +45,21 @@ fit_trawl_region <- function(dd) {
   # i.e., 1998 onewards has a survey every year
   if (nwfsc) dd <- filter(dd, year >= 1995)
 
-  if (nwfsc || goa) {
-    mesh3 <- fmesher::fm_mesh_2d_inla(
-      boundary = domain,
-      max.edge = c(100, 2000),
-      offset = c(100, 250),
-      cutoff = 40
-    )
-  } else if (bc) {
+  mesh3 <- fmesher::fm_mesh_2d_inla(
+    boundary = domain,
+    max.edge = c(75, 2000),
+    offset = c(75, 150),
+    cutoff = 30
+  )
+  if (bc) {
     mesh3 <- fmesher::fm_mesh_2d_inla(
       boundary = domain,
       max.edge = c(50, 2000),
-      offset = c(50, 100),
+      offset = c(50, 150),
       cutoff = 25
     )
-    plot(mesh3)
-    mesh3$n
-  } else {
-    stop("No region found")
   }
+
   mesh <- make_mesh(dd, c("UTM.lon", "UTM.lat"), mesh = mesh3)
   plot(mesh)
   mesh$mesh$n
@@ -102,6 +98,11 @@ fit_trawl_region <- function(dd) {
   )
   fit
   sanity(fit)
+  b2 <- tidy(fit, "ran_pars", model = 2)
+  if (b2$estimate[b2$term == "sigma_O"] < 0.01) { # sometimes collapses here
+    fit <- update(fit, spatial = list("on", "off"))
+  }
+  sanity(fit)
 
   if (FALSE) {
     set.seed(1)
@@ -136,7 +137,7 @@ out$BC$fit
 out$GOA$fit
 out$NWFSC$fit
 saveRDS(out, file = "output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
-# out <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
+out <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
 
 coast_index <- readRDS("output/coast-index-trawl.rds")
 aa <- bind_rows(
