@@ -35,3 +35,5 @@ f <- c(
 )
 
 sapply(f, fcopy)
+
+file.copy("output/values.tex", "../dogfish-trends-ms/figs/", overwrite = TRUE)

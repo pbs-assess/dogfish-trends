@@ -49,7 +49,7 @@ indexes$region <- factor(indexes$region, levels = c("Coast", "GOA", "BC", "NWFSC
 #
 
 
-mm <- lapply(fits2, \(x) x$data$lengthgroup[1]) |> unlist()
+# mm <- lapply(fits2, \(x) x$data$lengthgroup[1]) |> unlist()
 #
 # x1 <- lapply(fits1, \(x) tidy(x, 'ran_pars')) |> setNames(mm) |>
 #   bind_rows(.id = "lengthgroup") |> mutate(linear_predictor = 1)

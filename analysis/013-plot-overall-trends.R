@@ -68,6 +68,7 @@ glmdf <- ind |> filter(year >= 2005, model == "Combined") |>
     ret$upr <- ci[2, 2]
     ret
   })
+saveRDS(glmdf, file = "output/glmdf-overall-trends.rds")
 
 lab_pos <- ind |> group_by(region) |>
   summarise(max_y = max(upr)) |>
