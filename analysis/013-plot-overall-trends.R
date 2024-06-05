@@ -101,6 +101,8 @@ ind_ll <- ind_ll |>
     levels = c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast")))
 ind_ll <- mutate(ind_ll, est = est / 1000, lwr = lwr / 1000, upr = upr / 1000)
 
+ind_ll <- filter(ind_ll, !(region == "US West Coast" & year %in% c(1998, 2000, 2020, 2021, 2022)))
+
 glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
   group_by(region) |>
   group_split() |>
@@ -121,7 +123,8 @@ lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
   mutate(region_lab = paste0("(", letters[8:11], ") ", region))
 
-gg_iphc <- ind_ll |>
+gg_iphc <-
+  ind_ll |>
   ggplot(aes(year, est, colour = region)) +
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +

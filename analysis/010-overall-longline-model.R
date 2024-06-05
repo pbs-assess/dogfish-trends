@@ -153,3 +153,7 @@ ret <- lapply(regions, \(r) {
 out <- bind_rows(ret, .id = "region")
 
 saveRDS(out, file = "output/indexes-iphc-nb2-coastwide.rds")
+
+
+g <- d |> filter(cpue > 0) |> ggplot(aes(UTM.lon, UTM.lat)) + geom_point(data = gg,mapping= aes(UTM.lon, UTM.lat), colour = "red") + geom_point() + facet_wrap(~year) + coord_fixed()
+ggsave("figs/iphc-sets.png", width = 12, height = 12)
