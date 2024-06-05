@@ -375,7 +375,8 @@ cf <- rbind(cc, c1, c2, c3, c4, c5, c6, c7, c8) |> drop_na()
 uniq <- survey_sets |>
   dplyr::select(year, survey_name, fishing_event_id) |>
   distinct()
-cf2 <- left_join(cf, uniq)
+
+cf2 <- left_join(cf, uniq, relationship = "many-to-many")
 
 final <- left_join(cf2, surveys)
 
@@ -389,7 +390,7 @@ final |>
   group_by(year, survey_name, lengthgroup) |>
   summarize(sum = sum(catch_weight_ratio)) |>
   ggplot() +
-  geom_line(aes(year, (sum), group = lengthgroup, colour = lengthgroup), size = 2) +
+  geom_line(aes(year, (sum), group = lengthgroup, colour = lengthgroup)) +
   facet_wrap(~survey_name, scales = "free")
 
 df2 <- full_join(final, sets_summed, by = c("year", "area_swept", "fishing_event_id", "survey_abbrev"))
