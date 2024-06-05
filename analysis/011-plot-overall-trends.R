@@ -157,10 +157,12 @@ g_coefs <- glmdf |> select(region, slope, lwr, upr) |> distinct() |>
 
 g_trend_panels <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
 
-img <- magick::image_read("~/Downloads/Spiny_dogfish.jpg")
+#img <- magick::image_read("~/Downloads/Spiny_dogfish.jpg")
+img <- magick::image_read("Figures/test.png")
 dog_image <- magick::image_ggplot(img) +
   # theme(axis.text = element_text()) +
-  annotate("text", x = 115, y = 410, label = "(a)", colour = "white")
+  annotate("text", x = 115, y = 410, label = "(a)")
+  #         , colour = "white")
 
 g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heights = c(1.4, 3, 1))
 
