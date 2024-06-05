@@ -141,12 +141,12 @@ line_dat <- data.frame(sex = c(1,1,2,2),
                                as.numeric(line_dat_mature[1,]),
                                as.numeric(line_dat_immature[2,]),
                                as.numeric(line_dat_mature[2,])),
-                    maturepos = c(as.numeric(line_dat_immature[1,])-9,
-                               as.numeric(line_dat_mature[1,])+ 9,
-                               as.numeric(line_dat_immature[2,])-8,
-                               as.numeric(line_dat_mature[2,]) + 8),
+                    maturepos = c(as.numeric(line_dat_immature[1,]),
+                               as.numeric(line_dat_mature[1,]),
+                               as.numeric(line_dat_immature[2,]),
+                               as.numeric(line_dat_mature[2,])),
                     survey_name2 = "GOA",
-                    label = c("0.05\nprob.of\nmaturity", "0.95\nprob.of\nmaturity",
+                    label = c("0.95\nprob.of\nmaturity", "0.05\nprob.of\nmaturity",
                               "0.05\nprob.of\nmaturity", "0.95\nprob.of\nmaturity"))
 
 data_text <- data.frame(label = c("Males",  "Females"),  # Create data for text
@@ -205,9 +205,10 @@ hist <- hist +  geom_text(data = line_dat,
                           mapping = aes(x = maturepos,
                                         y = c(0.068, 0.068, 0.068, 0.068),
                                         label = label),
-                  hjust = c(0,1,0,1), size = 8/.pt)
+                  hjust = c(0,1,1,0), size = 8/.pt)
 
 hist
+
 ggsave("figs/length-distributions-trawl.pdf", width = 5, height = 4)
 ggsave("figs/length-distributions-trawl.png", width = 5, height = 4)
 
@@ -224,11 +225,26 @@ n_re <- length(unique(nd_re$sample_id)) / 5
 n_re2 <- ifelse(n_re < 15, 15, n_re)
 
 # tally by length group and calculate weight of each group
+fm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+fi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 1) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mi <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mi$age_or_length
+mm <- m$pred_data |> mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+  filter(female == 0) |>
+  slice_min(min2, n = 1, with_ties = FALSE)
+mm$age_or_length
+
 m$pred_data <- m$pred_data |>
-  mutate(cat = ifelse(female == 1 & glmm_fe >= 0.95, 1,
-    ifelse(female == 0 & glmm_fe >= 0.95, 2,
-      ifelse(female == 1 & glmm_fe <= 0.05, 3,
-        ifelse(female == 0 & glmm_fe <= 0.05, 4,
+  mutate(cat = ifelse(female == 1 & age_or_length >= as.numeric(fm$age_or_length), 1,
+    ifelse(female == 0 & age_or_length >= as.numeric(mm$age_or_length), 2,
+      ifelse(female == 1 & age_or_length <= as.numeric(fi$age_or_length), 3,
+        ifelse(female == 0 & age_or_length <= as.numeric(mi$age_or_length), 4,
           NA
         )
       )
@@ -249,7 +265,7 @@ data <- m$pred_data |>
 data
 ann_text <- data.frame(
   age_or_length = c(40, 40, 40, 40), glmm_re = c(0.75, 0.68, 0.60, 0.53),
-  lab = c("F05 = 76.7", "F95 = 95.6", "M05 = 64.9", "M95 = 76.7"),
+  lab = c("F05 = 77.0", "F95 = 95.6", "M05 = 65.1", "M95 = 76.7"),
   female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
 )
 
@@ -292,6 +308,7 @@ p <- ggplot() +
   theme(strip.text.x = element_blank())
 
 p <- p + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab, col = as.numeric(female)), show.legend = FALSE)
+p
 ggsave("Figures/maturityogive_nofacet.png", width = 4, height = 3)
 
 
@@ -301,7 +318,7 @@ p
 hist
 
 cowplot::plot_grid(p, hist,
-                   labels=c("(a)","(b)"),
+                   labels=c("(a) "," (b)"),
                    rel_heights = c(1, 1),
                    nrow = 1,
                    ncol = 2,
