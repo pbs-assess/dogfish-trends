@@ -64,3 +64,20 @@ fleet |>
   ggplot() +
   geom_point(aes(year, julian, size = cpue, colour = cpue))
 
+fleet |>
+  ggplot() +
+  geom_point(aes(year, depth, colour = cpue, size = cpue)) +
+  scale_colour_viridis_c(trans = "sqrt") +
+  theme_classic()
+
+fleet |>
+  group_by(year) |>
+  summarize(min = min(julian), max = max(julian))
+
+fleet |>
+  #filter(cpue > 1000) |>
+  ggplot() +
+  geom_point(aes(year, (julian), size = cpue, colour = cpue)) +
+  scale_colour_viridis_c(trans = "sqrt") +
+  theme_classic()
+
