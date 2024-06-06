@@ -38,7 +38,6 @@ maturity_short_names
 # 15 year old dogfish would be about ~50 cm
 # Males 70 cm mature
 
-
 # load data ---------------------------------------------------------------
 
 samps <- readRDS("output/samps_CoastalTrawl.rds") |>
@@ -48,7 +47,6 @@ samps <- readRDS("output/samps_CoastalTrawl.rds") |>
     survey_abbrev,
     survey_name
   ))
-
 
 # SOM Figure for manuscript: density figure of IPHC and trawl, regions combined -------------------------------
 
@@ -333,8 +331,7 @@ p <- ggplot() +
 
 p <- p + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab, col = as.numeric(female)), show.legend = FALSE)
 p
-ggsave("Figures/maturityogive_nofacet.png", width = 4, height = 3)
-
+ggsave("figs/maturityogive_nofacet.png", width = 4, height = 3)
 
 # cowplot both figures ----------------------------------------------------
 
@@ -351,4 +348,4 @@ cowplot::plot_grid(p, hist,
   rel_widths = c(1, 2),
   label_fontfamily = "sans"
 )
-ggsave("Figures/maturityogive_cowplot.png", width = 12, height = 4)
+ggsave("figs/maturityogive_cowplot.png", width = 12, height = 4)
