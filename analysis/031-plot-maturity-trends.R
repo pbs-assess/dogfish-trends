@@ -91,6 +91,13 @@ glmdf <- indexes |> filter(year >= 2005) |>
   })
 
 glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
+  mutate(slope = exp(slope))
+
+glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
+  filter(group == "imm") |>
+  mutate(slope = exp(slope))
+
+glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
   ggplot(aes(slope, region, xmin = lwr, xmax = upr, colour = group)) +
   geom_pointrange(position = position_dodge(width = 0.2)) +
   geom_vline(xintercept = 0, lty = 2)
