@@ -308,7 +308,7 @@ p <- ggplot() +
                                                          lty = "female"
     ),
     sides = "b",
-    position = position_jitter(),
+    # position = position_jitter(),
     length = unit(c(0.04), "npc"),
     alpha = c(0.05), lty = 1, show.legend = FALSE
   ) +
@@ -318,7 +318,7 @@ geom_rug(
                                                         #colour = "female"
                                                         lty = "female"
   ),
-    position = position_jitter(),
+    # position = position_jitter(),
     sides = "t",
     alpha = 0.05, lty = 1, show.legend = FALSE
   ) +
