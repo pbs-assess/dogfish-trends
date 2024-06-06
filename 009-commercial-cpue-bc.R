@@ -3,25 +3,12 @@
 
 
 #params
-sf_use_s2(FALSE)
-Coastalcrs <- 32609
-map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
-bc_coast <- st_crop(
-  map_data,
-  c(xmin = -134, ymin = 46, xmax = -120, ymax = 57)
-)
-bc_coast_proj <- sf::st_transform(bc_coast, crs = 32609)
-
 library(gfdata)
-library(tidyverse)
 library(sf)
 library(ggplot2)
-library(PBSmapping)
 library(here)
-library(tidyr)
-library(purrr)
 library(sdmTMB)
-library(gfplot)
+library(tidyverse)
 
 # load cleaned data and make mesh  ------------------------------------------------------
 dat <- readRDS("output/wrangled-cpue.rds")
@@ -158,8 +145,9 @@ ind_sp |>
     ylim = c(0, 3),
     xlim = c(range(ind_sp$year) + c(-0.5, 0.5))
   ) +
-  scale_x_continuous(breaks = seq(1996, 2024, 2))
-ggsave("Figures/cpue-index-spatiotemporal.png", width = 6, height = 4)
+  scale_x_continuous(breaks = seq(1996, 2024, 2)) +
+  ggsidekick::theme_sleek()
+ggsave("Figures/cpue-index-spatiotemporal.png", width = 5, height = 4)
 
 
 # # predict -----------------------------------------------------------------
