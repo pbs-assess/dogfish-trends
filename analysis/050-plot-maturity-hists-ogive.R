@@ -151,11 +151,13 @@ line_dat <- data.frame(
   )
 )
 
-data_text <- data.frame(label = c("Males",  "Females"),  # Create data for text
-                        sex = names(table(samps_hist$sex)),
-                        survey_name2 = "GOA",
-                        x = c(18,18),
-                        y = c(0.055, 0.055))
+data_text <- data.frame(
+  label = c("Males", "Females"), # Create data for text
+  sex = names(table(samps_hist$sex)),
+  survey_name2 = "GOA",
+  x = c(18, 18),
+  y = c(0.055, 0.055)
+)
 
 # data_textm <- data.frame(label = c("malesimm",  "malesm", 'femalesimm', 'femalesm'),  # Create data for text
 #                         sex = c(1,1,2,2),
@@ -287,46 +289,63 @@ ann_text <- data.frame(
   female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
 )
 
+string <- data.frame(
+  length = c(
+    as.numeric(fm$age_or_length), as.numeric(fi$age_or_length) + 1,
+    as.numeric(mi$age_or_length), as.numeric(mm$age_or_length - 1)
+  ),
+  female = c(1, 1, 0, 0)
+)
 
-
-p <- ggplot() +
+p <-
+  ggplot() +
   geom_line(
     data = nd_re, aes_string("age_or_length",
-
-                             "as.numeric(glmm_re)",
-                             group = "paste(sample_id, female)",
-                             #colour = "female"
-                             lty = "female"
-    ), inherit.aes = FALSE, alpha = 1 / n_re2,
+      "as.numeric(glmm_re)",
+      group = "paste(sample_id, female)",
+      # colour = "female"
+      linetype = "as.character(female)"
+    ),
+    inherit.aes = FALSE,
+    alpha = 1 / n_re2,
     show.legend = FALSE
   ) +
-
- geom_rug(
-    data = filter(m$data, mature == "FALSE"), aes_string(x = "age_or_length",
-                                                         y = "mature_num",
-                                                         #colour = "female"
-                                                         lty = "female"
+  scale_linetype_manual(values = c("dotdash", "solid")) +
+  geom_rug(
+    data = filter(m$data, mature == "FALSE"), aes_string(
+      x = "age_or_length",
+      y = "mature_num",
+      # colour = "female"
+      linetype = "as.character(female)"
     ),
     sides = "b",
-    position = position_jitter(),
     length = unit(c(0.04), "npc"),
-    alpha = c(0.05), lty = 1, show.legend = FALSE
+    alpha = c(0.05),
+    # lty = 1,
+    show.legend = FALSE
   ) +
-geom_rug(
-    data = filter(m$data, mature == "TRUE"), aes_string(x = "age_or_length",
-                                                        y = "mature_num",
-                                                        #colour = "female"
-                                                        lty = "female"
-  ),
-    position = position_jitter(),
+  geom_rug(
+    data = filter(m$data, mature == "TRUE"), aes_string(
+      x = "age_or_length",
+      y = "mature_num",
+      # colour = "female"
+      linetype = "as.character(female)"
+    ),
     sides = "t",
-    alpha = 0.05, lty = 1, show.legend = FALSE
+    alpha = 0.05,
+    # lty = 1,
+    show.legend = FALSE
   ) +
   labs(x = "Length (cm)", y = "Probability mature") +
   theme(plot.margin = unit(c(5, 1, 1, 1), "lines")) +
   geom_vline(
-    data = m$pred_data, aes(xintercept = matlength, colour = female),
-    show.legend = FALSE, position=position_jitter(w=0.02, h=0)
+    data = string,
+    aes(
+      xintercept = length,
+      # colour = female
+      linetype = as.character(female)
+    ),
+    show.legend = FALSE,
   ) +
   # facet_wrap(~female) +
   theme(strip.text.x = element_blank())
