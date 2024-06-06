@@ -30,4 +30,13 @@ for (i in seq(nrow(s))) {
   write_tex(x$propAbs, macro = paste0(x$tag, "PropAbs"))
 }
 
+svc <- readRDS("output/svc-spatial-data.rds")
 
+write_tex(mround(100 * mean(exp(svc$svc) < 0.2), 0), "SVCeighty")
+
+x <- group_by(prs, region) |>
+  summarise(p = mround(100 * mean(exp(svc) < 0.3), 0))
+
+write_tex(x$p[x$region == "BC"], "bcSVCseventy")
+write_tex(x$p[x$region == "GOA"], "goaSVCseventy")
+write_tex(x$p[x$region == "NWFSC"], "wcSVCseventy")
