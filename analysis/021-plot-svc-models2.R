@@ -13,9 +13,11 @@ z1 <- b1$estimate[b1$term == "year_scaled"]
 z2 <- b2$estimate[b1$term == "year_scaled"]
 
 # pick any year:
-# p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
-# p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
+p <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
 # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
+p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+p$combined_intercept <- p_start$est1 + p_start$est2
 
 # instead of intercept at scaled year = 0 (i.e., 2010), take prediction at an
 # early time step
@@ -24,7 +26,7 @@ z2 <- b2$estimate[b1$term == "year_scaled"]
 # mm <- lapply(mat_trend_fits, \(x) x$data$lengthgroup[1]) |> unlist()
 # names(mat_trend_fits) <- mm
 #
-# fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
 # p_start <- predict(fit_trend, newdata = filter(grid, year == min(fit$data$year))) # 2005 or 2006
 # p$combined_intercept <- p_start$est1 + p_start$est2
 
@@ -35,6 +37,7 @@ fits <- readRDS("output/fit-trawl-svc-maturity.rds")
 lapply(fits, \(x) x$family)
 
 grab_svc_pred <- function(fit) {
+  cat("-")
   p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
   if (sdmTMB:::is_delta(fit)) {
     b1 <- tidy(fit, model = 1)
@@ -117,6 +120,8 @@ prs$group_clean <- factor(prs$group_clean, levels = lvls)
 pal <- rev(RColorBrewer::brewer.pal(3, name = "RdBu"))
 # 'mids' is for placing the maturity labels at the top:
 mids <- group_by(prs, group_clean) |> summarise(mean_x = mean(rotated_x))
+
+saveRDS(prs, "output/svc-spatial-data.rds")
 
 # rotate sf coast ---------------------------------
 
