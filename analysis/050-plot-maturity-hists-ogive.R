@@ -153,7 +153,7 @@ data_text <- data.frame(label = c("Males",  "Females"),  # Create data for text
                         sex = names(table(samps_hist$sex)),
                         survey_name2 = "GOA",
                         x = c(18,18),
-                        y = c(0.058, 0.058))
+                        y = c(0.055, 0.055))
 # data_textm <- data.frame(label = c("malesimm",  "malesm", 'femalesimm', 'femalesm'),  # Create data for text
 #                         sex = c(1,1,2,2),
 #                         survey_name2 = "GOA",
@@ -276,14 +276,16 @@ p <- ggplot() +
     data = nd_re, aes_string("age_or_length",
                              "as.numeric(glmm_re)",
                              group = "paste(sample_id, female)",
-                             colour = "female"
+                             #colour = "female"
+                             lty = "female"
     ), inherit.aes = FALSE, alpha = 1 / n_re2,
     show.legend = FALSE, size = 1
   ) +
  geom_rug(
     data = filter(m$data, mature == "FALSE"), aes_string(x = "age_or_length",
                                                          y = "mature_num",
-                                                         colour = "female"
+                                                         #colour = "female"
+                                                         lty = "female"
     ),
     sides = "b",
     position = position_jitter(),
@@ -292,8 +294,9 @@ p <- ggplot() +
   ) +
  geom_rug(
     data = filter(m$data, mature == "TRUE"), aes_string(x = "age_or_length",
-                                                         y = "mature_num",
-                                                    colour = "female"
+                                                        y = "mature_num",
+                                                        #colour = "female"
+                                                        lty = "female"
     ),
     position = position_jitter(),
     sides = "t",
@@ -303,7 +306,7 @@ p <- ggplot() +
   theme(plot.margin = unit(c(5, 1, 1, 1), "lines")) +
   geom_vline(
     data = m$pred_data, aes(xintercept = matlength, colour = female),
-    show.legend = FALSE
+    show.legend = FALSE, position=position_jitter(w=0.02, h=0)
   ) +
   #facet_wrap(~female) +
   theme(strip.text.x = element_blank())
