@@ -2,7 +2,7 @@
 
 Coastalcrs = 32609
 
-# library -----------------------------------------------------------------
+#library
 library(sf)
 library(sdmTMB)
 library(dplyr)
@@ -10,8 +10,7 @@ library(here)
 library(tidyverse)
 
 
-# load data ---------------------------------------------------------------
-
+#data
 iphc <- readRDS("output/IPHC_coastdata.rds") %>%
   mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
 
@@ -113,4 +112,19 @@ df <- data.frame(a,b,c, d)
 colnames(df) = c('proj32604', "proj32609", "proj32610", "proj32611")
 rownames(df) <- c('GOA/BC','GOA/NW US','BC/NW US')
 df
+
+df |>
+  knitr::kable(format = "latex", col.names = c("Model", "Family", "Spatial", "Spatiotemporal", "SVC", "Mesh vertices"), booktabs = TRUE, align = "llllll", caption = "TODO", label = "model-configs") |>
+  kableExtra::column_spec(1, width = "4.4cm") |>
+  kableExtra::column_spec(2, width = "2.4cm")
+
+#i think it should just be a table of areas
+df <- bind_rows(ip04, ip09, ip10, ip11)
+head(df)
+dflong <- df |>
+  reshape2::melt(id=c("region", "value"))
+dflong
+  knitr::kable(format = "latex", col.names = c("Model", "Family", "Spatial", "Spatiotemporal", "SVC", "Mesh vertices"), booktabs = TRUE, align = "llllll", caption = "TODO", label = "model-configs") |>
+  kableExtra::column_spec(1, width = "4.4cm") |>
+  kableExtra::column_spec(2, width = "2.4cm")
 
