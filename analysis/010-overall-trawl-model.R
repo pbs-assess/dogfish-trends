@@ -184,15 +184,16 @@ index_l <- lapply(yy, \(y) {
 })
 index <- do.call(rbind, index_l)
 
-eao_l <- lapply(yy, \(y) {
-  cat(y, "\n")
-  nd <- dplyr::filter(grid, year %in% y)
-  pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
-  eao <- get_eao(pred, bias_correct = FALSE, area = nd$area_km)
-  gc()
-  eao
-})
-eao <- do.call(rbind, eao_l)
+# eao_l <- lapply(yy, \(y) {
+#   cat(y, "\n")
+#   nd <- dplyr::filter(grid, year %in% y)
+#   pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
+#   eao <- get_eao(pred, bias_correct = FALSE, area = nd$area_km)
+#   gc()
+#   eao
+# })
+# eao <- do.call(rbind, eao_l)
+# ggplot(eao, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") + geom_line()
 
 index_l <- lapply(yy, \(y) {
   cat(y, "\n")
@@ -229,11 +230,16 @@ do_expanions <- function(model, type = c("index", "eao")) {
 }
 index_reg_l <- do_expanions(fit)
 index_reg_lq <- do_expanions(fitq)
-eao_reg_l <- do_expanions(fit, type = "eao")
+# eao_reg_l <- do_expanions(fit, type = "eao")
 
 index_reg <- do.call(rbind, index_reg_l)
 index_regq <- do.call(rbind, index_reg_lq)
-eao_reg <- do.call(rbind, eao_reg_l)
+# eao_reg <- do.call(rbind, eao_reg_l)
+
+# ggplot(eao_reg, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") +
+#   geom_line() +
+#   facet_wrap(~region, scales = "free_y") +
+#   scale_y_log10()
 
 bind_rows(
   mutate(index, model = "No catchability effects", region = "Coastwide"),

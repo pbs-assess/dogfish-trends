@@ -31,7 +31,9 @@ f <- c(
   "figs/coefs.pdf",
   "figs/depth-effects.pdf",
   "figs/trawl-model-mesh.png",
-  "figs/iphc-model-mesh.png"
+  "figs/iphc-model-mesh.png",
+  "figs/maturity-ogives.pdf",
+  "figs/maturity-ogives.png"
 )
 
 sapply(f, fcopy)
