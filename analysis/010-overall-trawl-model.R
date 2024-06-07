@@ -184,6 +184,16 @@ index_l <- lapply(yy, \(y) {
 })
 index <- do.call(rbind, index_l)
 
+eao_l <- lapply(yy, \(y) {
+  cat(y, "\n")
+  nd <- dplyr::filter(grid, year %in% y)
+  pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
+  eao <- get_eao(pred, bias_correct = FALSE, area = nd$area_km)
+  gc()
+  eao
+})
+eao <- do.call(rbind, eao_l)
+
 index_l <- lapply(yy, \(y) {
   cat(y, "\n")
   nd <- dplyr::filter(grid, year %in% y)
@@ -201,12 +211,17 @@ regions <- unique(grid$region)
 
 gc()
 
-do_expanions <- function(model) {
+do_expanions <- function(model, type = c("index", "eao")) {
+  type <- match.arg(type)
   lapply(regions, \(r) {
     cat(r, "\n")
-    nd <- dplyr::filter(grid, region %in% r)
+    nd <- dplyr::filter(grid, region %in% r, year %in% unique(dat_coast$year))
     pred <- predict(model, newdata = nd, return_tmb_object = TRUE)
-    ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+    if (type == "index") {
+      ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+    } else {
+      ind <- get_eao(pred, bias_correct = FALSE, area = nd$area_km)
+    }
     ind$region <- r
     gc()
     ind
@@ -214,8 +229,11 @@ do_expanions <- function(model) {
 }
 index_reg_l <- do_expanions(fit)
 index_reg_lq <- do_expanions(fitq)
+eao_reg_l <- do_expanions(fit, type = "eao")
+
 index_reg <- do.call(rbind, index_reg_l)
 index_regq <- do.call(rbind, index_reg_lq)
+eao_reg <- do.call(rbind, eao_reg_l)
 
 bind_rows(
   mutate(index, model = "No catchability effects", region = "Coastwide"),
