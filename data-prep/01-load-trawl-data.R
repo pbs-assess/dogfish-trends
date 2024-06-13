@@ -2,12 +2,10 @@
 
 if (FALSE) {
   remotes::install_github("pbs-assess/gfdata")
-  remotes::install_github("DFO-NOAA-Pacific/surveyjoin")
   remotes::install_github("pfmc-assessments/nwfscSurvey")
 }
 
 # library -----------------------------------------------------------------
-library(surveyjoin)
 library(gfdata)
 library(here)
 library(tidyverse)
