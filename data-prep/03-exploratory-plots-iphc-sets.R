@@ -38,6 +38,6 @@ ggplot(iphc, aes(UTM.lon.m, UTM.lat.m), colour = "grey") +
   geom_point() +
   facet_wrap(~year)
 
-ggplot(iphc3, aes(longitude, latitude, colour = diff)) +
+ggplot(iphc, aes(longitude, latitude, colour = diff)) +
   geom_point(size = 0.4) +
   scale_colour_viridis_c()
