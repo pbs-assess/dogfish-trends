@@ -4,7 +4,7 @@ if (FALSE) {
   remotes::install_github("pbs-assess/gfdata")
   remotes::install_github("DFO-NOAA-Pacific/surveyjoin")
   remotes::install_github("pfmc-assessments/nwfscSurvey")
-}
+  }
 
 # library -----------------------------------------------------------------
 library(surveyjoin)
@@ -32,37 +32,33 @@ if (!file.exists("data-raw/data_surveysets.rds")) {
 # http://pfmc-assessments.github.io/nwfscSurvey/index.html
 # http://pfmc-assessments.github.io/nwfscSurvey/articles/nwfscSurvey.html
 
-prep_date_columns <- function(x) {
-  x |>
-    mutate(date2 = as.Date(Date, format = "%Y%m%d")) |>
-    select(-Date) |>
-    mutate(dmy = lubridate::ymd(date2)) |>
-    mutate(julian = lubridate::yday(dmy))
-}
+# prep_date_columns <- function(x) {
+#   x |>
+#     mutate(date2 = as.Date(Date, format = "%Y%m%d")) |>
+#     select(-Date) |>
+#     mutate(dmy = lubridate::ymd(date2)) |>
+#     mutate(julian = lubridate::yday(dmy))
+# }
 
 if (!file.exists("data-raw/nwfsc_sets_slope_AFSC.rds")) {
   catch_nwfsc_combo <- nwfscSurvey::PullCatch.fn(SurveyName = "NWFSC.Combo", SciName = "Squalus suckleyi") |>
     mutate(survey_abbrev = "NWFSC.Combo") |>
-    filter(Common_name == "Pacific spiny dogfish") |>
-    prep_date_columns()
+    filter(Common_name == "Pacific spiny dogfish") 
   saveRDS(catch_nwfsc_combo, "data-raw/nwfsc_sets_combo.rds")
 
   catch_nwfsc_triennial <- nwfscSurvey::PullCatch.fn(SurveyName = "Triennial", SciName = "Squalus suckleyi") |>
     mutate(survey_abbrev = "Triennial") |>
-    filter(Common_name == "Pacific spiny dogfish") |>
-    prep_date_columns()
+    filter(Common_name == "Pacific spiny dogfish") 
   saveRDS(catch_nwfsc_triennial, "data-raw/nwfsc_sets_triennial.rds")
 
   catch_nwfsc_slope <- nwfscSurvey::PullCatch.fn(SurveyName = "NWFSC.Slope", SciName = "Squalus suckleyi") |>
     mutate(survey_abbrev = "NWFSC.Slope") |>
-    filter(Common_name == "Pacific spiny dogfish") |>
-    prep_date_columns()
+    filter(Common_name == "Pacific spiny dogfish") 
   saveRDS(catch_nwfsc_slope, "data-raw/nwfsc_sets_slope.rds")
 
   catch_nwfsc_slope2 <- nwfscSurvey::PullCatch.fn(SurveyName = "AFSC.Slope", SciName = "Squalus suckleyi") |>
     mutate(survey_abbrev = "AFSC.Slope") |>
-    filter(Common_name == "Pacific spiny dogfish") |>
-    prep_date_columns()
+    filter(Common_name == "Pacific spiny dogfish") 
   saveRDS(catch_nwfsc_slope2, "data-raw/nwfsc_sets_slope_AFSC.rds")
 } else {
   catch_nwfsc_combo <- readRDS("data-raw/nwfsc_sets_combo.rds")
