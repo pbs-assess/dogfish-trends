@@ -22,7 +22,7 @@ iphc_latlongs <- read.csv("data-raw/Set and Pacific halibut data_raw.csv") %>%
   dplyr::select(IPHC.Reg.Area, Date, Eff, Ineffcde, BeginLat, BeginLon, AvgDepth..fm., Stlkey)
 
 iphc_coast2 <- iphc_coast %>%
-  inner_join(iphc_stations) %>%
+  inner_join(iphc_stations, relationship = "many-to-many") %>%
   inner_join(iphc_latlongs, by = "Stlkey")
 
 names(iphc_coast2) <- tolower(names(iphc_coast2))
@@ -38,15 +38,15 @@ iphc_coast3 <- iphc_coast2 %>%
     depth_m_log, year, beginlat, beginlon, station,
     iphc.reg.area, number.observed, hooksobserved, date
   ) %>%
-  mutate(hooksobserved2 = as.numeric(hooksobserved)) %>%
-  drop_na(hooksobserved2)
+  mutate(hooksobserved = gsub(",", "", hooksobserved)) |> #! IMPORTANT! commas to remove
+  mutate(hooksobserved2 = as.numeric(hooksobserved))
 
 iphc_coast4 <- add_utm_columns(iphc_coast3,
   ll_names = c("beginlon", "beginlat"),
   utm_names = c("UTM.lon.m", "UTM.lat.m"),
   utm_crs = bccrs
 ) %>%
-  inner_join(iphc_coast3) %>%
+  inner_join(iphc_coast3, relationship = "many-to-many") %>%
   rename(latitude = beginlat, longitude = beginlon) %>%
   mutate(cpue = number.observed / hooksobserved2) %>%
   mutate(dmy = lubridate::dmy(date)) %>%
