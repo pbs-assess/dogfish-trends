@@ -2,9 +2,10 @@
 
 
 # library -----------------------------------------------------------------
+library(ggplot2)
+library(sf)
 theme_set(gfplot::theme_pbs())
 sf_use_s2(FALSE)
-library(ggplot2)
 library(dplyr)
 library(wesanderson)
 library(tidyr)
