@@ -22,7 +22,7 @@ iphc %>%
   drop_na(hooksobserved) %>%
   mutate(sumeffhks = sum(hooksobserved2)) %>%
   mutate(catch = sum(number.observed)) %>%
-  summarise(cpue = catch / sumeffhks) %>%
+  mutate(cpue = catch / sumeffhks) %>%
   ggplot(aes(year, cpue, group = iphc.reg.area, col = iphc.reg.area)) +
   geom_line(linewidth = 2) +
   geom_point(size = 2, colour = "red") +
