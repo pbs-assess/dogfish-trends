@@ -4,8 +4,7 @@
 .Ruserdata
 Figures/
 output/
-.Rproj
 *.csv
 lw_gfplot.cpp
-lw_gfplot.o
-lw_gfplot.so
+*.o
+*.so
