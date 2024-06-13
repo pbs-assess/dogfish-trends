@@ -177,12 +177,21 @@ catch_nwfsc_triennial <- readRDS("data-raw/nwfsc_sets_triennial.rds")
 catch_nwfsc_slope <- readRDS("data-raw/nwfsc_sets_slope.rds")
 catch_nwfsc_slope2 <- readRDS("data-raw/nwfsc_sets_slope_AFSC.rds")
 
+prep_date_columns <- function(x) {
+  x |>
+    mutate(date2 = as.Date(Date, format = "%Y%m%d")) |>
+    select(-Date) |>
+    mutate(dmy = lubridate::ymd(date2)) |>
+    mutate(julian = lubridate::yday(dmy))
+}
+
 nwfsc <- bind_rows(
   catch_nwfsc_combo,
   catch_nwfsc_triennial,
   catch_nwfsc_slope,
   catch_nwfsc_slope2
 ) |>
+  prep_date_columns() |>
   dplyr::rename(
     fishing_event_id = Trawl_id,
     common_name = Common_name,
