@@ -1,5 +1,9 @@
 # create on database of US/Can sample survey data
 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 # Samples - BC ----------------------------------------------------------------
 
 bcsets <- readRDS("data-raw/data_surveysets.rds")
