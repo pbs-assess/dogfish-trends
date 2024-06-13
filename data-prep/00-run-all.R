@@ -11,4 +11,5 @@ source("data-prep/05-split-index-by-region-maturity.R")
 ## source("data-prep/06-load-cpue-data.R")
 ## source("data-prep/07-wrange-cpue-data.R")
 ## source("data-prep/08-exploratory-plots-cpue.R")
-
+source("data-prep/09-IPHC-grid-creation.R")
+source("data-prep/09-trawl-grid-creation.R")
