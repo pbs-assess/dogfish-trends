@@ -179,7 +179,7 @@ catch_nwfsc_slope2 <- readRDS("data-raw/nwfsc_sets_slope_AFSC.rds")
 
 prep_date_columns <- function(x) {
   x |>
-    mutate(date2 = as.Date(Date, format = "%Y%m%d")) |>
+    mutate(date2 = substr(Datetime_utc_iso, 1L, 10L)) |>
     select(-Date) |>
     mutate(dmy = lubridate::ymd(date2)) |>
     mutate(julian = lubridate::yday(dmy))
@@ -268,6 +268,8 @@ range(nwfsc_sets$logbot_depth)
 range(nwfsc_sets$catch_weight)
 range(bc$catch_weight)
 range(goa_sets$catch_weight)
+
+nwfsc_sets$date <- lubridate::ymd(nwfsc_sets$date)
 
 survey_sets <- bind_rows(bc, nwfsc_sets) |>
   bind_rows(goa_sets) |>
