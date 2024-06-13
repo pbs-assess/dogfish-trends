@@ -308,12 +308,14 @@ b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resol
 x <- survey_sets |> dplyr::select(longitude, latitude)
 survey_sets2 <- x[!duplicated(x), ]
 
-survey_sets3 <- marmap::get.depth(b, survey_sets2[, c("longitude", "latitude")], locator = FALSE) %>%
-  mutate(bot_depth = (depth * -1)) %>%
-  rename(longitude = lon, latitude = lat) %>%
-  mutate(logbot_depth = log(bot_depth)) %>%
-  right_join(survey_sets, by = c("longitude" = "longitude", "latitude" = "latitude"))
-# NAs are ok, fixing here
+suppressWarnings({ # negative depths
+  survey_sets3 <- marmap::get.depth(b, survey_sets2[, c("longitude", "latitude")], locator = FALSE) %>%
+    mutate(bot_depth = (depth * -1)) %>%
+    rename(longitude = lon, latitude = lat) %>%
+    mutate(logbot_depth = log(bot_depth)) %>%
+    right_join(survey_sets, by = c("longitude" = "longitude", "latitude" = "latitude"))
+  # NAs are ok, fixing here
+})
 
 survey_sets3[duplicated(survey_sets3), ]
 

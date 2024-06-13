@@ -13,7 +13,7 @@ iphc %>%
   group_by(year, iphc.reg.area) %>%
   summarize(sumcount = sum(number.observed)) %>%
   ggplot(aes(year, sumcount)) +
-  geom_line(size = 2) +
+  geom_line(linewidth = 2) +
   geom_point(size = 2, colour = "red") +
   facet_wrap(~iphc.reg.area)
 
@@ -24,7 +24,7 @@ iphc %>%
   mutate(catch = sum(number.observed)) %>%
   summarise(cpue = catch / sumeffhks) %>%
   ggplot(aes(year, cpue, group = iphc.reg.area, col = iphc.reg.area)) +
-  geom_line(size = 2) +
+  geom_line(linewidth = 2) +
   geom_point(size = 2, colour = "red") +
   facet_wrap(~iphc.reg.area)
 

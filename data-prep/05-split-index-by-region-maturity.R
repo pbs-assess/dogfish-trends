@@ -356,7 +356,7 @@ df2 |>
   group_by(year, survey_name, lengthgroup) |>
   summarize(sum = sum(catch_weight_ratio)) |>
   ggplot() +
-  geom_line(aes(year, (sum), group = lengthgroup, colour = lengthgroup), size = 2) +
+  geom_line(aes(year, (sum), group = lengthgroup, colour = lengthgroup), linewidth = 2) +
   facet_wrap(~survey_name, scales = "free")
 
 vect <- unique(df2$survey_name)
