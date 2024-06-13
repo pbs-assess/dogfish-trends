@@ -176,7 +176,7 @@ ggplot(grid2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
 ggplot(grid2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_point()
 
-gridtlcoastal_ras <- grid2 |> mutate(across(c(UTM.lon, UTM.lat), round, digits = 2)) # make them evenly spaced
+gridtlcoastal_ras <- grid2 |> mutate(across(c(UTM.lon, UTM.lat), \(x) round(x, digits = 2))) # make them evenly spaced
 ggplot(gridtlcoastal_ras, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_raster()
 gridnew <- gridtlcoastal_ras
@@ -337,7 +337,7 @@ ggplot(grid2, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_point(size = 0.25) +
   scale_colour_viridis_c()
 
-gridtlcoastal_ras <- grid2 |> mutate(across(c(UTM.lon, UTM.lat), round, digits = 2)) # make them evenly spaced
+gridtlcoastal_ras <- grid2 |> mutate(across(c(UTM.lon, UTM.lat), \(x) round(x, digits = 2))) # make them evenly spaced
 ggplot(gridtlcoastal_ras, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_raster()
 gridnew <- gridtlcoastal_ras
