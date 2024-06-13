@@ -74,7 +74,8 @@ if (!file.exists("data-raw/nwfsc_sets_slope_AFSC.rds")) {
 
 # Samps - US West Coast data  ----------------------------------------------------------
 
-if (!file.exists("data-raw/nwfsc_samp_slope_AFSC.rds")) {
+f <- c("data-raw/nwfsc_samp_combo.rds","data-raw/nwfsc_samp_triennial.rds", "data-raw/nwfsc_samp_slope_AFSC.rds")
+if (any(!file.exists(f))) {
   nwfsc_samp_combo <- nwfscSurvey::PullBio.fn(
     Name = "Pacific spiny dogfish",
     SurveyName = "NWFSC.Combo"
@@ -122,6 +123,7 @@ saveRDS(nwfsc_samples_raw, "data-raw/NWFSC_sampledata.rds")
 
 load("data-raw/afsc_haul.rda")
 # load("data-raw/afsc_catch.rda")
+# load("~/src/surveyjoin/local-data/afsc_catch.rda")
 # goa_all_catch <- afsc_catch |>
 #   filter(
 #     scientific_name %in% c("Squalus suckleyi")
