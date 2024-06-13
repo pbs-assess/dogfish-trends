@@ -1,6 +1,6 @@
 # create on database of US/Can set survey data
 
-# notes -------------------
+# notes -------------------------------------------------------------------
 # convert Fork Length to total length
 # LPC to LText 1483 3·49 (2·94–4·00) 1·20 (1·20–1·20) 0·98
 # LF to LText 876 2·17 (1·35–2·98) 1·10 (1·09–1·11) 0·98
@@ -19,7 +19,7 @@
 # IPHC Survey, the samples were measured as precaudal length (LPC)
 
 
-# libraries -----
+# libraries ---------------------------------------------------------------
 library(tidyverse)
 library(lubridate)
 library(gfplot)
@@ -27,7 +27,7 @@ library(here)
 library(gfdata)
 
 
-# Load - BC data see 01_load-trawl-data.R----------
+# Load - BC data see 01_load-trawl-data.R------------------------------------------------------------
 
 x <- c("SYN HS", "SYN QCS", "SYN WCVI", "SYN WCHG", "HS MSA")
 
@@ -79,27 +79,23 @@ x <- bc |> filter(is.na(doorspread_m) == TRUE)
 unique(bc$survey_series_id)
 # d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
 d <- readRDS("data-raw/bc_temperature.rds")
-d |>
-  group_by(fishing_event_id) |>
-  reframe(n = n()) |>
-  filter(n > 1) # some events have 2 temperatures due to two sensors
-d |>
-  distinct(fishing_event_id) |>
+d |> group_by(fishing_event_id) |>
+  reframe( n = n()) |>
+  filter(n >1) #some events have 2 temperatures due to two sensors
+d |> distinct(fishing_event_id) |>
   tally()
 
-d2 <- d %>%
-  group_by(fishing_event_id) %>%
-  # slice(which.max(avg)) |> #some fishing events have two sensors and therefore 2 values, get rid of one
-  mutate(bottom_temp_c = mean(avg)) |> # some fishing events have two sensors and therefore 2 values, get rid of one
+d2 <- d %>% group_by(fishing_event_id) %>%
+  #slice(which.max(avg)) |> #some fishing events have two sensors and therefore 2 values, get rid of one
+  mutate(bottom_temp_c = mean(avg)) |>   #some fishing events have two sensors and therefore 2 values, get rid of one
   distinct(fishing_event_id, .keep_all = TRUE) |>
-  # rename(bottom_temp_c = avg) |> #used the average bottom temperature
+  #rename(bottom_temp_c = avg) |> #used the average bottom temperature
   dplyr::select(fishing_event_id, year, bottom_temp_c) |>
   mutate(fishing_event_id = as.numeric(fishing_event_id))
 
-d2 |>
-  group_by(fishing_event_id) |>
-  reframe(n = n()) |>
-  filter(n > 1) # 2 events are nolonger in the dataframe
+d2 |> group_by(fishing_event_id) |>
+  reframe( n = n()) |>
+  filter(n >1) #2 events are nolonger in the dataframe
 
 bc$fishing_event_id <- as.numeric(bc$fishing_event_id)
 bc <- left_join(bc, d2)
@@ -181,21 +177,12 @@ catch_nwfsc_triennial <- readRDS("data-raw/nwfsc_sets_triennial.rds")
 catch_nwfsc_slope <- readRDS("data-raw/nwfsc_sets_slope.rds")
 catch_nwfsc_slope2 <- readRDS("data-raw/nwfsc_sets_slope_AFSC.rds")
 
-prep_date_columns <- function(x) {
-  x |>
-    mutate(date2 = as.Date(Date, format = "%Y%m%d")) |>
-    select(-Date) |>
-    mutate(dmy = lubridate::ymd(date2)) |>
-    mutate(julian = lubridate::yday(dmy))
-}
-
 nwfsc <- bind_rows(
   catch_nwfsc_combo,
   catch_nwfsc_triennial,
   catch_nwfsc_slope,
   catch_nwfsc_slope2
 ) |>
-  prep_date_columns() |>
   dplyr::rename(
     fishing_event_id = Trawl_id,
     common_name = Common_name,
@@ -241,7 +228,7 @@ nwfsc_sets |>
 
 
 
-# Merge Sets  -------
+# Merge Sets  ----------------------------------------------------
 
 nwfsc_sets$date
 goa_sets$date
@@ -296,7 +283,7 @@ survey_sets <- bind_rows(bc, nwfsc_sets) |>
 
 saveRDS(survey_sets, "output/Wrangled_USCan_trawldata.rds")
 
-# Add depth to merged trawl survey data ----------
+# Add depth to merged trawl survey data ----------------------------------
 survey_sets <- readRDS("output/Wrangled_USCan_trawldata.rds")
 survey_sets$logbot_depth_raw <- survey_sets$logbot_depth
 survey_sets <- survey_sets |> dplyr::select(-logbot_depth)
