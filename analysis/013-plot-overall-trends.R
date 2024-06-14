@@ -157,19 +157,20 @@ g_coefs <- glmdf |> select(region, slope, lwr, upr) |> distinct() |>
   coord_cartesian(xlim = c(0.3, 1.01)) +
   theme(axis.text.y.left = element_blank(), axis.ticks.y.left = element_blank()) +
   theme(axis.title.x.bottom = element_text(size = 9)) +
-  annotate("text", x = 0.32, y = 1.1, label = "(c)")
+  annotate("text", x = 0.325, y = 1.1, label = "(c)")
 
 g_trend_panels <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
 
-#img <- magick::image_read("~/Downloads/Spiny_dogfish.jpg")
-img <- magick::image_read("Figures/test.png")
-dog_image <- magick::image_ggplot(img) +
+#img <- magick::image_read("figs/Spiny_dogfish.jpg")
+img <- magick::image_read("Spiny Dogfish Sketch_3D Paint.jpg")
+(dog_image <- magick::image_ggplot(img) +
   # theme(axis.text = element_text()) +
-  annotate("text", x = 115, y = 410, label = "(a)")
-  #         , colour = "white")
-
+  annotate("text",
+           x = 355, y = 1510,
+           # x = 115, y = 410, colour = "white",
+           label = "(a)"
+  ))
 g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heights = c(1.4, 3, 1))
-
 
 g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
 print(g)
