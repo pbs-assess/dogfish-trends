@@ -99,7 +99,9 @@ fit_trawl_region <- function(dd) {
   fit
   sanity(fit)
   b2 <- tidy(fit, "ran_pars", model = 2)
-  if (b2$estimate[b2$term == "sigma_O"] < 0.01) { # sometimes collapses here
+  sigO <- b2$estimate[b2$term == "sigma_O"]
+  sigOse <- b2$std.error[b2$term == "sigma_O"]
+  if (sigO < 0.01 || sigOse / sigO > 3) { # sometimes collapses here
     fit <- update(fit, spatial = list("on", "off"))
   }
   sanity(fit)

@@ -10,6 +10,10 @@ source("analysis/999-colours-etc.R")
 fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
 fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix.rds")
 
+purrr::walk(fit_reg, \(x) sanity(x$fit))
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, "ran_pars", model = 1, conf.int = TRUE), .id = "region")
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, "ran_pars", model = 2, conf.int = TRUE), .id = "region")
+
 fits <- c(fit_reg, list(fit_coast))
 names(fits) <- c(names(fit_reg), "Coast")
 
@@ -22,10 +26,15 @@ coefs <- purrr::map_dfr(seq_along(fits), function(i) {
     x1 <- tidy(x$fit, "ran_pars", model = 1, conf.int = TRUE)
     x2 <- tidy(x$fit, "ran_pars", model = 2, conf.int = TRUE)
   }
+
   x1$term[1] <- "spatial range"
   x1$term[2] <- "spatiotemporal range"
-  x2$term[1] <- "spatial range"
-  x2$term[2] <- "spatiotemporal range"
+  if (sum(grepl("range", x2$term)) == 2L) {
+    x2$term[1] <- "spatial range"
+    x2$term[2] <- "spatiotemporal range"
+  } else {
+    x2$term[1] <- "spatiotemporal range"
+  }
   x1$linear_predictor <- 1
   x2$linear_predictor <- 2
   x <- bind_rows(list(x1, x2)) |> select(-std.error)
