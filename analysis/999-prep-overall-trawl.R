@@ -5,6 +5,11 @@ library(dplyr)
 library(tidyr)
 library(sdmTMB)
 
+coast_crs  <- paste0(
+  "+proj=aea +lat_0=48 +lon_0=-133 +lat_1=38.5 ",
+  "+lat_2=56 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+)
+
 prep_trawl_dat_and_grid <- function() {
   df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
     drop_na(area_swept_m2) |>
@@ -18,7 +23,7 @@ prep_trawl_dat_and_grid <- function() {
 
   df$depth_m <- exp(df$logbot_depth)
   range(df$depth_m)
-  df2 <- add_utm_columns(df, units = "km", utm_crs = 32607) %>%
+  df2 <- add_utm_columns(df, units = "km", utm_crs = coast_crs) %>%
     rename("UTM.lon" = "X", "UTM.lat" = "Y")
 
   group_by(df2, survey_name) |>
@@ -48,7 +53,7 @@ prep_trawl_dat_and_grid <- function() {
     drop_na()
   range(grid2$bot_depth)
 
-  grid <- add_utm_columns(grid2, units = "km", utm_crs = 32607) %>%
+  grid <- add_utm_columns(grid2, units = "km", utm_crs = coast_crs) %>%
     rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
     mutate(
       UTM.lon = round(UTM.lon, 3)

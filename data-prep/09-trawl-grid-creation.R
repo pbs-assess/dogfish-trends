@@ -21,6 +21,21 @@ GOAcrs <- 32607
 BCcrs <- 32609
 grid_spacing <- 4000
 
+df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
+quantile(df$latitude, 1/6)
+quantile(df$latitude, 5/6)
+mean(df$latitude)
+mean(df$longitude)
+
+
+# coast_crs <- 32607
+
+# this is Albers based on means and quantiles from the trawl data
+coast_crs  <- paste0(
+  "+proj=aea +lat_0=48 +lon_0=-133 +lat_1=38.5 ",
+  "+lat_2=56 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+)
+
 # Regional: create prediction grid GOA ---------------------------------------------------------------------
 # this grid is maybe too big? Could use it if we wanted to keep it consistent with NOAA
 predgrid <- readRDS("data-raw/GOAThorsonGrid_Less700m.rds")
@@ -77,8 +92,8 @@ gridgoa <- sdmTMB::add_utm_columns(grid,
   rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
   mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
 
-ggplot(gridgoa, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
-  geom_raster() # doesn't work, needs to be spaced evenly
+# ggplot(gridgoa, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
+#   geom_raster() # doesn't work, needs to be spaced evenly
 ggplot(gridgoa, aes(UTM.lon, UTM.lat, col = log(bot_depth))) +
   geom_point()
 
@@ -223,7 +238,7 @@ gridnwfsc <-
   distinct(.keep_all = TRUE) |>
   sdmTMB::add_utm_columns(
     ll_names = c("Cent.Long", "Cent.Lat"),
-    units = "km", utm_crs = 32607
+    units = "km", utm_crs = coast_crs
   ) |>
   rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
   dplyr::select(UTM.lon, UTM.lat, survey_name) |>
@@ -236,7 +251,7 @@ gridgoa <-
   distinct(.keep_all = TRUE) |>
   sdmTMB::add_utm_columns(
     ll_names = c("Cent.Long", "Cent.Lat"),
-    units = "km", utm_crs = 32607
+    units = "km", utm_crs = coast_crs
   ) |>
   rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
   dplyr::select(UTM.lon, UTM.lat, survey_name) |>
@@ -249,7 +264,7 @@ bcpred <- gfplot::synoptic_grid |>
   mutate(longitude = X, latitude = Y, X = X * 1000, Y = Y * 1000) |>
   distinct(.keep_all = TRUE) |>
   st_as_sf(coords = c("X", "Y"), crs = 32609) |>
-  st_transform(crs = 32607) |>
+  st_transform(crs = coast_crs) |>
   rename("UTM.lon" = "longitude", "UTM.lat" = "latitude") |>
   dplyr::select(UTM.lon, UTM.lat, survey_name) |>
   mutate(region = "BC")
@@ -270,7 +285,7 @@ coastalgrid <- rbind(gridnwfsc, gridbc, gridgoa) |>
 ggplot(data = coastalgrid, aes(UTM.lon, UTM.lat, colour = region)) +
   geom_point(size = 0.5)
 
-coastalgrid_sf <- st_as_sf(coastalgrid, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607)
+coastalgrid_sf <- st_as_sf(coastalgrid, coords = c("UTM.lon.m", "UTM.lat.m"), crs = coast_crs)
 hulls <- concaveman::concaveman(coastalgrid_sf)
 plot(hulls)
 # add a small buffer
@@ -298,7 +313,7 @@ center_extent3 <- center_extent2 |>
   mutate(UTM.lon = UTM.lon.m / 1000, UTM.lat = UTM.lat.m / 1000) |>
   # select(-FID) |>
   distinct(.keep_all = TRUE)
-st_crs(center_extent3) <- 32607
+st_crs(center_extent3) <- coast_crs
 center_extent4 <- st_transform(center_extent3, crs = "+proj=longlat + datum=WGS84")
 center_extent5 <- center_extent4 |>
   mutate(longitude = st_coordinates(center_extent4)[, 1]) |>
@@ -320,7 +335,7 @@ depthpoints_center[duplicated(depthpoints_center), ] # just checking
 
 # join the points back to the grid so I can predict on the grid
 grid2 <- st_join(grid_extent2,
-  st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607),
+  st_as_sf(depthpoints_center, coords = c("UTM.lon.m", "UTM.lat.m"), crs = coast_crs),
   join = st_contains
 ) |>
   drop_na(logbot_depth) |>
@@ -370,7 +385,7 @@ gmas_PIDs <- data.frame(PID = c(1, seq(3, 9, 1)), GMAs = c(
 gma <- major |>
   left_join(gmas_PIDs) |>
   st_as_sf(coords = c("X", "Y"), crs = 4326) |>
-  st_transform(crs = 32607) |>
+  st_transform(crs = coast_crs) |>
   group_by(GMAs) |>
   summarise(geometry = st_combine(geometry)) |>
   st_cast("POLYGON") |>
@@ -380,19 +395,28 @@ plot(st_geometry(gma))
 gridnew$UTM.lon.m <- gridnew$UTM.lon * 1000
 gridnew$UTM.lat.m <- gridnew$UTM.lat * 1000
 
-gridtest <- st_as_sf(gridnew, coords = c("UTM.lon.m", "UTM.lat.m"), crs = 32607)
+gridtest <- st_as_sf(gridnew, coords = c("UTM.lon.m", "UTM.lat.m"), crs = coast_crs)
 gma <- gma |> mutate(region = "BC")
 gridregion <- st_join(gridtest, gma)
 
 ggplot(gridregion, aes(UTM.lon, UTM.lat, col = region)) +
   geom_tile()
 
+if(coast_crs == 32607) {
 gridregion <- gridregion |>
   mutate(region = ifelse(is.na(region) == TRUE & UTM.lat > 6085.07, "GOA",
     ifelse(is.na(region) == TRUE & UTM.lat < 5600, "nwfsc",
       region
     )
   ))
+} else {
+  gridregion <- gridregion |>
+    mutate(region = ifelse(is.na(region) == TRUE & UTM.lat > 100, "GOA",
+                           ifelse(is.na(region) == TRUE & UTM.lat < 100, "nwfsc",
+                                  region
+                           )
+    ))
+}
 
 ggplot(gridregion, aes(UTM.lon, UTM.lat, col = region)) +
   geom_tile()
@@ -400,6 +424,6 @@ ggplot(gridregion, aes(UTM.lon, UTM.lat, col = region)) +
 gridregion <- gridregion |>
   filter(is.na(region) != TRUE)
 
-st_write(gridregion, "output/coasttrawlgrid_test.shp")
+# st_write(gridregion, "output/coasttrawlgrid_test.shp")
 gridregion <- st_drop_geometry(gridregion)
 saveRDS(gridregion, "output/prediction_grid_coastaltl_new.rds")
