@@ -1,11 +1,20 @@
 # create a IPHC grid
 
 # params
-Coastalcrs <- 32609
 gridsize <- 3000
 buffersize <- 25000
 mindepth <- 11
 maxdepth <- 1096
+
+
+
+# this is Albers based on means and quantiles from the trawl data
+new_crs  <- paste0(
+  "+proj=aea +lat_0=48 +lon_0=-133 +lat_1=38.5 ",
+  "+lat_2=56 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+)
+# orginal_crs <- 32609
+orginal_crs <- new_crs
 
 # library -----------------------------------------------------------------
 library(sf)
@@ -45,7 +54,12 @@ iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 
 # make the grid function
 iphcgridfunc <- function(iphc, iphcreg) {
-  iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs) # change to coastalcrs object
+  iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = orginal_crs) # change to orginal_crs object
+
+  browser()
+
+  iphcgrid_sf <- st_transform(iphcgrid_sf, crs = new_crs)
+
   plot(st_geometry(iphcgrid_sf))
   hullsa <- concaveman::concaveman(filter(iphcgrid_sf, iphc.reg.area %in% c("2A", "2B", "2C")))
   hulls3a <- concaveman::concaveman(filter(iphcgrid_sf, iphc.reg.area %in% c("3A", "3B", "2C")))
@@ -81,8 +95,11 @@ iphcgridfunc <- function(iphc, iphcreg) {
     ) |>
     st_drop_geometry()
 
-  # Use get.depth to get the depth for each point
-  suppressWarnings(bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1, keep = TRUE))
+  # browser()
+
+  # # Use get.depth to get the depth for each point
+  # suppressWarnings(bio_depth <- getNOAA.bathy(lon1 = -170, lon2 = -120, lat1 = 30, lat2 = 70, resolution = 1, keep = TRUE))
+  suppressWarnings(bio_depth <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resolution = 1, keep = TRUE))
 
   df_depths <- marmap::get.depth(bio_depth, df[, c("long", "lat")], locator = FALSE) %>%
     mutate(bot_depth = (depth * -1)) %>%
@@ -98,13 +115,13 @@ iphcgridfunc <- function(iphc, iphcreg) {
   grid1 <- add_utm_columns(df_depths,
     ll_names = c("longitude", "latitude"),
     utm_names = c("UTM.lon", "UTM.lat"),
-    utm_crs = Coastalcrs
+    utm_crs = new_crs
   ) %>%
     mutate(UTM.lon.m = UTM.lon * 1000, UTM.lat.m = UTM.lat * 1000)
 
   # join the points back to the grid so I can predict on the grid
   grid2 <- st_join(grid_extent,
-    st_as_sf(grid1, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs),
+    st_as_sf(grid1, coords = c("UTM.lon.m", "UTM.lat.m"), crs = new_crs),
     join = st_contains
   ) %>%
     drop_na(depth) %>%
@@ -117,12 +134,13 @@ iphcgridfunc <- function(iphc, iphcreg) {
 
   # intersect with plot of IPHC regulation areas
   # # this file is from the website: https://www.iphc.int/data/geospatial-data/
-  iphcreg_p <- st_transform(iphcreg, crs = Coastalcrs)
+  iphcreg_p <- st_transform(iphcreg, crs = new_crs)
 
-  grid3 <- st_as_sf(grid2, coords = c("UTM.lon.m", "UTM.lat.m"), crs = Coastalcrs)
+  grid3 <- st_as_sf(grid2, coords = c("UTM.lon.m", "UTM.lat.m"), crs = new_crs)
   grid4 <- st_intersection(grid3, iphcreg_p) |>
     filter(ET_ID != "4A") |>
     mutate(depth_m_log = log(bot_depth), area_km = as.numeric(area_km))
+
 
   grid4_ras <- grid4 %>%
     mutate(across(c(UTM.lon, UTM.lat), \(x) round(x, digits = 2)))
