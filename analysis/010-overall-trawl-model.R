@@ -18,23 +18,47 @@ table(dat_coast$survey_name)
 # custom mesh:
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(dat_coast[, c("UTM.lon", "UTM.lat")]),
-  concave = -0.07, convex = -0.05, resolution = c(200, 200)
+  # concave = -0.07, convex = -0.05, resolution = c(200, 200)
+  concave = -0.01, convex = -0.01, resolution = c(200, 200)
 )
 plot(domain)
+
+## started with these: fit with regular lognormal_mix, but not with poisson-link
+# min_edge <- 40
+# max_edge <- 60
+#
+## so tried a finer mesh: fit for everything!
+min_edge <- 30
+max_edge <- 55
+
 mesh3 <- fmesher::fm_mesh_2d_inla(
+  loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
   boundary = domain,
-  max.edge = c(150, 2000),
-  offset = c(150, 300),
-  cutoff = 50
+  # max.edge = c(150, 2000),
+  max.edge = c(max_edge, 1000),
+  offset = c(10, 300),
+  cutoff = min_edge
 )
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
-ggplot() + inlabru::gg(mesh$mesh) +
-  geom_point(data = dat_coast, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.07, pch = 21) +
+
+# mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), cutoff = 50)
+mesh$mesh$n
+
+# out <- INLA::inla.mesh.assessment(mesh3, spatial.range = 200, alpha = 2)
+# ggplot() + inlabru::gg(out, aes(color = sd.dev)) + coord_equal() +
+#   scale_color_gradient(limits = range(out$sd.dev, na.rm = TRUE))
+
+
+ggplot() +
+  geom_point(data = dat_coast, aes(UTM.lon, UTM.lat), size = 0.5,
+             alpha = 0.07, pch = 21) +
+  inlabru::gg(mesh$mesh) +
   xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
-ggsave("figs/trawl-model-mesh.pdf", width = 6, height = 6)
+ggsave(paste0("figs/trawl-model-mesh-",min_edge,"-", max_edge,".pdf"), width = 6, height = 6)
 ggsave("figs/trawl-model-mesh.png", width = 6, height = 6)
 
-mesh$mesh$n
+ggplot(dat_coast) +
+  geom_histogram(aes(log(catch_weight_t)))
 
 tictoc::tic()
 fit1 <- sdmTMB(
@@ -53,16 +77,16 @@ fit1 <- sdmTMB(
   silent = FALSE,
   share_range = FALSE,
   priors = sdmTMBpriors(
-    matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-    matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+    matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+    matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
   ),
 )
 tictoc::toc()
 fit1
 sanity(fit1)
 rm(dat, mesh3, domain)
-saveRDS(fit1, file = "output/fit-trawl-coast-lognormal-mix.rds")
-fit1 <- readRDS("output/fit-trawl-coast-lognormal-mix.rds")
+saveRDS(fit1, file = paste0("output/fit-trawl-coast-lognormal-mix-",min_edge,"-", max_edge,".rds"))
+fit1 <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-",min_edge,"-", max_edge,".rds"))
 
 p1 <- get_pars(fit1)
 plogis(p1$logit_p_mix)
@@ -80,8 +104,8 @@ tictoc::tic()
 fit4 <- update(fit1, family = delta_lognormal_mix(type = "poisson-link"))
 tictoc::toc()
 
-saveRDS(fit4, file = "output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
-fit4 <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+saveRDS(fit4, file = paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-",min_edge,"-", max_edge,".rds"))
+fit4 <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-",min_edge,"-", max_edge,".rds"))
 
 AIC(fit1, fit4)
 
@@ -153,8 +177,8 @@ fitq <- sdmTMB(
     b = normal(c(NA, NA, NA, 0, 0, 0), c(NA, NA, NA, 1, 1, 1))
   ),
 )
-saveRDS(fitq, "output/fit-trawl-coast-lognormal-mix-poisson-link-q.rds")
-fitq <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-q.rds")
+saveRDS(fitq, paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-q-",min_edge,"-", max_edge,".rds"))
+fitq <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-q-",min_edge,"-", max_edge,".rds"))
 AIC(fit4, fitq)
 sanity(fitq)
 fitq
@@ -198,7 +222,7 @@ index <- do.call(rbind, index_l)
 index_l <- lapply(yy, \(y) {
   cat(y, "\n")
   nd <- dplyr::filter(grid, year %in% y)
-  pred <- predict(fit4, newdata = nd, return_tmb_object = TRUE)
+  pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
   gc()
   ind
@@ -247,6 +271,9 @@ bind_rows(
   mutate(index_reg, model = "No catchability effects"),
   mutate(index_regq, model = "With catchability effects")
 ) |>
+  # ggplot() + geom_line(aes(year, est, colour = model)) +
+  # geom_ribbon(aes(year, ymin = lwr, ymax = upr, fill = model), alpha = 0.2) +
+  # facet_wrap(~region)
   saveRDS("output/trawl-indexes-with-catchability.rds")
 
 ind <- bind_rows(mutate(index, region = "Coast"), index_reg)

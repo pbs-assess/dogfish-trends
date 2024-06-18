@@ -7,7 +7,7 @@ dir.create("figs", showWarnings = FALSE)
 
 d <- readRDS("output/IPHC_coastdata.rds")
 d$offset <- log(d$hooksobserved2) # no hook comp
-# grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #two options, full
+# grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #full doesn't have updated projection
 grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") #this one doesn't extend as far south in the NW US
 
 grid$depth_m <- grid$bot_depth
@@ -21,22 +21,33 @@ test_resids_sim <- function(x, .n = 300) {
 # custom mesh:
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(d[, c("UTM.lon", "UTM.lat")]),
-  concave = -0.07, convex = -0.05, resolution = c(200, 200)
+  concave = -0.01, convex = -0.01, resolution = c(200, 200)
 )
 plot(domain)
+
+# try what worked for trawl
+min_edge <- 30
+max_edge <- 55
+
 mesh3 <- fmesher::fm_mesh_2d_inla(
+  loc = as.matrix(d[,c("UTM.lon","UTM.lat")]),
   boundary = domain,
-  max.edge = c(130, 2000),
-  offset = c(130, 300),
-  cutoff = 40
+  # max.edge = c(130, 2000),
+  max.edge = c(max_edge, 1000),
+  offset = c(10, 300),
+  cutoff = min_edge
 )
+
 mesh <- make_mesh(d, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
 mesh$mesh$n
 
-ggplot() + inlabru::gg(mesh$mesh) +
-  geom_point(data = d, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.07, pch = 21) +
+ggplot() +
+  geom_point(data = d, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.1, pch = 21) +
+  inlabru::gg(mesh$mesh) +
   xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+
+ggsave(paste0("figs/iphc-model-mesh-", min_edge,"-", max_edge,".pdf"), width = 6, height = 6)
 ggsave("figs/iphc-model-mesh.pdf", width = 6, height = 6)
 ggsave("figs/iphc-model-mesh.png", width = 6, height = 6)
 
@@ -53,14 +64,17 @@ fit <- sdmTMB(
   silent = FALSE,
   share_range = FALSE,
   priors = sdmTMBpriors(
-    matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-    matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+    matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+    matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
   )
 )
 toc()
 
-saveRDS(fit, file = "output/fit-iphc-nb2-coastwide.rds")
-fit <- readRDS("output/fit-iphc-nb2-coastwide.rds")
+sanity(fit)
+
+saveRDS(fit, file = paste0("output/fit-iphc-nb2-coastwide-",min_edge,"-", max_edge,".rds"))
+# fit_old <- readRDS("output/fit-iphc-nb2-coastwide-old-mesh.rds")
+fit <- readRDS(paste0("output/fit-iphc-nb2-coastwide-",min_edge,"-", max_edge,".rds"))
 
 set.seed(1)
 test_resids_sim(fit)
@@ -153,7 +167,7 @@ ret <- lapply(regions, \(r) {
 out <- bind_rows(ret, .id = "region")
 
 saveRDS(out, file = "output/indexes-iphc-nb2-coastwide.rds")
-
+# out <- readRDS(file = "output/indexes-iphc-nb2-coastwide.rds")
 
 g <- d |> filter(cpue > 0) |> ggplot(aes(UTM.lon, UTM.lat)) + geom_point(data = gg,mapping= aes(UTM.lon, UTM.lat), colour = "red") + geom_point() + facet_wrap(~year) + coord_fixed()
 ggsave("figs/iphc-sets.png", width = 12, height = 12)
