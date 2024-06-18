@@ -27,15 +27,15 @@ library(gfiphc)
 
 # Create prediction grid from hull  --------------------------------------------------
 
-# version 1
-iphc <- readRDS("output/IPHC_coastdata.rds") %>%
-  mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
-# path <- "output/PredictionGrid_IPHCcoast.shp"
-path_center <- "output/PredictionGridCentres_IPHCcoast.shp"
-path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths.rds"
-path_final <- "output/PredictionGridCentres_IPHCcoast_regarea.rds"
-# this file is from the website: https://www.iphc.int/data/geospatial-data/
-iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
+# # version 1
+# iphc <- readRDS("output/IPHC_coastdata.rds") %>%
+#   mutate(UTM.lat.m = UTM.lat * 1000, UTM.lon.m = UTM.lon * 1000)
+# # path <- "output/PredictionGrid_IPHCcoast.shp"
+# path_center <- "output/PredictionGridCentres_IPHCcoast.shp"
+# path_centerswithdepths <- "output/PredictionGridCentres_IPHCcoast_wdepths.rds"
+# path_final <- "output/PredictionGridCentres_IPHCcoast_regarea.rds"
+# # this file is from the website: https://www.iphc.int/data/geospatial-data/
+# iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 
 # version 2 with NW US trimmed as it extends far in a couple years and starts a year later
 iphc <- readRDS("output/IPHC_coastdata.rds") %>%
@@ -55,8 +55,6 @@ iphcreg <- st_read("data-raw/IPHC_RegulatoryAreas_PDC.shp")
 # make the grid function
 iphcgridfunc <- function(iphc, iphcreg) {
   iphcgrid_sf <- st_as_sf(iphc, coords = c("UTM.lon.m", "UTM.lat.m"), crs = orginal_crs) # change to orginal_crs object
-
-  browser()
 
   iphcgrid_sf <- st_transform(iphcgrid_sf, crs = new_crs)
 
