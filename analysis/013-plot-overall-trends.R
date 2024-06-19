@@ -51,11 +51,17 @@ nd <- readRDS("output/prediction_grid_hs.rds") |>
 p <- predict(fit_syn, newdata = nd, return_tmb_object = TRUE)
 hs_2003_from_syn <- get_index(p, bias_correct = TRUE, area = nd$area_km)
 
-hs_syn_ratio <- hs_2003_from_syn$est/ind_hs[ind_hs$year == 2003,]$est
+ind_syn <- readRDS("output/trawl-coast-indexes.rds") |>
+  filter(year == 2003 & region == "British Columbia" &
+           model == "Region-specific" & subregion == "Region-specific")
+
+hs_syn_ratio <- hs_2003_from_syn$est/ind_syn$est
 
 # trawl index ---------------------------------------------------------------
 
 ind <- readRDS("output/trawl-coast-indexes.rds")
+
+
 
 ind <- ind |> #filter(subregion != "Hecate (subregion)") |>
   group_by(region, subregion, model) |>
@@ -66,9 +72,10 @@ ind <- ind |> #filter(subregion != "Hecate (subregion)") |>
     upr = upr / geo_mean
   )
 
-ind[ind$subregion== "Hecate (subregion)",]$est <- ind[ind$subregion== "Hecate (subregion)",]$est * hs_syn_ratio
-ind[ind$subregion== "Hecate (subregion)",]$lwr <- ind[ind$subregion== "Hecate (subregion)",]$lwr * hs_syn_ratio
-ind[ind$subregion== "Hecate (subregion)",]$upr <- ind[ind$subregion== "Hecate (subregion)",]$upr * hs_syn_ratio
+## if you want to scale by proportion of BC represented by HS
+# ind[ind$subregion== "Hecate (subregion)",]$est <- ind[ind$subregion== "Hecate (subregion)",]$est * hs_syn_ratio
+# ind[ind$subregion== "Hecate (subregion)",]$lwr <- ind[ind$subregion== "Hecate (subregion)",]$lwr * hs_syn_ratio
+# ind[ind$subregion== "Hecate (subregion)",]$upr <- ind[ind$subregion== "Hecate (subregion)",]$upr * hs_syn_ratio
 
 ind <- ind |>
   mutate(region = factor(region,
