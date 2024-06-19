@@ -3,7 +3,8 @@ library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
-
+set_starting_year <- 1983
+set_starting_year_iphc <- 1995
 # map -----------------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
@@ -14,8 +15,8 @@ coast <- sf::st_crop(
   c(xmin = -175, ymin = 20, xmax = -115, ymax = 70)
 )
 
-coast_proj <- sf::st_transform(coast, crs = coast_crs)
-df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = coast_crs) |>
+coast_proj <- sf::st_transform(coast, crs = 32612)
+df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
   filter(!survey_name %in% c("msa bc")) |>
   mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
   mutate(survey_name = gsub("Triennial", "NWFSC", survey_name)) |>
@@ -48,20 +49,26 @@ nd <- readRDS("output/prediction_grid_hs.rds") |>
     year = 2003L
   )
 p <- predict(fit_syn, newdata = nd, return_tmb_object = TRUE)
-syn_2003 <- get_index(p, bias_correct = TRUE, area = nd$area_km)
+hs_2003_from_syn <- get_index(p, bias_correct = TRUE, area = nd$area_km)
+
+hs_syn_ratio <- hs_2003_from_syn$est/ind_hs[ind_hs$year == 2003,]$est
 
 # trawl index ---------------------------------------------------------------
 
 ind <- readRDS("output/trawl-coast-indexes.rds")
 
-ind <- ind |> filter(subregion != "Hecate (subregion)") |>
-  group_by(region, model) |>
+ind <- ind |> #filter(subregion != "Hecate (subregion)") |>
+  group_by(region, subregion, model) |>
   mutate(geo_mean = exp(mean(log_est[year >= 2003]))) |>
   mutate(
     est = est / geo_mean,
     lwr = lwr / geo_mean,
     upr = upr / geo_mean
   )
+
+ind[ind$subregion== "Hecate (subregion)",]$est <- ind[ind$subregion== "Hecate (subregion)",]$est * hs_syn_ratio
+ind[ind$subregion== "Hecate (subregion)",]$lwr <- ind[ind$subregion== "Hecate (subregion)",]$lwr * hs_syn_ratio
+ind[ind$subregion== "Hecate (subregion)",]$upr <- ind[ind$subregion== "Hecate (subregion)",]$upr * hs_syn_ratio
 
 ind <- ind |>
   mutate(region = factor(region,
@@ -96,10 +103,11 @@ gg_trawl <- filter(ind, model == "Combined") |>
   ggplot(aes(year, est, group = model, colour = region, ymin = lwr, ymax = upr)) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = cols_region3) +
-  geom_pointrange(data = filter(ind, model != "Combined"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey40", alpha = 0.6) +
+  geom_pointrange(data = filter(ind, model != "Combined", subregion == "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey70", alpha = 0.6) +
+  geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey30", alpha = 0.6) +
   geom_pointrange(
     size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1992, 2024)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year-1, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
@@ -147,7 +155,7 @@ gg_iphc <-
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1993, 2024)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year_iphc, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
