@@ -7,8 +7,9 @@ source("analysis/999-colours-etc.R")
 
 # param table ---------------------------------------------------------------
 
-fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
-fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix.rds")
+# fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
+fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
+fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
 
 purrr::walk(fit_reg, \(x) sanity(x$fit))
 purrr::map_dfr(fit_reg, \(x) tidy(x$fit, "ran_pars", model = 1, conf.int = TRUE), .id = "region")
@@ -27,8 +28,13 @@ coefs <- purrr::map_dfr(seq_along(fits), function(i) {
     x2 <- tidy(x$fit, "ran_pars", model = 2, conf.int = TRUE)
   }
 
-  x1$term[1] <- "spatial range"
-  x1$term[2] <- "spatiotemporal range"
+  if (sum(grepl("range", x1$term)) == 2L) {
+    x1$term[1] <- "spatial range"
+    x1$term[2] <- "spatiotemporal range"
+  } else {
+    x1$term[1] <- "spatiotemporal range"
+  }
+
   if (sum(grepl("range", x2$term)) == 2L) {
     x2$term[1] <- "spatial range"
     x2$term[2] <- "spatiotemporal range"
@@ -66,6 +72,11 @@ coefs |>
 ggsave("figs/coefs.pdf", width = 8, height = 5)
 
 # depth plots ---------------------------------------------------------------
+
+# look at coefficients
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 1, conf.int = TRUE), .id = "region")
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 2, conf.int = TRUE), .id = "region")
+
 
 dd <- c(
   seq(min(dat$depth_m), 400, length.out = 110),
