@@ -26,7 +26,8 @@ domain <- fmesher::fm_nonconvex_hull_inla(
 plot(domain)
 
 # try what worked for trawl
-min_edge <- 30
+# min_edge <- 30
+min_edge <- 50
 max_edge <- 55
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
