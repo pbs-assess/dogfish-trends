@@ -3,8 +3,8 @@ library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
-set_starting_year <- 1983
-set_starting_year_iphc <- 1995
+set_starting_year <- 1980
+set_starting_year_iphc <- 1997
 # map -----------------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
@@ -18,14 +18,21 @@ coast <- sf::st_crop(
 coast_proj <- sf::st_transform(coast, crs = 32612)
 df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
   filter(!survey_name %in% c("msa bc")) |>
+  # mutate(survey_name = gsub("msa bc", "HS", survey_name)) |>
   mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
   mutate(survey_name = gsub("Triennial", "NWFSC", survey_name)) |>
   mutate(survey_name = gsub("NWFSC.Combo.pass1", "NWFSC", survey_name)) |>
   mutate(survey_name = gsub("NWFSC.Combo.pass2", "NWFSC", survey_name))
 
+df_hs <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
+  filter(survey_abbrev %in% c("HS MSA"))
+
 pnw <- ggplot() +
   geom_point(data = filter(df, year %in% c(2003, 2004, 2006, 2007)), aes(X, Y,
     col = survey_name), size = 0.02) +
+  ## if needing to show HS too
+  # geom_point(data = filter(df_hs, year %in% c(2003)), aes(X, Y),
+  #            colour = "black", alpha = 0.5, size = 0.02) +
   geom_sf(data = coast_proj, colour = "grey70", fill = "grey90") +
   xlim(range(df$X) + c(-300000, 10000)) +
   ylim(range(df$Y) + c(-10000, 1000000)) +
@@ -34,33 +41,11 @@ pnw <- ggplot() +
   scale_colour_manual(values = cols_region2) +
   annotate("text", x = min(df$X) - 100000 + 90000, y = max(df$Y) + 1000000, label = "(b)")
 
-# prep HS subregional model
-ind_hs <- readRDS("output/trawl-coast-indexes.rds") |> filter(subregion == "Hecate (subregion)")
-
-fit_syn <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")[["BC"]]$fit
-
-nd <- readRDS("output/prediction_grid_hs.rds") |>
-  add_utm_columns(units = "km", utm_crs = coast_crs) %>%
-  rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
-  mutate(
-    UTM.lon = round(UTM.lon, 3),
-    X = UTM.lon, Y = UTM.lat,
-    depth_m  = bot_depth,
-    year = 2003L
-  )
-p <- predict(fit_syn, newdata = nd, return_tmb_object = TRUE)
-hs_2003_from_syn <- get_index(p, bias_correct = TRUE, area = nd$area_km)
-
-ind_syn <- readRDS("output/trawl-coast-indexes.rds") |>
-  filter(year == 2003 & region == "British Columbia" &
-           model == "Region-specific" & subregion == "Region-specific")
-
-hs_syn_ratio <- hs_2003_from_syn$est/ind_syn$est
+pnw
 
 # trawl index ---------------------------------------------------------------
 
 ind <- readRDS("output/trawl-coast-indexes.rds")
-
 
 ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   group_by(region, subregion, model) |>
@@ -68,11 +53,17 @@ ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   mutate(
     est = est / geo_mean,
     lwr = lwr / geo_mean,
-    upr = upr / geo_mean
+    upr = upr / geo_mean,
+    upr = ifelse(upr > 3.9, 3.9, upr)
   )
 
+# if(FALSE){
+# prep HS subregional model
+ind_hs <- readRDS("output/trawl-coast-indexes.rds") |>
+  filter(subregion == "Hecate (subregion)")
+
 ind_hs2 <- ind_hs |>
-  mutate(geo_mean = exp(mean(log_est))) |>
+  mutate(geo_mean = exp(mean(log_est[year == 2003]))) |>
   mutate(
     est = est / geo_mean,
     lwr = lwr / geo_mean,
@@ -81,8 +72,33 @@ ind_hs2 <- ind_hs |>
 
 hs_to_syn_offset <- ind[ind$region == "British Columbia",]$est[1]-ind_hs2$est[length(ind_hs2$est)]
 
-### adjusted for ratio of population
+# get offset ratio, if wanted
+if(FALSE){
+  fit_syn <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")[["BC"]]$fit
+
+  nd <- readRDS("output/prediction_grid_hs.rds") |>
+    add_utm_columns(units = "km", utm_crs = coast_crs) %>%
+    rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
+    mutate(
+      UTM.lon = round(UTM.lon, 3),
+      X = UTM.lon, Y = UTM.lat,
+      depth_m  = bot_depth,
+      year = 2003L
+    )
+  p <- predict(fit_syn, newdata = nd, return_tmb_object = TRUE)
+  hs_2003_from_syn <- get_index(p, bias_correct = TRUE, area = nd$area_km)
+
+  ind_syn <- readRDS("output/trawl-coast-indexes.rds") |>
+    filter(year == 2003 & region == "British Columbia" &
+             model == "Region-specific" & subregion == "Region-specific")
+
+  hs_syn_ratio <- hs_2003_from_syn$est/ind_syn$est
+
+
+### adjust offset for ratio of population present in HS
 hs_to_syn_offset <- hs_syn_ratio*(ind[ind$region == "British Columbia",]$est[1])-ind_hs2$est[length(ind_hs2$est)]
+}
+
 
 ind_hs2$est <- ind_hs2$est + hs_to_syn_offset
 ind_hs2$lwr <- ind_hs2$lwr + hs_to_syn_offset
@@ -92,6 +108,7 @@ ind_hs2$upr <- ind_hs2$upr + hs_to_syn_offset
 ind <- bind_rows(ind, ind_hs2) |>
   mutate(region = factor(region,
     levels = c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast")))
+# }
 
 glmdf <- ind |> filter(year >= 2005, model == "Combined") |>
   group_by(region) |>
@@ -122,11 +139,14 @@ gg_trawl <- filter(ind, model == "Combined") |>
   ggplot(aes(year, est, group = model, colour = region, ymin = lwr, ymax = upr)) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = cols_region3) +
-  geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey30", alpha = 0.6) +
-  geom_pointrange(data = filter(ind, subregion == "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey70", alpha = 0.6) +
+  geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"),
+                  mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey50", alpha = 0.6) +
+  geom_pointrange(data = filter(ind, subregion == "Hecate (subregion)"),
+                  mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey75", alpha = 0.6) +
   geom_pointrange(
     size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year-1, 2024)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE,
+                  xlim = c(set_starting_year-1, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
@@ -174,7 +194,7 @@ gg_iphc <-
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year_iphc, 2024)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year_iphc, 2023)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
@@ -219,5 +239,5 @@ g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heig
 g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
 print(g)
 
-ggsave("figs/overall-survey-trends-offset.pdf", width = 6.7, height = 5.4)
+ggsave("figs/overall-survey-trends-julian-iphc50.pdf", width = 6.7, height = 5.4)
 # ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
