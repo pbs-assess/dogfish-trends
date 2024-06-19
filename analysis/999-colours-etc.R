@@ -49,10 +49,11 @@ clean_region_names <- function(x) {
   x$region <- gsub("^Coast$", "Coastwide", x$region)
   x$region <- gsub("GOA", "Gulf of Alaska", x$region)
   x$region <- gsub("BC", "British Columbia", x$region)
+  x$region <- gsub("HS", "Hecate Strait", x$region)
   x$region <- gsub("NWFSC", "US West Coast", x$region)
   x <- x |>
     mutate(region = factor(region,
-      levels = rev(c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast"))))
+      levels = rev(c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast", "Hecate Strait"))))
   x
 }
 
