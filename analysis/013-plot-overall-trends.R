@@ -62,8 +62,7 @@ hs_syn_ratio <- hs_2003_from_syn$est/ind_syn$est
 ind <- readRDS("output/trawl-coast-indexes.rds")
 
 
-
-ind <- ind |> #filter(subregion != "Hecate (subregion)") |>
+ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   group_by(region, subregion, model) |>
   mutate(geo_mean = exp(mean(log_est[year >= 2003]))) |>
   mutate(
@@ -72,12 +71,25 @@ ind <- ind |> #filter(subregion != "Hecate (subregion)") |>
     upr = upr / geo_mean
   )
 
-## if you want to scale by proportion of BC represented by HS
-# ind[ind$subregion== "Hecate (subregion)",]$est <- ind[ind$subregion== "Hecate (subregion)",]$est * hs_syn_ratio
-# ind[ind$subregion== "Hecate (subregion)",]$lwr <- ind[ind$subregion== "Hecate (subregion)",]$lwr * hs_syn_ratio
-# ind[ind$subregion== "Hecate (subregion)",]$upr <- ind[ind$subregion== "Hecate (subregion)",]$upr * hs_syn_ratio
+ind_hs2 <- ind_hs |>
+  mutate(geo_mean = exp(mean(log_est))) |>
+  mutate(
+    est = est / geo_mean,
+    lwr = lwr / geo_mean,
+    upr = upr / geo_mean
+  )
 
-ind <- ind |>
+hs_to_syn_offset <- ind[ind$region == "British Columbia",]$est[1]-ind_hs2$est[length(ind_hs2$est)]
+
+### adjusted for ratio of population
+hs_to_syn_offset <- hs_syn_ratio*(ind[ind$region == "British Columbia",]$est[1])-ind_hs2$est[length(ind_hs2$est)]
+
+ind_hs2$est <- ind_hs2$est + hs_to_syn_offset
+ind_hs2$lwr <- ind_hs2$lwr + hs_to_syn_offset
+ind_hs2$upr <- ind_hs2$upr + hs_to_syn_offset
+
+
+ind <- bind_rows(ind, ind_hs2) |>
   mutate(region = factor(region,
     levels = c("Coastwide", "Gulf of Alaska", "British Columbia", "US West Coast")))
 
@@ -110,8 +122,8 @@ gg_trawl <- filter(ind, model == "Combined") |>
   ggplot(aes(year, est, group = model, colour = region, ymin = lwr, ymax = upr)) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = cols_region3) +
-  geom_pointrange(data = filter(ind, model != "Combined", subregion == "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey70", alpha = 0.6) +
   geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey30", alpha = 0.6) +
+  geom_pointrange(data = filter(ind, subregion == "Hecate (subregion)"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey70", alpha = 0.6) +
   geom_pointrange(
     size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year-1, 2024)) +
@@ -207,5 +219,5 @@ g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heig
 g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
 print(g)
 
-ggsave("figs/overall-survey-trends2.pdf", width = 6.7, height = 5.4)
-ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
+ggsave("figs/overall-survey-trends-offset.pdf", width = 6.7, height = 5.4)
+# ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
