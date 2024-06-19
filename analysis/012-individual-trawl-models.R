@@ -22,12 +22,14 @@ dat <- dat |> mutate(
 
 table(dat$survey_name)
 
+dat$julian_c <- dat$julian - 172 # centered on summer solstice
 dat$region <- ""
 dat$region[dat$survey_name %in%
     c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial")] <- "NWFSC"
 dat$region[dat$survey_name %in% c("GOA")] <- "GOA"
 dat$region[dat$survey_name %in% c("syn bc")] <- "BC"
-dat$region[dat$survey_name %in% c("msa bc")] <- "HS"
+dat$region[dat$survey_name %in% c("msa bc")] <- "BC"
+# dat$region[dat$survey_name %in% c("msa bc")] <- "HS" # use this for HS by its self
 table(dat$region)
 
 table(dat$survey_name, dat$year)
@@ -49,9 +51,9 @@ fit_trawl_region <- function(dd) {
   print(unique(dd$region))
 
   nwfsc <- any(grepl("NWFSC", dd$survey_name, ignore.case = TRUE))
-  bc <- any(grepl("syn", dd$survey_name, ignore.case = TRUE))
+  bc <- any(grepl("BC", dd$region, ignore.case = TRUE))
   goa <- any(grepl("goa", dd$survey_name, ignore.case = TRUE))
-  hs <- any(grepl("msa", dd$survey_name, ignore.case = TRUE))
+  hs <- any(grepl("HS", dd$region, ignore.case = TRUE))
   # pre 1998, there are 3 year gaps... and it's a lot to ask the
   # RW field to stitch together
   # 1998 onwards there is the NWFSC Slope survey every year to help
@@ -139,19 +141,23 @@ fit_trawl_region <- function(dd) {
                 "-",min_edge, "-", max_edge, ".png"), width = 6, height = 6)
 
   if (nwfsc) {
+    # dd$survey_name <- factor(dd$survey_name,
+    #   levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial"))
+
+    dd <- dd |> mutate(survey_name = ifelse(
+      survey_name %in% c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2"),
+      "NWFSC.Combo", survey_name))
+
     dd$survey_name <- factor(dd$survey_name,
-      levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial"))
+                             levels = c("NWFSC.Combo", "NWFSC.Slope", "Triennial"))
   }
 
-  # if (bc) {
-  #   dd$survey_name <- factor(dd$survey_name,
-  #     levels = c("syn bc", "msa bc"), labels = c("BC Synoptic", "MSA"))
-  # }
 
   if (length(unique(dd$survey_name)) > 1) {
-    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian, 2)
+
+    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
   } else {
-    f <- catch_weight_t ~ poly(log(depth_m), 2)
+    f <- catch_weight_t ~ poly(log(depth_m), 2) + poly(julian_c, 2)
   }
   table(dd$survey_name, dd$year)
 
@@ -161,8 +167,20 @@ fit_trawl_region <- function(dd) {
   if(nwfsc) set_family <- delta_lognormal_mix(type = "poisson-link")
 
   set_spatial <- "on"
-
   if(hs) set_spatial <- "off"
+  if(hs) f <- catch_weight_t ~ poly(log(depth_m), 2)
+
+  if (bc) {
+    # dd$survey_name <- factor(dd$survey_name,
+    #   levels = c("syn bc", "msa bc"), labels = c("BC Synoptic", "MSA"))
+
+    # can't estimate catchability or date effects for BC
+    f <- catch_weight_t ~ poly(log(depth_m), 2)
+
+    # needed if hs and bc combined
+    set_spatial <- "off"
+    dd$survey_name <- factor("BC Synoptic/MSA")
+  }
 
   fit <- sdmTMB(
     formula = f,
@@ -213,7 +231,7 @@ fit_trawl_region <- function(dd) {
     fit <- run_extra_optimization(fit)
   }
 
-  sanity(fit)
+  # sanity(fit)
 
   if (FALSE) {
     set.seed(1)
@@ -247,6 +265,8 @@ fit_trawl_region <- function(dd) {
   }
   }
 
+  nd$julian_c <- 0
+
   p <- predict(fit, newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(p, bias_correct = TRUE, area = nd$area_km)
   list(index = ind, fit = fit, pred = p)
@@ -254,18 +274,15 @@ fit_trawl_region <- function(dd) {
 
 # dat2 <- filter(dat, region == "NWFSC")
 # dat2 <- filter(dat, region == "GOA")
-# dat2 <- filter(dat, region %in% c("GOA","NWFSC"))
-# dat2 <- filter(dat, region == "HS")
+# dat2 <- filter(dat, region == "BC")
 #
 # out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
 # out2 <- out
-# out2 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-BC.rds")
-# out$BC <- out2$BC
 
 out <- split(dat, dat$region) |> lapply(fit_trawl_region)
 
-saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
-out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
+out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
 
 
 ind <- purrr::map_dfr(out, \(x) {
@@ -276,9 +293,9 @@ ind <- purrr::map_dfr(out, \(x) {
 
 # awkward temporary hack for HS, will update with something better
 ind$subregion <- ind$region
-ind[ind$subregion=="HS",]$region <- "BC"
+# ind[ind$subregion=="HS",]$region <- "BC"
+# ind[ind$subregion=="HS",]$subregion <- "Hecate (subregion)"
 ind[ind$subregion!="HS",]$subregion <- "Region-specific"
-ind[ind$subregion=="HS",]$subregion <- "Hecate (subregion)"
 
 out$BC$fit
 out$GOA$fit

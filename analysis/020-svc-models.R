@@ -10,14 +10,20 @@ dat_coast <- filter(dat, survey_name %in%
 # coast SVC trawl model ------------------------------------------------
 
 domain <- fmesher::fm_nonconvex_hull_inla(
-  as.matrix(dat_coast[, c("UTM.lon", "UTM.lat")]),
-  concave = -0.07, convex = -0.05, resolution = c(200, 200)
+  as.matrix(dat_coast[, c("X", "Y")]),
+  concave = -0.01, convex = -0.01, resolution = c(200, 200)
 )
+
+##
+min_edge <- 16
+max_edge <- 24
+
 mesh3 <- fmesher::fm_mesh_2d_inla(
+  loc = as.matrix(dat_coast[,c("X", "Y")]),
   boundary = domain,
-  max.edge = c(100, 2000),
-  offset = c(100, 300),
-  cutoff = 40
+  max.edge = c(max_edge, 1000),
+  offset = c(10, 300),
+  cutoff = min_edge
 )
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
