@@ -21,20 +21,13 @@ GOAcrs <- 32607
 BCcrs <- 32609
 grid_spacing <- 4000
 
-df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
-quantile(df$latitude, 1/6)
-quantile(df$latitude, 5/6)
-mean(df$latitude)
-mean(df$longitude)
-
-
 # coast_crs <- 32607
-
-# this is Albers based on means and quantiles from the trawl data
-coast_crs  <- paste0(
-  "+proj=aea +lat_0=48 +lon_0=-133 +lat_1=38.5 ",
-  "+lat_2=56 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
-)
+source("data-prep/00-set-crs.R")
+# this loads this Albers based on means and quantiles from the trawl data
+# coast_crs  <- paste0(
+#   "+proj=aea +lat_0=48 +lon_0=-133 +lat_1=38.5 ",
+#   "+lat_2=56 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+# )
 
 # Regional: create prediction grid GOA ---------------------------------------------------------------------
 # this grid is maybe too big? Could use it if we wanted to keep it consistent with NOAA
@@ -70,7 +63,7 @@ b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resol
 grid <- marmap::get.depth(b, predgrid2[, c("longitude", "latitude")], locator = FALSE) |>
   mutate(bot_depth = (depth * -1)) |>
   rename(longitude = lon, latitude = lat) |>
-  filter(bot_depth > 25) |>
+  filter(bot_depth > 15) |>
   mutate(logbot_depth = log(bot_depth)) |>
   inner_join(predgrid2, by = c("longitude" = "longitude", "latitude" = "latitude"))
 
@@ -170,7 +163,7 @@ b <- marmap::getNOAA.bathy(lon1 = -180, lon2 = -110, lat1 = 20, lat2 = 80, resol
 depthpoints_center <- marmap::get.depth(b, center_extent5[, c("longitude", "latitude")], locator = FALSE) |>
   mutate(bot_depth = (depth * -1)) |>
   rename(longitude = lon, latitude = lat) |>
-  filter(bot_depth > 25) |>
+  filter(bot_depth > 15) |>
   mutate(logbot_depth = log(bot_depth)) |>
   inner_join(center_extent5, by = c("longitude" = "longitude", "latitude" = "latitude"))
 
@@ -328,7 +321,7 @@ str(center_extent5)
 depthpoints_center <- marmap::get.depth(b, center_extent5[, c("longitude", "latitude")], locator = FALSE) |>
   mutate(bot_depth = (depth * -1)) |>
   rename(longitude = lon, latitude = lat) |>
-  filter(bot_depth > 25) |>
+  filter(bot_depth > 15) |>
   mutate(logbot_depth = log(bot_depth)) |>
   inner_join(center_extent5, by = c("longitude" = "longitude", "latitude" = "latitude"))
 depthpoints_center[duplicated(depthpoints_center), ] # just checking

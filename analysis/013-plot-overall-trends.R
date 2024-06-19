@@ -1,7 +1,7 @@
 library(dplyr)
 library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
-
+source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
 
 # map -----------------------------------------------------------------------
@@ -14,8 +14,8 @@ coast <- sf::st_crop(
   c(xmin = -175, ymin = 20, xmax = -115, ymax = 70)
 )
 
-coast_proj <- sf::st_transform(coast, crs = 32612)
-df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = 32612) |>
+coast_proj <- sf::st_transform(coast, crs = coast_crs)
+df <- sdmTMB::add_utm_columns(dat, units = "m", utm_crs = coast_crs) |>
   filter(!survey_name %in% c("msa bc")) |>
   mutate(survey_name = gsub("syn bc", "BC", survey_name)) |>
   mutate(survey_name = gsub("Triennial", "NWFSC", survey_name)) |>
@@ -33,11 +33,28 @@ pnw <- ggplot() +
   scale_colour_manual(values = cols_region2) +
   annotate("text", x = min(df$X) - 100000 + 90000, y = max(df$Y) + 1000000, label = "(b)")
 
+# prep HS subregional model
+ind_hs <- readRDS("output/trawl-coast-indexes.rds") |> filter(subregion == "Hecate (subregion)")
+
+fit_syn <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")[["BC"]]$fit
+
+nd <- readRDS("output/prediction_grid_hs.rds") |>
+  add_utm_columns(units = "km", utm_crs = coast_crs) %>%
+  rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
+  mutate(
+    UTM.lon = round(UTM.lon, 3),
+    X = UTM.lon, Y = UTM.lat,
+    depth_m  = bot_depth,
+    year = 2003L
+  )
+p <- predict(fit_syn, newdata = nd, return_tmb_object = TRUE)
+syn_2003 <- get_index(p, bias_correct = TRUE, area = nd$area_km)
+
 # trawl index ---------------------------------------------------------------
 
 ind <- readRDS("output/trawl-coast-indexes.rds")
 
-ind <- ind |>
+ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   group_by(region, model) |>
   mutate(geo_mean = exp(mean(log_est[year >= 2003]))) |>
   mutate(
@@ -82,7 +99,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
   geom_pointrange(data = filter(ind, model != "Combined"), mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey40", alpha = 0.6) +
   geom_pointrange(
     size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1994, 2023)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1992, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
@@ -130,7 +147,7 @@ gg_iphc <-
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1994, 2023)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(1993, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
