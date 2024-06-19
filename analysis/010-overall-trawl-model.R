@@ -107,6 +107,8 @@ tictoc::toc()
 saveRDS(fit4, file = paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-",min_edge,"-", max_edge,".rds"))
 fit4 <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-",min_edge,"-", max_edge,".rds"))
 
+
+sanity(fit4)
 AIC(fit1, fit4)
 
 set.seed(123)

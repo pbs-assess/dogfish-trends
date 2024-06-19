@@ -5,11 +5,27 @@ theme_set(ggsidekick::theme_sleek())
 source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-colours-etc.R")
 
-# param table ---------------------------------------------------------------
+
+## fit_iphc <- readRDS("output/fit-iphc-nb2-coastwide-30-55.rds")
+# fit_iphc <- readRDS("output/fit-iphc-nb2-coastwide-50-55.rds") # se on phi smaller
+#
+# tidy(fit_iphc, conf.int = TRUE)
+# tidy(fit_iphc, "ran_pars", conf.int = TRUE)
+
+
+# load trawl models ---------------------------------------------------------
 
 # fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
-fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
+# fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
+fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
 fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
+
+# look at regional fixed effect coefficients ------------------------------------------
+
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 1, conf.int = TRUE), .id = "region")
+purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 2, conf.int = TRUE), .id = "region")
+
+# random param table ---------------------------------------------------------------
 
 purrr::walk(fit_reg, \(x) sanity(x$fit))
 purrr::map_dfr(fit_reg, \(x) tidy(x$fit, "ran_pars", model = 1, conf.int = TRUE), .id = "region")
@@ -69,13 +85,10 @@ coefs |>
   scale_color_brewer(palette = "Dark2") +
   labs(x = "Estimate", y = "Region", colour = "Linear predictor") +
   ggsidekick::theme_sleek()
-ggsave("figs/coefs.pdf", width = 8, height = 5)
+ggsave("figs/coefs-w-julian.pdf", width = 8, height = 5)
 
 # depth plots ---------------------------------------------------------------
 
-# look at coefficients
-purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 1, conf.int = TRUE), .id = "region")
-purrr::map_dfr(fit_reg, \(x) tidy(x$fit, model = 2, conf.int = TRUE), .id = "region")
 
 
 dd <- c(
