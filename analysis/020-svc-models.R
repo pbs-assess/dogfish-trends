@@ -10,16 +10,16 @@ dat_coast <- filter(dat, survey_name %in%
 # coast SVC trawl model ------------------------------------------------
 
 domain <- fmesher::fm_nonconvex_hull_inla(
-  as.matrix(dat_coast[, c("X", "Y")]),
+  as.matrix(dat_coast[, c("UTM.lon", "UTM.lat")]),
   concave = -0.01, convex = -0.01, resolution = c(200, 200)
 )
 
 ##
-min_edge <- 16
-max_edge <- 24
+min_edge <- 30
+max_edge <- 45
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
-  loc = as.matrix(dat_coast[,c("X", "Y")]),
+  loc = as.matrix(dat_coast[,c("UTM.lon", "UTM.lat")]),
   boundary = domain,
   max.edge = c(max_edge, 1000),
   offset = c(10, 300),
@@ -49,8 +49,8 @@ fit <- sdmTMB(
   silent = FALSE,
   share_range = FALSE,
   priors = sdmTMBpriors(
-    matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-    matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+    matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+    matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
   ),
 )
 fit
