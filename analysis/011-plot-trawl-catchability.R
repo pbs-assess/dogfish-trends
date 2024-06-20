@@ -22,7 +22,7 @@ dd |>
   xlab("Year") +
   ylab("Standardized relative biomass") +
   labs(colour = "Model", fill = "Model") +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = range(index$year) + c(-0.5, 0.5)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = range(dd$year) + c(-0.5, 0.5)) +
   scale_color_brewer(palette = "Set2") +
   facet_wrap(~region, ncol = 1)
 
