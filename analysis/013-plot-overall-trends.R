@@ -54,7 +54,8 @@ ind <- ind |> filter(subregion != "Hecate (subregion)") |>
     est = est / geo_mean,
     lwr = lwr / geo_mean,
     upr = upr / geo_mean,
-    upr = ifelse(upr > 3.9, 3.9, upr)
+    # upr = ifelse(upr > 3.9, 3.9, upr)
+    upr = ifelse(upr > 10, 10, upr)
   )
 
 # if(FALSE){
