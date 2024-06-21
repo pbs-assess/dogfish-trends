@@ -17,7 +17,7 @@ source("analysis/999-colours-etc.R")
 
 # fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
 # fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
-fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
+fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
 fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
 
 # look at regional fixed effect coefficients ------------------------------------------
@@ -95,7 +95,7 @@ dd <- c(
   seq(min(dat$depth_m), 400, length.out = 110),
   seq(400, 1000, length.out = 50)
 )
-nd <- data.frame(depth_m = dd, year = 2003L)
+nd <- data.frame(depth_m = dd, year = 2003L, julian_c = 0)
 
 ret <- purrr::map_dfr(seq_along(fits), function(i) {
   cat(i, "\n")
