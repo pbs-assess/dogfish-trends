@@ -25,7 +25,8 @@ table(dat$survey_name)
 dat$julian_c <- dat$julian - 172 # centered on summer solstice
 dat$region <- ""
 dat$region[dat$survey_name %in%
-    c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial")] <- "NWFSC"
+    c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2",
+      "AFSC.Slope", "NWFSC.Slope", "Triennial")] <- "NWFSC"
 dat$region[dat$survey_name %in% c("GOA")] <- "GOA"
 dat$region[dat$survey_name %in% c("syn bc")] <- "BC"
 dat$region[dat$survey_name %in% c("msa bc")] <- "BC"
@@ -36,8 +37,18 @@ table(dat$survey_name, dat$year)
 table(dat$region, dat$year)
 
 dat |> filter(region == "NWFSC", year < 2007) |>
-  ggplot(aes(UTM.lon, UTM.lat, colour = survey_name)) + geom_point() +
+  ggplot(aes(UTM.lon, UTM.lat,
+             colour = log(catch_weight_t), size = catch_weight_t)) +
+  geom_point() +
+  scale_colour_viridis_c() +
   facet_grid(survey_name~year)
+
+dat |> filter(region == "NWFSC", year < 1998) |>
+  ggplot() +
+  # geom_histogram(aes((depth_m))) +
+  geom_histogram(aes(log(catch_weight_t))) +
+  # geom_histogram(aes(offset_km2)) +
+  facet_wrap(year~survey_name, scales = "free_y")
 
 group_by(dat, survey_name) |>
   summarise(min_depth = min(depth_m), max_depth = max(depth_m))
@@ -149,7 +160,7 @@ fit_trawl_region <- function(dd) {
       "NWFSC.Combo", survey_name))
 
     dd$survey_name <- factor(dd$survey_name,
-                             levels = c("NWFSC.Combo", "NWFSC.Slope", "Triennial"))
+                             levels = c("NWFSC.Combo", "AFSC.Slope", "NWFSC.Slope", "Triennial"))
   }
 
 
@@ -272,17 +283,24 @@ fit_trawl_region <- function(dd) {
   list(index = ind, fit = fit, pred = p)
 }
 
+## For updating one model at a time
 # dat2 <- filter(dat, region == "NWFSC")
-# dat2 <- filter(dat, region == "GOA")
-# dat2 <- filter(dat, region == "BC")
-#
+# # dat2 <- filter(dat, region == "GOA")
+# # dat2 <- filter(dat, region == "BC")
+# #
 # out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
 # out2 <- out
+# out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
+# out$NWFSC <- out2$NWFSC
 
-out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+# out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
+out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
 
-saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
-out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
+
+out$BC$fit
+out$GOA$fit
+out$NWFSC$fit
 
 
 ind <- purrr::map_dfr(out, \(x) {
@@ -297,9 +315,6 @@ ind$subregion <- ind$region
 # ind[ind$subregion=="HS",]$subregion <- "Hecate (subregion)"
 ind[ind$subregion!="HS",]$subregion <- "Region-specific"
 
-out$BC$fit
-out$GOA$fit
-out$NWFSC$fit
 
 coast_index <- readRDS("output/coast-index-trawl.rds")
 coast_index$subregion <- "Region-specific"

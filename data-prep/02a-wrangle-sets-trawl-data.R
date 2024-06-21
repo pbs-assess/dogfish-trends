@@ -214,7 +214,9 @@ names(nwfsc) <- tolower(names(nwfsc))
 
 nwfsc_haul$event_id <- as.character(nwfsc_haul$event_id)
 unique(nwfsc_haul$survey_name)
-nwfsc <- nwfsc |> inner_join(nwfsc_haul[, c("event_id", "bottom_temp_c")], by = c("fishing_event_id" = "event_id"))
+nwfsc <- nwfsc |> left_join(nwfsc_haul[, c("event_id", "bottom_temp_c")], by = c("fishing_event_id" = "event_id"))
+
+unique(nwfsc$survey_name)
 
 nwfsc_sets <- nwfsc %>%
   dplyr::select(
