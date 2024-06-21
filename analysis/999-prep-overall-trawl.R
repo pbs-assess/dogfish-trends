@@ -19,6 +19,8 @@ prep_trawl_dat_and_grid <- function() {
       survey_name
     )) |>
     drop_na(longitude, latitude)
+  # leaving this here so that the final year of msa gets included in coastwide model
+  # because it fills in a nice gaps in that year
   df$survey_name[df$year < 2003 & df$survey_name == "syn bc"] <- "msa bc"
 
   df$depth_m <- exp(df$logbot_depth)
