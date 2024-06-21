@@ -4,7 +4,7 @@ library(ggplot2)
 library(tictoc)
 
 # data prep -----------------------------------------------------------------
-
+source("data-prep/00-set-crs.R")
 source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
 source("analysis/999-prep-maturity-split-data.R")
@@ -22,13 +22,23 @@ group_by(d, survey_name, lengthgroup) |>
 example_dat <- filter(d, lengthgroup == "imm")
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(example_dat[, c("X", "Y")]),
-  concave = -0.07, convex = -0.05, resolution = c(200, 200)
+  concave = -0.01, convex = -0.01, resolution = c(200, 200)
 )
+
+## used for overall trawl
+# min_edge <- 30
+# max_edge <- 55
+# ## drop resolution
+# min_edge <- 40
+min_edge <- 50
+max_edge <- 55
+
 mesh3 <- fmesher::fm_mesh_2d_inla(
+  loc = as.matrix(example_dat[,c("X", "Y")]),
   boundary = domain,
-  max.edge = c(150, 2000),
-  offset = c(150, 300),
-  cutoff = 50
+  max.edge = c(max_edge, 1000),
+  offset = c(10, 300),
+  cutoff = min_edge
 )
 mesh <- make_mesh(example_dat, c("X", "Y"), mesh = mesh3)
 plot(mesh)
@@ -66,8 +76,8 @@ for (i in seq_along(groups)) {
     silent = TRUE,
     share_range = FALSE,
     priors = sdmTMBpriors(
-      matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-      matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+      matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+      matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
     ),
   )
 
