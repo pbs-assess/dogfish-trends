@@ -131,3 +131,64 @@ ret |>
 
 ggsave("figs/depth-effects.pdf", width = 5, height = 4)
 ggsave("figs/depth-effects.png", width = 5, height = 4)
+
+
+
+# date effect plots ---------------------------------------------------------------
+
+
+dd <- c(
+  seq(min(dat$julian_c), max(dat$julian_c), length.out = 110)
+)
+nd <- data.frame(julian_c = dd,
+                 year = 2003L, depth_m = mean(dat$depth_m))
+
+nd$julian  <- nd$julian_c + 172
+
+# remove BC as julian date was not in that model
+fits <- fit_reg[2:3]
+ret <- purrr::map_dfr(seq_along(fits), function(i) {
+  cat(i, "\n")
+  x <- fits[[i]]
+  if (length(fits[[i]]) == 3) {
+    x <- x$fit
+  }
+  if ("survey_name" %in% names(fits[[i]]$pred$data)) {
+    nd$survey_name <- fits[[i]]$pred$data$survey_name[1]
+  }
+  pp <- predict(x, newdata = nd, re_form = NA, se_fit = TRUE)
+  pp$region <- names(fits)[i]
+  pp
+})
+
+
+date_ranges <- dat |> group_by(region) |>
+  summarise(min = min(julian),
+            max = max(julian)) |>
+  clean_region_names()
+
+# date_ranges[date_ranges$region == "NWFSC",]
+
+ret |>
+  clean_region_names() |>
+  left_join(date_ranges) |>
+  filter(julian < max, julian > min) |>
+  group_by(region) |>
+  mutate(est = log(exp(est) / max(exp(est)))) |>
+  filter(region != "British Columbia") |>
+  ggplot(aes(julian, exp(est),
+             colour = region, fill = region,
+             ymin = exp(est - 2 * est_se),
+             ymax = exp(est + 2 * est_se),
+  )) +
+  geom_ribbon(alpha = 0.1, colour = NA) +
+  geom_line() +
+  ggsidekick::theme_sleek() +
+  coord_cartesian(ylim = c(0, 1.8), expand = FALSE, xlim = c(min(nd$julian),max(nd$julian))) +
+  scale_colour_manual(values = cols_region) +
+  scale_fill_manual(values = cols_region) +
+  labs(y = "Standardized julian effect", x = "Julian date", colour = "Region", fill = "Region") +
+  theme(legend.position.inside = c(0.8, 0.8), legend.position = "inside")
+
+ggsave("figs/date-effects.pdf", width = 5, height = 4)
+ggsave("figs/date-effects.png", width = 5, height = 4)
