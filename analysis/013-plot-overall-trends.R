@@ -4,7 +4,10 @@ theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
 set_starting_year <- 1980
-set_starting_year_iphc <- 1997
+# set_starting_year_iphc <- 1997
+# grey_bar_end <- set_starting_year_iphc
+set_starting_year_iphc <- set_starting_year
+grey_bar_end <- 2003
 # map -----------------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
@@ -49,13 +52,17 @@ ind <- readRDS("output/trawl-coast-indexes.rds")
 
 ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   group_by(region, subregion, model) |>
-  mutate(geo_mean = exp(mean(log_est[year >= 2003]))) |>
+  mutate(geo_mean = exp(mean(log_est[year >= 2003])),
+         max_est = max(est/geo_mean, na.rm = FALSE),
+         upr_75 = quantile(upr/geo_mean, 0.75),
+         ) |>
   mutate(
     est = est / geo_mean,
     lwr = lwr / geo_mean,
     upr = upr / geo_mean,
-    # upr = ifelse(upr > 3.9, 3.9, upr)
-    upr = ifelse(upr > 10, 10, upr)
+    upr = ifelse(region == "British Columbia" & upr > max(upr[year >= 2003]),
+                 max(upr[year >= 2003]), upr),
+    upr = ifelse(upr > 9.5, 9.5, upr)
   )
 
 # if(FALSE){
@@ -140,6 +147,12 @@ gg_trawl <- filter(ind, model == "Combined") |>
   ggplot(aes(year, est, group = model, colour = region, ymin = lwr, ymax = upr)) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = cols_region3) +
+  geom_rect(data = filter(ind, model == "Combined" & region == "Coastwide"),
+    aes(xmin = set_starting_year - 2, xmax = grey_bar_end,
+        ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
+  geom_rect(data = filter(ind, model != "Combined"),
+            aes(xmin = set_starting_year - 2, xmax = grey_bar_end,
+                ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
   geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"),
                   mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey50", alpha = 0.6) +
   geom_pointrange(data = filter(ind, subregion == "Hecate (subregion)"),
@@ -147,12 +160,12 @@ gg_trawl <- filter(ind, model == "Combined") |>
   geom_pointrange(
     size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE,
-                  xlim = c(set_starting_year-1, 2024)) +
+                  xlim = c(set_starting_year-2, 2025)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
   labs(x = "Year", y = "Trawl survey biomass index", colour = "Model") +
-  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
+  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2023,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
   theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))+
   theme(axis.title.x.bottom = element_text(size = 9))
@@ -195,7 +208,9 @@ gg_iphc <-
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  coord_cartesian(ylim = c(0, NA), expand = FALSE, xlim = c(set_starting_year_iphc, 2023)) +
+  scale_x_continuous(breaks = c(2000, 2010, 2020)) +
+  coord_cartesian(ylim = c(0, NA), expand = FALSE,
+                  xlim = c(set_starting_year_iphc, 2024)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
@@ -224,7 +239,9 @@ g_coefs <- glmdf |> select(region, slope, lwr, upr) |> distinct() |>
   theme(axis.title.x.bottom = element_text(size = 9)) +
   annotate("text", x = 0.325, y = 1.1, label = "(c)")
 
-g_trend_panels <- cowplot::plot_grid(gg_trawl, gg_iphc, ncol = 2L, align = "h")
+g_trend_panels <- cowplot::plot_grid(gg_trawl, gg_iphc,
+                                     # rel_widths = c(1, 27/44 + 0.1),
+                                     ncol = 2L, align = "h")
 
 #img <- magick::image_read("figs/Spiny_dogfish.jpg")
 img <- magick::image_read("Spiny Dogfish Sketch_3D Paint.jpg")
@@ -235,10 +252,12 @@ img <- magick::image_read("Spiny Dogfish Sketch_3D Paint.jpg")
            # x = 115, y = 410, colour = "white",
            label = "(a)"
   ))
-g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L, rel_heights = c(1.4, 3, 1))
+g_left_panels <- cowplot::plot_grid(dog_image, pnw, g_coefs, ncol = 1L,
+                                    rel_heights = c(1.4, 3, 1))
 
-g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3), ncol = 2L, align = "h")
+g <- cowplot::plot_grid(g_left_panels, g_trend_panels, rel_widths = c(1.2, 3),
+                        ncol = 2L, align = "h")
 print(g)
 
-ggsave("figs/overall-survey-trends-julian-iphc50.pdf", width = 6.7, height = 5.4)
+ggsave("figs/overall-survey-trends-julian-iphc50-3.pdf", width = 6.7, height = 5.4)
 # ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
