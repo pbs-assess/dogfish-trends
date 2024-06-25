@@ -3,11 +3,13 @@ library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
-set_starting_year <- 1980
+set_starting_year <- 1980 - 1
 # set_starting_year_iphc <- 1997
 # grey_bar_end <- set_starting_year_iphc
 set_starting_year_iphc <- set_starting_year
-grey_bar_end <- 2003
+grey_bar_end <- 2002
+max_year <- 2024
+
 # map -----------------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
@@ -148,10 +150,10 @@ gg_trawl <- filter(ind, model == "Combined") |>
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = cols_region3) +
   geom_rect(data = filter(ind, model == "Combined" & region == "Coastwide"),
-    aes(xmin = set_starting_year - 2, xmax = grey_bar_end,
+    aes(xmin = -Inf, xmax = grey_bar_end,
         ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
   geom_rect(data = filter(ind, model != "Combined"),
-            aes(xmin = set_starting_year - 2, xmax = grey_bar_end,
+            aes(xmin = -Inf, xmax = grey_bar_end,
                 ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
   geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"),
                   mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey50", alpha = 0.6) +
@@ -160,7 +162,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
   geom_pointrange(
     size = 0.2, pch = 21) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE,
-                  xlim = c(set_starting_year-2, 2025)) +
+                  xlim = c(set_starting_year-2, max_year)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
@@ -208,9 +210,9 @@ gg_iphc <-
   scale_colour_manual(values = cols_region3) +
   facet_wrap(~region, scales = "free_y", ncol = 1) +
   geom_pointrange(aes(ymin = lwr, ymax = upr), size = 0.2, pch = 21) +
-  scale_x_continuous(breaks = c(2000, 2010, 2020)) +
+  # scale_x_continuous(breaks = c(2000, 2010, 2020)) +
   coord_cartesian(ylim = c(0, NA), expand = FALSE,
-                  xlim = c(set_starting_year_iphc, 2024)) +
+                  xlim = c(set_starting_year_iphc, max_year)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = 2022,
     inherit.aes = FALSE, vjust = 0.5, hjust = 1, size = 3) +
