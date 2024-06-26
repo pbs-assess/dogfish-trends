@@ -114,34 +114,25 @@ ret <- purrr::map_dfr(seq_along(fits), function(i) {
 })
 
 ret$date  <- "Summer solstice"
+
+# add fall equinox for NWFSC
 nd2 <- nd
 nd2$julian_c = 265 - 172
 nd2$date <- "Fall equinox"
+nd2$survey_name <- fits[[3]]$pred$data$survey_name[1]
+pp <- predict(fits[[3]]$fit, newdata = nd2, re_form = NA, se_fit = TRUE)
+pp$region <- names(fits)[3]
+ret2 <- pp
 
-ret2 <- purrr::map_dfr(seq_along(fits["NWFSC"]), function(i) {
-  cat(i, "\n")
-  x <- fits[[i]]
-  if (length(fits[[i]]) == 3) {
-    x <- x$fit
-  }
-  if ("survey_name" %in% names(fits[[i]]$pred$data)) {
-    nd$survey_name <- fits[[i]]$pred$data$survey_name[1]
-  }
-  pp <- predict(x, newdata = nd2, re_form = NA, se_fit = TRUE)
-  pp$region <- names(fits)[i]
-  pp
-})
-
-
-
-ret |>
+dd <- ret |>
   bind_rows(ret2) |>
   clean_region_names() |>
-  group_by(region) |>
+  group_by(region, date) |>
   mutate(est = log(exp(est) / max(exp(est))),
-         date = factor(levels = c("Summer solstice","Fall equinox"))
-         ) |>
-  ggplot(aes(depth_m, exp(est),
+         date = factor(date, levels = c("Summer solstice","Fall equinox"))
+         )
+
+dd |>  ggplot(aes(depth_m, exp(est),
     colour = region, fill = region,
     ymin = exp(est - 2 * est_se),
     ymax = exp(est + 2 * est_se),
@@ -155,9 +146,9 @@ ret |>
   scale_colour_manual(values = cols_region) +
   scale_fill_manual(values = cols_region) +
   labs(y = "Standardized depth effect", x = "Depth (m)",
-       linetype = "",
-       colour = "Region", fill = "Region") +
-  theme(legend.position.inside = c(0.8, 0.8), legend.position = "inside")
+       colour = "Region", fill = "Region",
+       linetype = "Season") +
+  theme(legend.position.inside = c(0.8, 0.7), legend.position = "inside")
 
 ggsave("figs/depth-effects-i2.pdf", width = 5, height = 4)
 ggsave("figs/depth-effects-i2.png", width = 5, height = 4)
