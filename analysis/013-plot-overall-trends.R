@@ -158,10 +158,10 @@ gg_trawl <- filter(ind, model == "Combined") |>
   scale_colour_manual(values = cols_region3) +
   geom_rect(data = filter(ind, model == "Combined" & region == "Coastwide"),
     aes(xmin = -Inf, xmax = grey_bar_end,
-        ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
+        ymin = -Inf, ymax = +Inf), fill = "grey97", colour = NA) +
   geom_rect(data = filter(ind, model != "Combined"),
             aes(xmin = -Inf, xmax = grey_bar_end,
-                ymin = -Inf, ymax = +Inf), fill = "grey95", colour = NA) +
+                ymin = -Inf, ymax = +Inf), fill = "grey97", colour = NA) +
   geom_pointrange(data = filter(ind, model != "Combined", subregion != "Hecate (subregion)"),
                   mapping = aes(x = year - 0.25), size = 0.2, pch = 5, colour = "grey65", alpha = 0.6) +
   geom_pointrange(data = filter(ind, subregion == "Hecate (subregion)"),
