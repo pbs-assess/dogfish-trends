@@ -174,7 +174,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
   labs(x = "Year", y = "Trawl survey biomass index", colour = "Model") +
-  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = set_starting_year + 1,
+  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.9, label = region_lab), x = set_starting_year -1,
     inherit.aes = FALSE, vjust = 0.5, hjust = 0, size = 3) +
   theme(strip.text.x = element_blank(), strip.background.x = element_blank(), panel.spacing.y = unit(-0.1, "lines"))+
   theme(axis.title.x.bottom = element_text(size = 9))
@@ -209,7 +209,7 @@ glmdf_ll <- ind_ll |> #filter(year >= 2006) |>
 
 lab_pos <- ind_ll |> group_by(region) |>
   summarise(max_y = max(upr)) |>
-  mutate(region_lab = paste0("(", letters[8:11], ") ", region))
+  mutate(region_lab = paste0("(", letters[8:11], ") "))
 
 gg_iphc <-
   ind_ll |>
@@ -221,7 +221,7 @@ gg_iphc <-
   coord_cartesian(ylim = c(0, NA), expand = TRUE,
                   xlim = c(set_starting_year_iphc+1, max_year-1)) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
-  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.95, label = region_lab), x = set_starting_year_iphc + 3,
+  geom_text(data = lab_pos, mapping = aes(y = max_y * 0.95, label = region_lab), x = set_starting_year_iphc + 1,
     inherit.aes = FALSE, vjust = 0.5, hjust = 0, size = 3) +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
   guides(colour = "none") +
