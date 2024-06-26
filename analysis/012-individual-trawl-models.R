@@ -36,19 +36,20 @@ table(dat$region)
 table(dat$survey_name, dat$year)
 table(dat$region, dat$year)
 
-dat |> filter(region == "NWFSC", year < 2007) |>
+dat |> filter(region == "NWFSC", year < 2003) |>
   ggplot(aes(UTM.lon, UTM.lat,
              colour = log(catch_weight_t), size = catch_weight_t)) +
   geom_point() +
   scale_colour_viridis_c() +
   facet_grid(survey_name~year)
 
-dat |> filter(region == "NWFSC", year < 1998) |>
+dat |> filter(region == "NWFSC", year < 2007) |>
   ggplot() +
-  # geom_histogram(aes((depth_m))) +
-  geom_histogram(aes(log(catch_weight_t))) +
+  geom_histogram(aes((depth_m))) +
+  # geom_histogram(aes(log(catch_weight_t))) +
+  # geom_histogram(aes(julian)) +
   # geom_histogram(aes(offset_km2)) +
-  facet_wrap(year~survey_name, scales = "free_y")
+  facet_wrap(~survey_name, scales = "free_y")
 
 group_by(dat, survey_name) |>
   summarise(min_depth = min(depth_m), max_depth = max(depth_m))
@@ -165,8 +166,9 @@ fit_trawl_region <- function(dd) {
 
 
   if (length(unique(dd$survey_name)) > 1) {
-
-    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
+    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
+    # f <- catch_weight_t ~ survey_name + s(depth_m, julian_c)
+    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2)
   } else {
     f <- catch_weight_t ~ poly(log(depth_m), 2) + poly(julian_c, 2)
   }
@@ -290,13 +292,12 @@ fit_trawl_region <- function(dd) {
 # #
 # out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
 # out2 <- out
-# out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian2.rds")
+# out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
 # out$NWFSC <- out2$NWFSC
 
-# out <- split(dat, dat$region) |> lapply(fit_trawl_region)
-saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
-out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
-
+out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i.rds")
+out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i.rds")
 
 out$BC$fit
 out$GOA$fit
