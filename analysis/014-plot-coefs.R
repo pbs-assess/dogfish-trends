@@ -15,12 +15,8 @@ source("analysis/999-colours-etc.R")
 
 # load trawl models ---------------------------------------------------------
 
-# fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-mix-poisson-link.rds")
-# fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-NW-mix.rds")
 # fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
-
-fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i.rds")
-
+fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
 fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
 
 # look at regional fixed effect coefficients ------------------------------------------
@@ -97,7 +93,13 @@ dd <- c(
   seq(400, 1000, length.out = 50)
 )
 nd <- data.frame(depth_m = dd, year = 2003L, julian_c = 0)
+nd$date  <- "Summer solstice"
 
+# add fall equinox for NWFSC
+nd2 <- nd
+nd2$julian_c = 265 - 172
+nd2$date <- "Fall equinox"
+nd <- bind_rows(nd, nd2)
 
 ret <- purrr::map_dfr(seq_along(fits), function(i) {
   cat(i, "\n")
@@ -113,19 +115,19 @@ ret <- purrr::map_dfr(seq_along(fits), function(i) {
   pp
 })
 
-ret$date  <- "Summer solstice"
-
-# add fall equinox for NWFSC
-nd2 <- nd
-nd2$julian_c = 265 - 172
-nd2$date <- "Fall equinox"
-nd2$survey_name <- fits[[3]]$pred$data$survey_name[1]
-pp <- predict(fits[[3]]$fit, newdata = nd2, re_form = NA, se_fit = TRUE)
-pp$region <- names(fits)[3]
-ret2 <- pp
+# ret$date  <- "Summer solstice"
+#
+# # add fall equinox for NWFSC
+# nd2 <- nd
+# nd2$julian_c = 265 - 172
+# nd2$date <- "Fall equinox"
+# nd2$survey_name <- fits[[3]]$pred$data$survey_name[1]
+# pp <- predict(fits[[3]]$fit, newdata = nd2, re_form = NA, se_fit = TRUE)
+# pp$region <- names(fits)[3]
+# ret2 <- pp
 
 dd <- ret |>
-  bind_rows(ret2) |>
+  # bind_rows(ret2) |>
   clean_region_names() |>
   group_by(region, date) |>
   mutate(est = log(exp(est) / max(exp(est))),
@@ -139,7 +141,7 @@ dd |>  ggplot(aes(depth_m, exp(est),
   )) +
   # geom_ribbon(alpha = 0.1, colour = NA) +
   geom_ribbon(data = filter(dd, date == "Summer solstice"), alpha = 0.1, colour = NA) +
-  geom_ribbon(data = filter(dd, date == "Fall equinox"), alpha = 0.1, colour = NA) +
+  # geom_ribbon(data = filter(dd, date == "Fall equinox"), alpha = 0.1, colour = NA) +
   geom_line(aes(linetype = date)) +
   ggsidekick::theme_sleek() +
   coord_cartesian(ylim = c(0, 2.2), expand = FALSE, xlim = c(min(dat$depth_m), 750)) +
@@ -150,8 +152,8 @@ dd |>  ggplot(aes(depth_m, exp(est),
        linetype = "Season") +
   theme(legend.position.inside = c(0.8, 0.7), legend.position = "inside")
 
-ggsave("figs/depth-effects-i2.pdf", width = 5, height = 4)
-ggsave("figs/depth-effects-i2.png", width = 5, height = 4)
+ggsave("figs/depth-effects-i-all2.pdf", width = 5, height = 4)
+ggsave("figs/depth-effects-i-all2.png", width = 5, height = 4)
 
 
 

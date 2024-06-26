@@ -170,7 +170,7 @@ fit_trawl_region <- function(dd) {
     # f <- catch_weight_t ~ survey_name + s(depth_m, julian_c)
     f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2)
   } else {
-    f <- catch_weight_t ~ poly(log(depth_m), 2) + poly(julian_c, 2)
+    f <- catch_weight_t ~ poly(log(depth_m), 2) * poly(julian_c, 2)
   }
   table(dd$survey_name, dd$year)
 
@@ -287,17 +287,20 @@ fit_trawl_region <- function(dd) {
 
 ## For updating one model at a time
 # dat2 <- filter(dat, region == "NWFSC")
-# # dat2 <- filter(dat, region == "GOA")
+# dat2 <- filter(dat, region == "GOA")
 # # dat2 <- filter(dat, region == "BC")
 # #
 # out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
+
+# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-GOA.rds")
 # out2 <- out
 # out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
 # out$NWFSC <- out2$NWFSC
+# out$GOA <- out2$GOA
 
 out <- split(dat, dat$region) |> lapply(fit_trawl_region)
-saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i.rds")
-out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i.rds")
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
+out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
 
 out$BC$fit
 out$GOA$fit
