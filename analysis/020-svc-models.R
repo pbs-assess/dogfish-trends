@@ -108,8 +108,8 @@ fit_maturity_group_svc <- function(dd) {
     family = delta_lognormal(type = "poisson-link"),
     silent = FALSE,
     priors = sdmTMBpriors(
-      matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-      matern_st = pc_matern(range_gt = 250, sigma_lt = 2)
+      matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+      matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
     ),
   )
   s <- sanity(fit)
