@@ -1,4 +1,4 @@
-fit_trawl_lognormal_mix_pl <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
+fit_trawl_lognormal_mix_pl <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-45.rds")
 
 f <- fit_trawl_lognormal_mix_pl
 
