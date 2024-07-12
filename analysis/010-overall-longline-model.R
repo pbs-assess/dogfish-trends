@@ -21,13 +21,14 @@ test_resids_sim <- function(x, .n = 300) {
 # custom mesh:
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(d[, c("UTM.lon", "UTM.lat")]),
-  concave = -0.01, convex = -0.01, resolution = c(200, 200)
+  concave = -0.01, convex = -0.015, resolution = c(200, 200)
 )
 plot(domain)
 
 # try what worked for trawl
 # min_edge <- 30
 min_edge <- 50
+# max_edge <- 45
 max_edge <- 55
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
@@ -44,13 +45,46 @@ plot(mesh)
 mesh$mesh$n
 
 ggplot() +
-  geom_point(data = d, aes(UTM.lon, UTM.lat), size = 0.5, alpha = 0.1, pch = 21) +
-  inlabru::gg(mesh$mesh) +
-  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+  geom_point(data = d|> arrange(year),
+             aes(UTM.lon, UTM.lat, colour = year ), size = 0.5,
+             alpha = 0.5, pch = 16) +
+  inlabru::gg(mesh$mesh,
+              edge.color = "grey80",
+              edge.linewidth = 0.25,
+              # interior = TRUE,
+              # int.color = "blue",
+              int.linewidth = 0.25,
+              exterior = FALSE,
+              # ext.color = "black",
+              ext.linewidth = 0.5) +
+  scale_colour_viridis_c(direction = -1) +
+  labs(colour = "Year") +
+  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed(expand = FALSE) +
+  theme(legend.position = "inside", legend.position.inside = c(0.2, 0.25))
 
 ggsave(paste0("figs/iphc-model-mesh-", min_edge,"-", max_edge,".pdf"), width = 6, height = 6)
 ggsave("figs/iphc-model-mesh.pdf", width = 6, height = 6)
 ggsave("figs/iphc-model-mesh.png", width = 6, height = 6)
+
+
+# d |>
+#   ggplot() +
+#   facet_wrap(~year, ncol = 5) +
+#   scale_colour_viridis_c() +
+#   geom_point(aes(longitude, latitude, colour = julian),
+#              size = 0.4, alpha = 0.7) +
+#   labs(colour = "Day of year") +
+#   xlab("Longitude") + ylab("Latitude")
+# ggsave("figs/iphc-julian-map.pdf", width = 8, height = 7)
+#
+# d |>
+#   ggplot() +
+#   facet_wrap(~year, ncol = 5) +
+#   scale_colour_viridis_c() +
+#   geom_histogram(aes(depth_m))
+#
+#
+# d$julian_c <- d$julian - 172 # centered on summer solstice
 
 tic()
 fit <- sdmTMB(
