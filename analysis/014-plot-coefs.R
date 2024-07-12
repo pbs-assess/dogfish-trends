@@ -17,7 +17,7 @@ source("analysis/999-colours-etc.R")
 
 # fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
 fit_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
-fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-55.rds")
+fit_coast <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-45.rds")
 
 # look at regional fixed effect coefficients ------------------------------------------
 

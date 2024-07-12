@@ -29,7 +29,7 @@ plot(domain)
 #
 ## so tried a finer mesh: fit for everything!
 min_edge <- 30
-max_edge <- 55
+max_edge <- 45
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
   loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
@@ -50,10 +50,23 @@ mesh$mesh$n
 
 
 ggplot() +
-  geom_point(data = dat_coast, aes(UTM.lon, UTM.lat), size = 0.5,
-             alpha = 0.07, pch = 21) +
-  inlabru::gg(mesh$mesh) +
-  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+  geom_point(data = dat_coast |> arrange(year), aes(UTM.lon, UTM.lat
+             , colour = year), size = 0.25, alpha = 0.5,
+             # ), size = 0.25, alpha = 0.25,
+             pch = 16) +
+  inlabru::gg(mesh$mesh,
+              edge.color = "grey80",
+              edge.linewidth = 0.15,
+              # interior = TRUE,
+              # int.color = "blue",
+              int.linewidth = 0.25,
+              exterior = FALSE,
+              # ext.color = "black",
+              ext.linewidth = 0.5) +
+  scale_colour_viridis_c(direction = -1) +
+  labs(colour = "Year") +
+  xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed(expand = FALSE) +
+  theme(legend.position = "inside", legend.position.inside = c(0.2, 0.25))
 ggsave(paste0("figs/trawl-model-mesh-",min_edge,"-", max_edge,".pdf"), width = 6, height = 6)
 ggsave("figs/trawl-model-mesh.png", width = 6, height = 6)
 
@@ -174,11 +187,14 @@ fitq <- sdmTMB(
   share_range = FALSE,
   # do_fit = F,
   priors = sdmTMBpriors(
-    matern_s = pc_matern(range_gt = 250, sigma_lt = 2),
-    matern_st = pc_matern(range_gt = 250, sigma_lt = 2),
+    matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
+    matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
     b = normal(c(NA, NA, NA, 0, 0, 0), c(NA, NA, NA, 1, 1, 1))
   ),
 )
+
+# rm(fit1, fit4)
+
 saveRDS(fitq, paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-q-",min_edge,"-", max_edge,".rds"))
 fitq <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-poisson-link-q-",min_edge,"-", max_edge,".rds"))
 AIC(fit4, fitq)
