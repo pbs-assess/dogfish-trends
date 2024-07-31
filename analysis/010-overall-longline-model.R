@@ -47,9 +47,9 @@ min_edge <- 50
 # max_edge <- 45
 max_edge <- 55
 
-if (file.exists("output/mesh-trawl-iphc.rds")) {
+if (file.exists("output/mesh-iphc-overall.rds")) {
   # ensure consistent knot locations across platforms:
-  mesh3 <- readRDS("output/mesh-iphc.rds")
+  mesh3 <- readRDS("output/mesh-iphc-overall.rds")
 } else {
   mesh3 <- fmesher::fm_mesh_2d_inla(
     loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
@@ -60,7 +60,7 @@ if (file.exists("output/mesh-trawl-iphc.rds")) {
     offset = c(10, 300),
     cutoff = min_edge
   )
-  saveRDS(mesh3, "output/mesh-iphc.rds")
+  saveRDS(mesh3, "output/mesh-iphc-overall.rds")
 }
 
 mesh <- make_mesh(d, c("UTM.lon", "UTM.lat"), mesh = mesh3)
