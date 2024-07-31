@@ -103,9 +103,26 @@ iphc_coast6 %>%
   dplyr::select(station, year) %>%
   filter(n() > 1)
 
+#rm puget sound inside waters
+df_2ainside <-
+  iphc_coast6 |>
+  filter(iphc.reg.area == "2A") |>
+  mutate(id = paste0(station, year, latitude)) |>
+  filter(UTM.lon > 685 & UTM.lat > -100)
+
+iphc_coast7 <-
+  iphc_coast6 |>
+  filter(iphc.reg.area == "2A") |>
+  mutate(id = paste0(station, year, latitude)) |>
+  filter(!id %in% df_2ainside$id) |>
+  dplyr::select(-c(id)) |>
+  bind_rows(filter(iphc_coast6, iphc.reg.area != "2A"))
+
+x <- ggplot(iphc_coast7, aes(UTM.lon, UTM.lat)) + geom_point()
+x + geom_point(data = df_2ainside, aes(UTM.lon, UTM.lat), col = "red")
 
 # add depth from marmap ---------------------------------------------------
-iphc <- iphc_coast6 |>
+iphc <- iphc_coast7 |>
   mutate(depth_m_raw = exp(depth_m_log), depth_m_log_raw = depth_m_log) |>
   dplyr::select(-c(depth_m_log, depth_m_log, geometry))
 iphc <- st_drop_geometry(iphc)
