@@ -75,7 +75,7 @@ bc |>
 
 x <- bc |> filter(is.na(doorspread_m) == TRUE)
 
-# missing temp data, pull that informaiton in
+# missing temp data, pull that information in
 unique(bc$survey_series_id)
 # d <- get_sensor_data_trawl(ssid = c(1,2,3,4,16), "temperature")
 d <- readRDS("data-raw/bc_temperature.rds")
