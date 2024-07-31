@@ -36,6 +36,12 @@ table(dat$region)
 table(dat$survey_name, dat$year)
 table(dat$region, dat$year)
 
+#filter out the early surveys that had changes in survey design and timing
+rm1 <- dat |> filter(survey_name == "AFSC.slope" & year < 1997)
+rm2 <- dat |> filter(survey_name == "Triennial" & year > 1995)
+
+rm <- bind_rows(rm1, rm2)
+dat <- filter(dat, !fishing_event_id %in% rm$fishing_event_id)
 dat |> filter(region == "NWFSC", year < 2003) |>
   ggplot(aes(UTM.lon, UTM.lat,
              colour = log(catch_weight_t), size = catch_weight_t)) +
@@ -51,7 +57,7 @@ dat |> filter(region == "NWFSC", year < 2007) |>
   # geom_histogram(aes(offset_km2)) +
   facet_wrap(~survey_name, scales = "free_y")
 
-group_by(dat, survey_name) |>
+group_by(dat, survey_name, year) |>
   summarise(min_depth = min(depth_m), max_depth = max(depth_m))
 
 ggplot(dat) +
@@ -69,7 +75,7 @@ fit_trawl_region <- function(dd) {
   # pre 1998, there are 3 year gaps... and it's a lot to ask the
   # RW field to stitch together
   # 1998 onwards there is the NWFSC Slope survey every year to help
-  # i.e., 1998 onewards has a survey every year
+  # i.e., 1998 onwards has a survey every year
   # if (nwfsc) dd <- filter(dd, year >= 1995)
   # if (nwfsc) dd <- filter(dd, year >= 1989)
 
@@ -168,9 +174,11 @@ fit_trawl_region <- function(dd) {
   if (length(unique(dd$survey_name)) > 1) {
     # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
     # f <- catch_weight_t ~ survey_name + s(depth_m, julian_c)
-    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2)
+    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2)
+    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)
   } else {
-    f <- catch_weight_t ~ poly(log(depth_m), 2) * poly(julian_c, 2)
+    #f <- catch_weight_t ~ poly(log(depth_m), 2) * poly(julian_c, 2)
+    f <- catch_weight_t ~ poly(log(depth_m), 2)
   }
   table(dd$survey_name, dd$year)
 
