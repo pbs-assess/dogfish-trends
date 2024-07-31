@@ -24,12 +24,12 @@ domain <- fmesher::fm_nonconvex_hull_inla(
 plot(domain)
 
 ## started with these: fit with regular lognormal_mix, but not with poisson-link
-# min_edge <- 40
-# max_edge <- 60
+min_edge <- 40 #try this as model doesn't converge
+max_edge <- 60
 #
 ## so tried a finer mesh: fit for everything!
-min_edge <- 30
-max_edge <- 45
+#min_edge <- 30
+#max_edge <- 45
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
   loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
