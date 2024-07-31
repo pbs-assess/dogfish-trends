@@ -31,14 +31,21 @@ plot(domain)
 min_edge <- 30
 max_edge <- 45
 
-mesh3 <- fmesher::fm_mesh_2d_inla(
-  loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
-  boundary = domain,
-  # max.edge = c(150, 2000),
-  max.edge = c(max_edge, 1000),
-  offset = c(10, 300),
-  cutoff = min_edge
-)
+if (file.exists("output/mesh-trawl-overall.rds")) {
+  # ensure consistent knot locations across platforms:
+  mesh3 <- readRDS("output/mesh-trawl-overall.rds")
+} else {
+  mesh3 <- fmesher::fm_mesh_2d_inla(
+    loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
+    boundary = domain,
+    # max.edge = c(150, 2000),
+    max.edge = c(max_edge, 1000),
+    offset = c(10, 300),
+    cutoff = min_edge
+  )
+  saveRDS(mesh3, "output/mesh-trawl-overall.rds")
+}
+
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 
 # mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), cutoff = 50)
