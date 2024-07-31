@@ -3,13 +3,29 @@ library(ggplot2)
 library(sdmTMB)
 theme_set(ggsidekick::theme_sleek())
 library(tictoc)
+remotes::install_github("pbs-assess/sdmTMBextra", dependencies = TRUE)
+library(sdmTMBextra)
 dir.create("figs", showWarnings = FALSE)
 
 d <- readRDS("output/IPHC_coastdata.rds")
 d$offset <- log(d$hooksobserved2) # no hook comp
 # grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea.rds") #full doesn't have updated projection
-grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") #this one doesn't extend as far south in the NW US
+grid <- readRDS("output/PredictionGridCentres_IPHCcoast_regarea_trim.rds") |>
+  mutate(id = seq(1,n(), 1))#this one doesn't extend as far south in the NW US
 
+#rm the puget sound points
+ps <-
+  grid |>
+  filter(ET_ID == "2A") |>
+  filter(UTM.lon > 645 & UTM.lat > -40)
+
+grid <-
+  grid |>
+  filter(!id %in% c(ps$id))
+
+x <- ggplot() + geom_point(data = grid, aes(UTM.lon, UTM.lat))
+x + geom_point(data = ps, aes(UTM.lon, UTM.lat), col = "red")
+grid <- grid |> dplyr::select(-id)
 grid$depth_m <- grid$bot_depth
 
 test_resids_sim <- function(x, .n = 300) {
