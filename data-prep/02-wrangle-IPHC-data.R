@@ -108,7 +108,7 @@ df_2ainside <-
   iphc_coast6 |>
   filter(iphc.reg.area == "2A") |>
   mutate(id = paste0(station, year, latitude)) |>
-  filter(UTM.lon > 685 & UTM.lat > -100)
+  filter(UTM.lon > 655 & UTM.lat > -100)
 
 iphc_coast7 <-
   iphc_coast6 |>
