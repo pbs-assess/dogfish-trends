@@ -47,14 +47,21 @@ min_edge <- 50
 # max_edge <- 45
 max_edge <- 55
 
-mesh3 <- fmesher::fm_mesh_2d_inla(
-  loc = as.matrix(d[,c("UTM.lon","UTM.lat")]),
-  boundary = domain,
-  # max.edge = c(130, 2000),
-  max.edge = c(max_edge, 1000),
-  offset = c(10, 300),
-  cutoff = min_edge
-)
+if (file.exists("output/mesh-iphc-overall.rds")) {
+  # ensure consistent knot locations across platforms:
+  mesh3 <- readRDS("output/mesh-iphc-overall.rds")
+} else {
+  mesh3 <- fmesher::fm_mesh_2d_inla(
+    loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
+    boundary = domain,
+    # max.edge = c(150, 2000),
+    # max.edge = c(130, 2000),
+    max.edge = c(max_edge, 1000),
+    offset = c(10, 300),
+    cutoff = min_edge
+  )
+  saveRDS(mesh3, "output/mesh-iphc-overall.rds")
+}
 
 mesh <- make_mesh(d, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 plot(mesh)
