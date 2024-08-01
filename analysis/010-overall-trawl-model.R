@@ -40,7 +40,6 @@ mesh3 <- fmesher::fm_mesh_2d_inla(
   cutoff = min_edge
 )
 mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
-
 # mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), cutoff = 50)
 mesh$mesh$n
 
