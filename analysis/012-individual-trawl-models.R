@@ -37,8 +37,8 @@ table(dat$survey_name, dat$year)
 table(dat$region, dat$year)
 
 #filter out the early surveys that had changes in survey design and timing
-rm1 <- dat |> filter(survey_name == "AFSC.slope" & year < 1997)
-rm2 <- dat |> filter(survey_name == "Triennial" & year > 1995)
+rm1 <- dat |> filter(survey_name == "AFSC.Slope" & year < 1997)
+rm2 <- dat |> filter(survey_name == "Triennial" & year < 1995)
 
 rm <- bind_rows(rm1, rm2)
 dat <- filter(dat, !fishing_event_id %in% rm$fishing_event_id)
@@ -73,7 +73,7 @@ fit_trawl_region <- function(dd) {
   goa <- any(grepl("goa", dd$survey_name, ignore.case = TRUE))
   hs <- any(grepl("HS", dd$region, ignore.case = TRUE))
   # pre 1998, there are 3 year gaps... and it's a lot to ask the
-  # RW field to stitch together
+  # RW field to stitch together, these are removed now due to changes in survey design
   # 1998 onwards there is the NWFSC Slope survey every year to help
   # i.e., 1998 onwards has a survey every year
   # if (nwfsc) dd <- filter(dd, year >= 1995)
