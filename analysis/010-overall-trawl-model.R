@@ -12,6 +12,7 @@ dat_coast$survey_name <- factor(dat_coast$survey_name,
   levels = c("GOA", "syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2"))
 levels(dat_coast$survey_name)
 table(dat_coast$survey_name)
+table(dat_coast$survey_name,  dat_coast$year)
 
 # coast trawl model ---------------------------------------------------------
 
@@ -231,7 +232,8 @@ index_l <- lapply(yy, \(y) {
   ind
 })
 index <- do.call(rbind, index_l)
-
+saveRDS(index, "output/index_l.rds")
+index <- readRDS("output/index_l.rds")
 # eao_l <- lapply(yy, \(y) {
 #   cat(y, "\n")
 #   nd <- dplyr::filter(grid, year %in% y)
@@ -243,6 +245,9 @@ index <- do.call(rbind, index_l)
 # eao <- do.call(rbind, eao_l)
 # ggplot(eao, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") + geom_line()
 
+yrs <- unique(dat_coast$year)
+yy <- chunk_years(yrs, 2)
+yy
 index_l <- lapply(yy, \(y) {
   cat(y, "\n")
   nd <- dplyr::filter(grid, year %in% y)
