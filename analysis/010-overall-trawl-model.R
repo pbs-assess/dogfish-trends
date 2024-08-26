@@ -212,6 +212,7 @@ fitq$sd_report
 grid <- filter(grid, year %in% dat_coast$year)
 grid$survey_name <- factor("syn bc", levels = levels(dat_coast$survey_name))
 grid$depth_m <- grid$bot_depth
+grid$offset_km <- 0
 
 # chunk years to keep memory down:
 chunk_years <- function(x, chunks) {
@@ -247,16 +248,15 @@ index <- readRDS("output/index_l.rds")
 # ggplot(eao, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") + geom_line()
 
 
-# index_l <- lapply(yy, \(y) {
-#   cat(y, "\n")
-#   nd <- dplyr::filter(grid, year %in% y) #this results in errors for me but works when done as one command
-nd <- grid
-  pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
-  ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
-#   gc()
-#   ind
-# })
-# indexq <- do.call(rbind, index_l)
+index_l <- lapply(yy, \(y) {
+   cat(y, "\n")
+   nd <- dplyr::filter(grid, year %in% y)
+   pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
+   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+   gc()
+   ind
+ })
+indexq <- do.call(rbind, index_l)
 indexq <- ind
 
 # apply coast model to regions ----------------------------------------------
