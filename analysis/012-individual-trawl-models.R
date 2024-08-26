@@ -49,6 +49,13 @@ dat |> filter(region == "NWFSC", year < 2003) |>
   scale_colour_viridis_c() +
   facet_grid(survey_name~year)
 
+dat |> filter(region == "BC") |>
+  ggplot(aes(UTM.lon, UTM.lat,
+             colour = log(catch_weight_t), size = catch_weight_t)) +
+  geom_point() +
+  scale_colour_viridis_c() +
+  facet_grid(survey_name~year)
+
 dat |> filter(region == "NWFSC", year < 2007) |>
   ggplot() +
   geom_histogram(aes((depth_m))) +
@@ -57,12 +64,21 @@ dat |> filter(region == "NWFSC", year < 2007) |>
   # geom_histogram(aes(offset_km2)) +
   facet_wrap(~survey_name, scales = "free_y")
 
+dat |> filter(region == "GOA") |>
+  ggplot(aes(UTM.lon, UTM.lat,
+             colour = log(catch_weight_t), size = catch_weight_t)) +
+  geom_point() +
+  scale_colour_viridis_c() +
+  facet_grid(survey_name~year)
+
 group_by(dat, survey_name, year) |>
   summarise(min_depth = min(depth_m), max_depth = max(depth_m))
 
 ggplot(dat) +
   facet_wrap(~region) +
   geom_histogram(aes(log(catch_weight_t)))
+
+table(dat$region, dat$year)
 
 # function to fit each:
 fit_trawl_region <- function(dd) {
