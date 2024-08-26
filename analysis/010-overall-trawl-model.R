@@ -211,6 +211,7 @@ fitq$sd_report
 
 grid <- filter(grid, year %in% dat_coast$year)
 grid$survey_name <- factor("syn bc", levels = levels(dat_coast$survey_name))
+grid$depth_m <- grid$bot_depth
 
 # chunk years to keep memory down:
 chunk_years <- function(x, chunks) {
@@ -245,18 +246,18 @@ index <- readRDS("output/index_l.rds")
 # eao <- do.call(rbind, eao_l)
 # ggplot(eao, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") + geom_line()
 
-yrs <- unique(dat_coast$year)
-yy <- chunk_years(yrs, 2)
-yy
-index_l <- lapply(yy, \(y) {
-  cat(y, "\n")
-  nd <- dplyr::filter(grid, year %in% y)
+
+# index_l <- lapply(yy, \(y) {
+#   cat(y, "\n")
+#   nd <- dplyr::filter(grid, year %in% y) #this results in errors for me but works when done as one command
+nd <- grid
   pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
-  gc()
-  ind
-})
-indexq <- do.call(rbind, index_l)
+#   gc()
+#   ind
+# })
+# indexq <- do.call(rbind, index_l)
+indexq <- ind
 
 # apply coast model to regions ----------------------------------------------
 
@@ -265,7 +266,8 @@ regions <- unique(grid$region)
 
 gc()
 
-do_expanions <- function(model, type = c("index", "eao")) {
+
+do_expansions <- function(model, type = c("index", "eao")) {
   type <- match.arg(type)
   lapply(regions, \(r) {
     cat(r, "\n")
@@ -281,9 +283,9 @@ do_expanions <- function(model, type = c("index", "eao")) {
     ind
   })
 }
-index_reg_l <- do_expanions(fit)
-index_reg_lq <- do_expanions(fitq)
-# eao_reg_l <- do_expanions(fit, type = "eao")
+index_reg_l <- do_expansions(fit)
+index_reg_lq <- do_expansions(fitq)
+# eao_reg_l <- do_expansions(fit, type = "eao")
 
 index_reg <- do.call(rbind, index_reg_l)
 index_regq <- do.call(rbind, index_reg_lq)
