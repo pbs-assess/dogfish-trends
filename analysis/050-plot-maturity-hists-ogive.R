@@ -6,7 +6,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
-
+devtools::install_github("eliocamp/tagger")
 source("analysis/999-colours-etc.R")
 
 # notes -------------------------------------------------------------------
@@ -229,8 +229,12 @@ m <- readRDS("output/survey_samples_codedmaturity.rds")
 raw <- m$data
 m$data <- m$data |> mutate(mature_num = ifelse(mature == "FALSE", 0.5, 0.5))
 
-blue <- RColorBrewer::brewer.pal(3, "Blues")[3]
+# blue <- RColorBrewer::brewer.pal(3, "Blues")[3]
+# red <- RColorBrewer::brewer.pal(3, "Reds")[3]
+
+blue <- "grey30"
 red <- RColorBrewer::brewer.pal(3, "Reds")[3]
+
 source("analysis/999-plot-mat-ogives.R")
 g_mat <- plot_mat_ogive(m, col = c("M" = blue, "F" = red)) +
   guides(colour = "none", linetype = "none")
