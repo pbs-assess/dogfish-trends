@@ -51,7 +51,7 @@ d <- d |> dplyr::select(-UTM.lat, -UTM.lon)
 df_forplotting <- add_utm_columns(d, units = "km", utm_crs = 32612) %>%
   rename("UTM.lon" = "X", "UTM.lat" = "Y")
 
-coast_proj <- sf::st_transform(coast, crs = 32612)
+coast_proj <- sf::st_transform(bc_coast, crs = 32612)
 
 
 df_forplotting$iphc.reg.area <- factor(df_forplotting$iphc.reg.area,
@@ -62,7 +62,7 @@ df_forplotting$iphc.reg.area <- factor(df_forplotting$iphc.reg.area,
 ggplot() +
   geom_point(data = df_forplotting, aes(longitude, latitude)) +
   facet_wrap(~iphc.reg.area, ncol = 1) +
-  geom_sf(data = coast, colour = "grey70", fill = "grey90") +
+  geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
   theme_classic() +
   scale_colour_viridis_c(trans = "log") +
   scale_x_continuous(
@@ -153,8 +153,13 @@ ggplot(tl, aes(longitude, latitude,
 
 df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
   # filter(survey_abbrev %in% c("GOA"))
-  # filter(survey_name %in% c("syn bc"))
-  filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1"))
+   filter(survey_name %in% c("syn bc"))
+  # filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1"))
+
+# rm1 <- df |> filter(survey_name == "AFSC.Slope" & year < 1997)
+# rm2 <- df |> filter(survey_name == "Triennial" & year < 1995)
+# rm <- bind_rows(rm1, rm2)
+# df <- filter(df, !fishing_event_id %in% rm$fishing_event_id)
 
 ggplot() +
   geom_point(data = df, aes(longitude, latitude,
@@ -175,8 +180,8 @@ ggplot() +
   ) +
   scale_size_continuous(range = c(0.5, 5)) +
   # geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
-  # geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
-  geom_sf(data = ws_coast, colour = "grey70", fill = "grey90") +
+  geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
+  # geom_sf(data = ws_coast, colour = "grey70", fill = "grey90") +
   scale_color_viridis_c(trans = "log") +
   scale_x_continuous(
     "Longitude"
@@ -185,9 +190,9 @@ ggplot() +
   theme(axis.text = element_text(size = 6))
 
 
-# ggsave("Figures/SummaryPlot_rawtrawl_goa.jpg", width = 10, height = 8)
-# ggsave("Figures/SummaryPlot_rawtrawl_bc.jpg", width = 10, height = 8)
-ggsave("Figures/SummaryPlot_rawtrawl_nwus.jpg", width = 10, height = 8)
+# ggsave("figs/SummaryPlot_rawtrawl_goa.jpg", width = 10, height = 8)
+ ggsave("figs/SummaryPlot_rawtrawl_bc.jpg", width = 10, height = 8)
+# ggsave("figs/SummaryPlot_rawtrawl_nwus.jpg", width = 10, height = 8)
 
 
 
