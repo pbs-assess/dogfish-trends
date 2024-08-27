@@ -51,6 +51,10 @@ mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), mesh = mesh3)
 # mesh <- make_mesh(dat_coast, c("UTM.lon", "UTM.lat"), cutoff = 50)
 mesh$mesh$n
 
+
+# #for PC users use this mesh, I have trouble with model covergence using this
+# mesh <- readRDS("output/mesh-trawl-overall-mac.rds")
+
 # out <- INLA::inla.mesh.assessment(mesh3, spatial.range = 200, alpha = 2)
 # ggplot() + inlabru::gg(out, aes(color = sd.dev)) + coord_equal() +
 #   scale_color_gradient(limits = range(out$sd.dev, na.rm = TRUE))
@@ -220,7 +224,7 @@ chunk_years <- function(x, chunks) {
   split(x, rep(seq_len(chunks), each = ceiling(ny/chunks))[seq_along(x)])
 }
 yrs <- unique(dat_coast$year)
-yy <- chunk_years(yrs, 2)
+yy <- chunk_years(yrs, 3)
 yy
 
 fit <- fit4 # !!
@@ -248,6 +252,10 @@ index <- readRDS("output/index_l.rds")
 # ggplot(eao, aes(year, est, ymin = lwr, ymax = upr)) + geom_ribbon(fill = "grey60") + geom_line()
 
 
+yrs <- unique(dat_coast$year)
+yy <- chunk_years(yrs, 3)
+yy
+
 index_l <- lapply(yy, \(y) {
    cat(y, "\n")
    nd <- dplyr::filter(grid, year %in% y)
@@ -256,8 +264,10 @@ index_l <- lapply(yy, \(y) {
    gc()
    ind
  })
+
 indexq <- do.call(rbind, index_l)
-indexq <- ind
+saveRDS(indexq, "output/indexq.rds")
+indexq <- readRDS("output/indexq.rds")
 
 # apply coast model to regions ----------------------------------------------
 
@@ -283,8 +293,42 @@ do_expansions <- function(model, type = c("index", "eao")) {
     ind
   })
 }
-index_reg_l <- do_expansions(fit)
+index_reg_l <- do_expansions(fit) #goa is NAs
+
+
+#is index_reg_l goa all NAs? If yes, run this code
+# yrs <- unique(dat_coast$year)
+# yy <- chunk_years(yrs, 4)
+# yy
+#
+# nd <- dplyr::filter(grid, region %in% "GOA", year %in% unique(dat_coast$year))
+# index_goa <- lapply(yy, \(y) {
+#   cat(y, "\n")
+#   nd <- dplyr::filter(grid, year %in% y)
+#   pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
+#   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+#   gc()
+#   ind
+# })
+# index_goa2 <- do.call(rbind, index_goa)
+# index_goa2$region <- "GOA"
+# index_reg_l[[3]] <- index_goa2
+
 index_reg_lq <- do_expansions(fitq)
+#GOA NA?? run this
+nd <- dplyr::filter(grid, region %in% "GOA", year %in% unique(dat_coast$year))
+index_goaq <- lapply(yy, \(y) {
+  cat(y, "\n")
+  nd <- dplyr::filter(grid, year %in% y)
+  pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
+  ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
+  gc()
+  ind
+})
+index_goaq2 <- do.call(rbind, index_goaq)
+index_goaq2$region <- "GOA"
+index_reg_lq[[3]] <- index_goaq2
+
 # eao_reg_l <- do_expansions(fit, type = "eao")
 
 index_reg <- do.call(rbind, index_reg_l)
