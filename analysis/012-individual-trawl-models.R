@@ -323,13 +323,16 @@ fit_trawl_region <- function(dd) {
 # out$GOA <- out2$GOA
 
 out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+#
+# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-allnwfsc.rds")
+# out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-allnwfsc.rds")
+
 saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
 out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
 
 out$BC$fit
 out$GOA$fit
 out$NWFSC$fit
-
 
 ind <- purrr::map_dfr(out, \(x) {
   ii <- x$ind
@@ -359,3 +362,4 @@ aa$region <- gsub("nwfsc", "US West Coast", aa$region)
 row.names(aa) <- NULL
 
 saveRDS(aa, "output/trawl-coast-indexes.rds")
+#saveRDS(aa, "output/trawl-coast-indexes-allnwfsc.rds")
