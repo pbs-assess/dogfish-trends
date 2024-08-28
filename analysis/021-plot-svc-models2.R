@@ -6,6 +6,42 @@ source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-rotate.R")
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
 
+# #trying this to see if the map of absolute decline is more intuitive
+# #needs cleaning and not included in manuscript for now, rought
+# grid <- grid |> dplyr::select(-c(year, year_scaled)) |> distinct(.keep_all = TRUE)
+# grid$FID <- seq(1,nrow(grid), 1)
+# years <- seq(min(dat$year), max(dat$year), 1)
+# years <- c(2006, 2023)
+# grid <- purrr::map_dfr(years, ~ tibble(grid, year = .x))
+# grid <- grid |> mutate(year_scaled = ifelse(year == 2006, -0.7, 1.3))
+# fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds")
+# p <- predict(fit, newdata = grid)
+# p$expest <- rowSums(p[c(15:20)])
+# p <- p |> group_by(FID) |> mutate(est = expest[which(year == 2023)] - expest[which(year == 2006)] )
+# ggplot(p, aes(UTM.lon, UTM.lat, colour = exp(expest), fill = expest)) + geom_tile() + scale_colour_viridis_c(trans = "sqrt")
+# fits <- readRDS("output/fit-trawl-svc-maturity.rds")
+# lapply(fits, \(x) x$family)
+#
+# grab_svc_pred_LD <- function(fit) {
+#   cat("-")
+#   p <- predict(fit, newdata = filter(grid, year %in% c(2006, 2023)))
+#   if (sdmTMB:::is_delta(fit)) {
+#   p <- p |> mutate(expest = exp(est1) + exp(est2) + exp(est_non_rf1) + exp(est_non_rf2) + exp(est_rf1) + exp(est_rf2))
+#   p <- p |> group_by(FID) |> mutate(est = expest[which(year == 2023)] - expest[which(year == 2006)] )
+#   } else {
+#     p <- p |> mutate(expest_last= exp(est) + exp(est_non_rf) + exp(est_rf)) |> dplyr::select(c(longitude, latitude, UTM.lon, UTM.lat, expest_last, FID))
+#     p <- p |> group_by(FID) |> mutate(est = expest[which(year == 2023)] - expest[which(year == 2006)] )
+#     }
+#   p
+# }
+# preds <- lapply(fits, grab_svc_pred_LD)
+# x <- preds$imm
+# p <- c(list(p), preds) # add in the coast pred data
+# names(p) <- c("Combined", names(preds))
+#
+# ###end of determining change in biomass by grid cell
+
+
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds")
 b1 <- tidy(fit, model = 1)
 b2 <- tidy(fit, model = 2)
@@ -26,7 +62,6 @@ p$combined_intercept <- p_start$est1 + p_start$est2
 # mm <- lapply(mat_trend_fits, \(x) x$data$lengthgroup[1]) |> unlist()
 # names(mat_trend_fits) <- mm
 #
-#fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
 fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-45.rds")
 
 # p_start <- predict(fit_trend, newdata = filter(grid, year == min(fit$data$year))) # 2005 or 2006
