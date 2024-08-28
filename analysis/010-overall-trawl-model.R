@@ -256,7 +256,7 @@ index <- readRDS("output/index_l.rds")
 
 
 yrs <- unique(dat_coast$year)
-yy <- chunk_years(yrs, 3)
+yy <- chunk_years(yrs, 4) # chunk into 4 to save memory
 yy
 
 index_l <- lapply(yy, \(y) {
@@ -279,7 +279,6 @@ regions <- unique(grid$region)
 
 gc()
 
-
 do_expansions <- function(model, type = c("index", "eao")) {
   type <- match.arg(type)
   lapply(regions, \(r) {
@@ -296,42 +295,8 @@ do_expansions <- function(model, type = c("index", "eao")) {
     ind
   })
 }
-index_reg_l <- do_expansions(fit) #goa is NAs
-
-
-#is index_reg_l goa all NAs? If yes, run this code
-# yrs <- unique(dat_coast$year)
-# yy <- chunk_years(yrs, 4)
-# yy
-#
-# nd <- dplyr::filter(grid, region %in% "GOA", year %in% unique(dat_coast$year))
-# index_goa <- lapply(yy, \(y) {
-#   cat(y, "\n")
-#   nd <- dplyr::filter(grid, year %in% y)
-#   pred <- predict(fit, newdata = nd, return_tmb_object = TRUE)
-#   ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
-#   gc()
-#   ind
-# })
-# index_goa2 <- do.call(rbind, index_goa)
-# index_goa2$region <- "GOA"
-# index_reg_l[[3]] <- index_goa2
-
+index_reg_l <- do_expansions(fit)
 index_reg_lq <- do_expansions(fitq)
-#GOA NA?? run this
-nd <- dplyr::filter(grid, region %in% "GOA", year %in% unique(dat_coast$year))
-index_goaq <- lapply(yy, \(y) {
-  cat(y, "\n")
-  nd <- dplyr::filter(grid, year %in% y)
-  pred <- predict(fitq, newdata = nd, return_tmb_object = TRUE)
-  ind <- get_index(pred, bias_correct = TRUE, area = nd$area_km)
-  gc()
-  ind
-})
-index_goaq2 <- do.call(rbind, index_goaq)
-index_goaq2$region <- "GOA"
-index_reg_lq[[3]] <- index_goaq2
-
 # eao_reg_l <- do_expansions(fit, type = "eao")
 
 index_reg <- do.call(rbind, index_reg_l)
