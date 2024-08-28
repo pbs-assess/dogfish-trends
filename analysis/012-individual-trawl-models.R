@@ -14,6 +14,10 @@ filter(dat, survey_name %in% c("syn bc", "msa bc"), year %in% c(2002, 2003, 2004
                             colour = survey_abbrev)) +
   facet_grid(~year)
 
+dat |> filter(survey_abbrev == "HS MSA") |>
+  group_by(year) |>
+  reframe(cpue = sum(cpue_kgkm2))
+
 # leaving 2003 HS MSA classified as syn for the overall model since there's only one year of it and it's catchability isn't sig different from syn surveys when they are modelled together
 # separating it here to make two separate models
 dat <- dat |> mutate(
