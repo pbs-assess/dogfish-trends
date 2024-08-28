@@ -26,7 +26,9 @@ p$combined_intercept <- p_start$est1 + p_start$est2
 # mm <- lapply(mat_trend_fits, \(x) x$data$lengthgroup[1]) |> unlist()
 # names(mat_trend_fits) <- mm
 #
-fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+#fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link.rds")
+fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-45.rds")
+
 # p_start <- predict(fit_trend, newdata = filter(grid, year == min(fit$data$year))) # 2005 or 2006
 # p$combined_intercept <- p_start$est1 + p_start$est2
 
