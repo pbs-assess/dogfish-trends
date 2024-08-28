@@ -4,7 +4,7 @@ theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
 
-set_starting_year <- 1980 - 1
+set_starting_year <- 1984 - 1 #was 1980
 max_year <- 2024
 
 # these options for using less white space
@@ -57,6 +57,25 @@ pnw
 # trawl index ---------------------------------------------------------------
 
 ind <- readRDS("output/trawl-coast-indexes.rds")
+#ind <- readRDS("output/trawl-coast-indexes-allnwfsc.rds")
+
+#goainc <-
+
+ind |> filter(region == "US West Coast" & model == "Region-specific") |>
+  mutate(meanest = mean(est)) |>
+  group_by(year, meanest) |>
+  reframe(est_sum = sum(est)) |>
+  ggplot() +
+  geom_point(aes(year, est_sum)) +
+  geom_hline(yintercept = 60928)
+
+ind |> filter(region == "Gulf of Alaska" & model == "Region-specific") |>
+  mutate(meanest = mean(est)) |>
+  group_by(year, meanest) |>
+  reframe(est_sum = sum(est)) |>
+  ggplot() +
+  geom_point(aes(year, est_sum)) +
+  geom_hline(yintercept = 42373.03)
 
 ind <- ind |> filter(subregion != "Hecate (subregion)") |>
   group_by(region, subregion, model) |>
