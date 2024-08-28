@@ -44,7 +44,7 @@ predict_weight <- function(x) {
     print(paste(nrow(filter(x, sex == 0)), "samples are missing sex information (coded as 0), the predicted weight for these individuals will be the average of male and female predicted weights."))
     xy <- filter(x, sex == 0 | sex == 1)
     xy$sex <- replace(xy$sex, xy$sex == 0, 1) # males are 1
-    maletw <- fit_length_weight(
+    maletw <- gfplot::fit_length_weight(
       xy,
       sex = "male",
       downsample = Inf,
