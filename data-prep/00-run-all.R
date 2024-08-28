@@ -1,6 +1,12 @@
 dir.create("output", showWarnings = FALSE)
 dir.create("figs", showWarnings = FALSE)
 
+
+if (FALSE) {
+  remotes::install_github("pbs-assess/gfiphc")
+  remotes::install_github("pfmc-assessments/nwfscSurvey")
+}
+
 source("data-prep/01-load-trawl-data.R")
 source("data-prep/02-wrangle-IPHC-data.R")
 source("data-prep/02a-wrangle-sets-trawl-data.R")

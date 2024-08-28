@@ -1,3 +1,6 @@
+RhpcBLASctl::blas_set_num_threads(1)
+RhpcBLASctl::omp_set_num_threads(1)
+
 library(dplyr)
 library(ggplot2)
 library(sdmTMB)
@@ -59,7 +62,7 @@ mesh$mesh$n
 # ggplot() + inlabru::gg(out, aes(color = sd.dev)) + coord_equal() +
 #   scale_color_gradient(limits = range(out$sd.dev, na.rm = TRUE))
 
-
+# install.packages("INLA",repos=c(getOption("repos"),INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)
 ggplot() +
   geom_point(data = dat_coast |> arrange(year), aes(UTM.lon, UTM.lat
              , colour = year), size = 0.25, alpha = 0.5,
