@@ -1,10 +1,14 @@
+RhpcBLASctl::blas_set_num_threads(1)
+RhpcBLASctl::omp_set_num_threads(1)
+
 library(dplyr)
 library(ggplot2)
 library(sdmTMB)
 theme_set(ggsidekick::theme_sleek())
 library(tictoc)
-remotes::install_github("pbs-assess/sdmTMBextra", dependencies = TRUE)
-library(sdmTMBextra)
+library(sf)
+# remotes::install_github("pbs-assess/sdmTMBextra", dependencies = TRUE)
+# library(sdmTMBextra)
 dir.create("figs", showWarnings = FALSE)
 
 d <- readRDS("output/IPHC_coastdata.rds")
