@@ -134,33 +134,40 @@ fit_trawl_region <- function(dd) {
     # max_edge <- 36
   }
 
-  mesh3 <- fmesher::fm_mesh_2d_inla(
-    loc = as.matrix(dd[,c("UTM.lon","UTM.lat")]),
-    boundary = domain,
-    max.edge = c(max_edge, 1000),
-    # offset first value: does nothing with domain (vs. data)
-    # offset second value: should be ~= range to avoid edge effects
-    offset = c(10, 300), #
-    cutoff = min_edge
-  )
+  f <- paste0("output/mesh-", unique(dd$region), ".rds")
 
-  if(hs){
-    # much smaller domain needs different params
-    domain <- fmesher::fm_nonconvex_hull_inla(
-      as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
-      concave = -0.07, convex = -0.05, resolution = c(200, 200)
-    )
-
-    min_edge <- 12
-    max_edge <- 16
-
+  if (!file.exists(f)) {
     mesh3 <- fmesher::fm_mesh_2d_inla(
       loc = as.matrix(dd[,c("UTM.lon","UTM.lat")]),
       boundary = domain,
-      max.edge = c(max_edge, 100),
-      offset = c(10, 100),
+      max.edge = c(max_edge, 1000),
+      # offset first value: does nothing with domain (vs. data)
+      # offset second value: should be ~= range to avoid edge effects
+      offset = c(10, 300), #
       cutoff = min_edge
     )
+
+    if(hs){
+      # much smaller domain needs different params
+      domain <- fmesher::fm_nonconvex_hull_inla(
+        as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
+        concave = -0.07, convex = -0.05, resolution = c(200, 200)
+      )
+
+      min_edge <- 12
+      max_edge <- 16
+
+      mesh3 <- fmesher::fm_mesh_2d_inla(
+        loc = as.matrix(dd[,c("UTM.lon","UTM.lat")]),
+        boundary = domain,
+        max.edge = c(max_edge, 100),
+        offset = c(10, 100),
+        cutoff = min_edge
+      )
+    }
+    saveRDS(mesh3, f)
+  } else {
+    mesh3 <- readRDS(f)
   }
 
   mesh <- make_mesh(dd, c("UTM.lon", "UTM.lat"), mesh = mesh3)
