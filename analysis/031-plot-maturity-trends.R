@@ -107,6 +107,14 @@ glmdf <- add_maturity_group_clean_column(glmdf)
 indexes <- clean_region_names(indexes)
 glmdf <- clean_region_names(glmdf)
 
+slopevalues <- glmdf |>
+  filter(region != "Coastwide") |>
+  distinct(group, slope, .keep_all = TRUE)
+
+values <- indexes |>
+  filter(region != "Coastwide", group_clean == "Mature females")
+
+
 slopes_plot <- glmdf |>
   filter(region != "Coastwide") |>
   select(group_clean, region, slope, lwr, upr) |> distinct() |>
@@ -246,6 +254,7 @@ g1 <- indexes |>
   # mutate(region = gsub("Gulf of Alaska", "Gulf of\nAlaska", region)) |>
   # mutate(region = gsub("US West Coast", "US West\nCoast", region)) |>
   # mutate(region = factor(region, levels = c("Coastwide", "Gulf of\nAlaska", "British\nColumbia", "US West\nCoast"))) |>
+  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast"))) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = region, fill = region)) +
   geom_line() +
   geom_ribbon(alpha = 0.2, colour = NA) +
@@ -280,6 +289,7 @@ g2 <- indexes |>
   # mutate(region = gsub("Gulf of Alaska", "Gulf of\nAlaska", region)) |>
   # mutate(region = gsub("US West Coast", "US West\nCoast", region)) |>
   # mutate(region = factor(region, levels = c("Coastwide", "Gulf of\nAlaska", "British\nColumbia", "US West\nCoast"))) |>
+  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast"))) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group_clean, fill = group_clean)) +
   geom_line() +
   geom_ribbon(alpha = 0.2, colour = NA) +
@@ -297,7 +307,9 @@ g2 <- indexes |>
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9)) +
   scale_y_continuous(trans = "log10") +
-  theme(legend.position.inside = c(0.835, 0.22), legend.position = "inside", legend.text = element_text(size = 7), legend.title = element_text(size = 8)) +
+  theme(legend.position.inside = c(0.835, 0.22), legend.position = "inside", legend.text = element_text(size = 7),
+        #legend.title = element_text(size = 8),
+        legend.title = element_blank()) +
   # theme(legend.position = "bottom")
   guides(fill=guide_legend(nrow=3,byrow=TRUE), colour = guide_legend(nrow = 3, byrow = TRUE))
 g2
