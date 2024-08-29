@@ -58,6 +58,28 @@ df_forplotting$iphc.reg.area <- factor(df_forplotting$iphc.reg.area,
   levels = c("3B", "3A", "2C", "2B", "2A")
 )
 
+d |> filter(iphc.reg.area %in% c("3A", "2C", "3B")) |>
+  filter(cpue != 0) |>
+  ggplot() +
+  geom_point(aes(longitude, latitude, colour = cpue), size = 0.5) +
+  facet_wrap(~year) +
+  geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
+  theme_classic() +
+  scale_colour_viridis_c(trans = "sqrt") +
+  # scale_x_continuous(
+  #   breaks = c(-160, -140, -120),
+  #   labels = c("-160", "-140", "-120"),
+    # breaks = c(min(df_forplotting$longitude)+10, -145, max(df_forplotting$longitude)+10),
+    # labels = round(c(min(df_forplotting$longitude)+10, -145, max(df_forplotting$longitude)+10), 0),
+  #  "Longitude"
+  #) +
+  labs(colour = "Catch weight\n(log, kg)") +
+  # scale_y_continuous("Latitude",
+  #   breaks = c(35, 45, 55),
+  #   labels = c(35, 45, 55)
+  # ) +
+  theme(axis.text = element_text(size = 10))
+
 
 ggplot() +
   geom_point(data = df_forplotting, aes(longitude, latitude)) +
@@ -73,10 +95,31 @@ ggplot() +
     "Longitude"
   ) +
   labs(colour = "Catch weight\n(log, kg)") +
-  scale_y_continuous("Latitude",
-    breaks = c(35, 45, 55),
-    labels = c(35, 45, 55)
+  # scale_y_continuous("Latitude",
+  #   breaks = c(35, 45, 55),
+  #   labels = c(35, 45, 55)
+  # ) +
+  theme(axis.text = element_text(size = 10))
+
+
+ggplot() +
+  geom_point(data = df_forplotting, aes(longitude, latitude)) +
+  facet_wrap(~iphc.reg.area, ncol = 1) +
+  geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
+  theme_classic() +
+  scale_colour_viridis_c(trans = "log") +
+  scale_x_continuous(
+    breaks = c(-160, -140, -120),
+    labels = c("-160", "-140", "-120"),
+    # breaks = c(min(df_forplotting$longitude)+10, -145, max(df_forplotting$longitude)+10),
+    # labels = round(c(min(df_forplotting$longitude)+10, -145, max(df_forplotting$longitude)+10), 0),
+    "Longitude"
   ) +
+  labs(colour = "Catch weight\n(log, kg)") +
+  # scale_y_continuous("Latitude",
+  #   breaks = c(35, 45, 55),
+  #   labels = c(35, 45, 55)
+  # ) +
   theme(axis.text = element_text(size = 10))
 
 ggsave("Figures/SummaryPlot_surveyarea_iphc.jpg", width = 5, height = 8)
@@ -152,20 +195,39 @@ ggplot(tl, aes(longitude, latitude,
 
 
 df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
-  # filter(survey_abbrev %in% c("GOA"))
-   filter(survey_name %in% c("syn bc"))
-  # filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1"))
+   filter(survey_abbrev %in% c("GOA"))
+   #filter(survey_name %in% c("syn bc"))
+  #filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope"))
 
+unique(df$survey_name)
+unique(df$survey_abbrev)
 # rm1 <- df |> filter(survey_name == "AFSC.Slope" & year < 1997)
 # rm2 <- df |> filter(survey_name == "Triennial" & year < 1995)
 # rm <- bind_rows(rm1, rm2)
 # df <- filter(df, !fishing_event_id %in% rm$fishing_event_id)
 
+df |> #i don't see any dramamtic shift other than in 1993 that was run later in the year
+  filter(julian >= 200) |>
+ggplot() +
+  geom_point(aes(longitude, latitude,
+                            col = (julian),
+                            #size = (julian)
+  ), alpha = 0.75, size = 0.5) +
+  facet_wrap(vars(year)) +
+  geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
+  scale_color_viridis_c(trans = "log") +
+  scale_x_continuous(
+    "Longitude"
+  ) +
+  labs(colour = expression(paste("CPUE (kg/", km^"2", ")"))) +
+  theme(axis.text = element_text(size = 6))
+
+
 ggplot() +
   geom_point(data = df, aes(longitude, latitude,
     col = (cpue_kgkm2),
     size = (cpue_kgkm2)
-  ), alpha = 0.75) +
+  ), alpha = 0.25) +
   facet_wrap(vars(year)) +
   theme(
     legend.position = "bottom",
@@ -179,9 +241,9 @@ ggplot() +
     size = expression(paste("CPUE (kg/", km^"2", ")"))
   ) +
   scale_size_continuous(range = c(0.5, 5)) +
-  # geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
-  geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
-  # geom_sf(data = ws_coast, colour = "grey70", fill = "grey90") +
+  geom_sf(data = goa_coast, colour = "grey70", fill = "grey90") +
+  #geom_sf(data = bc_coast, colour = "grey70", fill = "grey90") +
+  #geom_sf(data = ws_coast, colour = "grey70", fill = "grey90") +
   scale_color_viridis_c(trans = "log") +
   scale_x_continuous(
     "Longitude"
@@ -190,9 +252,9 @@ ggplot() +
   theme(axis.text = element_text(size = 6))
 
 
-# ggsave("figs/SummaryPlot_rawtrawl_goa.jpg", width = 10, height = 8)
- ggsave("figs/SummaryPlot_rawtrawl_bc.jpg", width = 10, height = 8)
-# ggsave("figs/SummaryPlot_rawtrawl_nwus.jpg", width = 10, height = 8)
+ggsave("figs/SummaryPlot_rawtrawl_goa.jpg", width = 10, height = 8)
+# ggsave("figs/SummaryPlot_rawtrawl_bc.jpg", width = 10, height = 8)
+ ggsave("figs/SummaryPlot_rawtrawl_nwus.jpg", width = 10, height = 8)
 
 
 
