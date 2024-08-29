@@ -56,7 +56,7 @@ if (file.exists("output/mesh-iphc-overall.rds")) {
   mesh3 <- readRDS("output/mesh-iphc-overall.rds")
 } else {
   mesh3 <- fmesher::fm_mesh_2d_inla(
-    loc = as.matrix(dat_coast[,c("UTM.lon","UTM.lat")]),
+    loc = as.matrix(d[,c("UTM.lon","UTM.lat")]),
     boundary = domain,
     # max.edge = c(150, 2000),
     # max.edge = c(130, 2000),
