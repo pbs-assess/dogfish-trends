@@ -125,6 +125,12 @@ fit_maturity_group_svc <- function(dd) {
 ret <- split(d, d$lengthgroup) |> lapply(fit_maturity_group_svc)
 purrr::walk(ret, sanity)
 saveRDS(ret, file = "output/fit-trawl-svc-maturity.rds")
+ret <- readRDS("output/fit-trawl-svc-maturity.rds")
+sanity(ret$imm)
+sanity(ret$mm)
+sanity(ret$mf)
+sanity(ret$maturingf)
+sanity(ret$maturingm)
 
 # IPHC -----------------------------------------------------------------
 
