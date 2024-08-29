@@ -201,7 +201,7 @@ fit_trawl_region <- function(dd) {
   if (length(unique(dd$survey_name)) > 1) {
     # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
     # f <- catch_weight_t ~ survey_name + s(depth_m, julian_c)
-    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2)
+    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2) use this if want to put julian back in
     f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)
   } else {
     #f <- catch_weight_t ~ poly(log(depth_m), 2) * poly(julian_c, 2)
