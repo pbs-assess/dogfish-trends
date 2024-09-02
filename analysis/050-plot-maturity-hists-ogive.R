@@ -48,7 +48,118 @@ samps <- readRDS("output/samps_CoastalTrawl.rds") |>
     survey_name
   ))
 
-# SOM Figure for manuscript: density figure of IPHC and trawl, regions combined -------------------------------
+
+
+
+# density figure of iphc --------------------------------------------------
+#come back and clean up
+
+# iphcsamps <- read.csv("data-raw/Cindy - IPHC sampling information/IPHC_dogfish_lengths2021.csv") |> # need to remove expansion set etc.
+#   mutate(
+#     length_pcl = length # lengths are in precaudal length (PCL)
+#   ) |>
+#   mutate(length_ext_cm = length_pcl * 1.20) |>
+#   filter(fmp != "BSAI") # need to remove expansion set etc.
+#
+# range(iphcsamps$length_ext_cm, na.rm = TRUE)
+# iphcsamps |>
+#   filter(sex %in% c("M", "F")) |>
+#   group_by(fmp, sex) |>
+#   drop_na(length_ext_cm) |>
+#   summarise(min = min(length_ext_cm), max = max(length_ext_cm))
+#
+# iphcsamps |>
+#   filter(sex %in% c("M", "F")) |>
+#   group_by(fmp, sex) |>
+#   drop_na(length_ext_cm) |>
+#   summarise(min = min(length_ext_cm), max = max(length_ext_cm))
+#
+# breakpts <- seq(2011, 2022, 5)
+# breakpts <- c(breakpts[1], breakpts[2], 2022)
+#
+# unique(iphcsamps$sex)
+# samps_hist <- iphcsamps %>%
+#   mutate(year_group = findInterval(year, breakpts), sexMF = sex, survey_name = "IPHC") |>
+#   drop_na(length_ext_cm) |>
+#   mutate(sex = ifelse(sexMF == "F", 2, ifelse(sexMF == "M", 1, 0))) |>
+#   filter(sex %in% c(1, 2))
+#
+# samps_hist$fmp <- factor(samps_hist$fmp,
+#                          levels = c("GOA", "CAN", "WC")
+# )
+#
+#
+# samps_hist$mature <- ifelse(samps_hist$sex == 2, 97, 70) # mature code 55
+#
+# range(samps_hist$length_ext_cm)
+#
+# means <- samps_hist |>
+#   mutate(length_ext_cm = as.numeric(length_ext_cm)) |>
+#   filter(length_ext_cm > 12) |>
+#   group_by(year_group, survey_name, sex) |>
+#   summarize(sex_length_mean = mean(length_ext_cm)) |>
+#   ungroup()
+# means
+# unique(means$year_group)
+# year.labs <- c("'11-'16", "'17-'21")
+# names(year.labs) <- c("1", "2")
+#
+#
+# # label names
+# sex.labs <- c("Males", "Females")
+# names(sex.labs) <- c("1", "2")
+#
+#
+# # install.packages("wesanderson")
+# library(wesanderson)
+# names(wes_palettes)
+# wes_palette("FantasticFox1", 3, type = c("continuous"))
+# x <- wes_palette("Moonrise2", n = 4, type = c("continuous"))
+# x2 <- c(x[2], x[1])
+#
+# ggplot(samps_hist, aes(length_ext_cm, group = as.factor(year_group), fill = as.factor(year_group)),
+#        colour = as.factor(year_group)
+# ) +
+#   geom_density(alpha = 0.6, size = 0.25) + # , bins = 50) +
+#   geom_vline(
+#     data = samps_hist,
+#     aes(xintercept = mature)
+#   ) +
+#   facet_grid(
+#     rows = vars(fmp), cols = vars(sex), scales = "free",
+#     labeller = ggplot2::labeller(sex = sex.labs)
+#   ) +
+#   scale_x_continuous(
+#     breaks = c(0, 25, 75, 125), labels = c(0, 25, 75, 125),
+#     limits = c(0, 125), name = "Length (cm)"
+#   ) +
+#   scale_y_continuous(breaks = c(0, 0.03, 0.06), labels = c(0, 0.03, 0.06), name = "Density") +
+#   scale_fill_manual("Years", values = x2, labels = c("'11-'15", "'16-'21")) +
+#   scale_colour_manual(values = x2) +
+#   theme(
+#     plot.background = element_rect(fill = "NA", colour = "NA"),
+#     # text = element_text(family= "Gill Sans MT"),
+#     axis.line.x = element_line(colour = "grey60"),
+#     panel.grid.major = element_blank(),
+#     panel.grid.minor = element_blank(),
+#     strip.background = element_blank(),
+#     plot.margin = margin(1, 0, 1, 0.5, "cm"),
+#     panel.background = element_rect(fill = "white", colour = "grey60"),
+#     axis.text.x = element_text(size = 10, vjust = 1, colour = "grey20"),
+#     axis.text.y = element_text(size = 10, colour = c("grey20")),
+#     axis.title.x = element_text(size = 10, colour = "grey20"),
+#     axis.title.y = element_text(size = 10, colour = "grey20"),
+#     axis.ticks.length = unit(0.15, "cm"),
+#     strip.text = element_text(size = 10),
+#     axis.ticks.x = element_line(colour = "grey60"),
+#     axis.ticks.y = element_line(colour = "grey60")
+#   )
+#
+# ggsave("Figures/length_summary_iphc.png", width = 6, height = 4)
+
+
+
+# Density figure of trawl, regions combined -------------------------------
 
 breakpts <- c(c(1996, 2002), seq(2003, 2023, 10))
 
