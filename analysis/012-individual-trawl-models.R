@@ -9,12 +9,15 @@ source("analysis/999-prep-overall-trawl.R")
 
 # but MSA in 2003 classified as syn BC
 filter(dat, survey_name %in% c("syn bc", "msa bc"), year %in% c(2002, 2003, 2004)) |>
-  ggplot() + geom_point(aes(longitude, latitude,
-                            shape = survey_name,
-                            colour = survey_abbrev)) +
+  ggplot() +
+  geom_point(aes(longitude, latitude,
+    shape = survey_name,
+    colour = survey_abbrev
+  )) +
   facet_grid(~year)
 
-dat |> filter(survey_abbrev == "HS MSA") |>
+dat |>
+  filter(survey_abbrev == "HS MSA") |>
   group_by(year) |>
   reframe(cpue = sum(cpue_kgkm2))
 
@@ -29,8 +32,10 @@ table(dat$survey_name)
 dat$julian_c <- dat$julian - 172 # centered on summer solstice
 dat$region <- ""
 dat$region[dat$survey_name %in%
-    c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2",
-      "AFSC.Slope", "NWFSC.Slope", "Triennial")] <- "NWFSC"
+  c(
+    "NWFSC.Combo.pass1", "NWFSC.Combo.pass2",
+    "AFSC.Slope", "NWFSC.Slope", "Triennial"
+  )] <- "NWFSC"
 dat$region[dat$survey_name %in% c("GOA")] <- "GOA"
 dat$region[dat$survey_name %in% c("syn bc")] <- "BC"
 dat$region[dat$survey_name %in% c("msa bc")] <- "BC"
@@ -40,27 +45,56 @@ table(dat$region)
 table(dat$survey_name, dat$year)
 table(dat$region, dat$year)
 
-#filter out the early surveys that had changes in survey design and timing
-rm1 <- dat |> filter(survey_name == "AFSC.Slope" & year < 1997)
-rm2 <- dat |> filter(survey_name == "Triennial" & year < 1995)
+# OPTION 1 - use only consistent surveys AFSC slope and Triennial in the later years
+# filter out the early surveys that had changes in survey design and timing
+# rm1 <- dat |> filter(survey_name == "AFSC.Slope" & year < 1997)
+# rm2 <- dat |> filter(survey_name == "Triennial" & year < 1995)
+#
+# rm <- bind_rows(rm1, rm2)
+# dat <- filter(dat, !fishing_event_id %in% rm$fishing_event_id)
+# dat |> filter(region == "NWFSC", year < 2003) |>
+#   ggplot(aes(UTM.lon, UTM.lat,
+#              colour = log(catch_weight_t), size = catch_weight_t)) +
+#   geom_point() +
+#   scale_colour_viridis_c() +
+#   facet_grid(survey_name~year)
+#
+# dat |> filter(region == "NWFSC") |>
+#   ggplot(aes(UTM.lon, UTM.lat,
+#              colour = log(catch_weight_t), size = catch_weight_t)) +
+#   geom_point() +
+#   scale_colour_viridis_c() +
+#   facet_grid(survey_name~year)
 
-rm <- bind_rows(rm1, rm2)
-dat <- filter(dat, !fishing_event_id %in% rm$fishing_event_id)
-dat |> filter(region == "NWFSC", year < 2003) |>
+# OPTION 2 - allow for a difference catchability to be estimate for early AFSC slope and early Triennial due to depth, seasonal, spatial coverage was different
+# dat <- dat |>
+#  mutate(survey_name = ifelse(survey_name == "AFSC.Slope" & year < 1997, "AFSC.Slope1", survey_name))
+# dat <- dat |>
+#  mutate(survey_name = ifelse(survey_name == "Triennial" & year < 1997, "Triennial1", survey_name))
+
+# OPTION 3 - no difference in catchability to be estimate for early AFSC slope and early Triennial
+unique(dat$survey_name) # should be NWFSC combo, nwfsc slope, afsc, triennial..
+
+dat |>
+  filter(region == "NWFSC") |>
   ggplot(aes(UTM.lon, UTM.lat,
-             colour = log(catch_weight_t), size = catch_weight_t)) +
+    colour = log(catch_weight_t), size = catch_weight_t
+  )) +
   geom_point() +
   scale_colour_viridis_c() +
-  facet_grid(survey_name~year)
+  facet_grid(survey_name ~ year)
 
-dat |> filter(region == "BC") |>
+dat |>
+  filter(region == "BC") |>
   ggplot(aes(UTM.lon, UTM.lat,
-             colour = log(catch_weight_t), size = catch_weight_t)) +
+    colour = log(catch_weight_t), size = catch_weight_t
+  )) +
   geom_point() +
   scale_colour_viridis_c() +
-  facet_grid(survey_name~year)
+  facet_grid(survey_name ~ year)
 
-dat |> filter(region == "NWFSC", year < 2007) |>
+dat |>
+  filter(region == "NWFSC", year < 2007) |>
   ggplot() +
   geom_histogram(aes((depth_m))) +
   # geom_histogram(aes(log(catch_weight_t))) +
@@ -68,12 +102,14 @@ dat |> filter(region == "NWFSC", year < 2007) |>
   # geom_histogram(aes(offset_km2)) +
   facet_wrap(~survey_name, scales = "free_y")
 
-dat |> filter(region == "GOA") |>
+dat |>
+  filter(region == "GOA") |>
   ggplot(aes(UTM.lon, UTM.lat,
-             colour = log(catch_weight_t), size = catch_weight_t)) +
+    colour = log(catch_weight_t), size = catch_weight_t
+  )) +
   geom_point() +
   scale_colour_viridis_c() +
-  facet_grid(survey_name~year)
+  facet_grid(survey_name ~ year)
 
 group_by(dat, survey_name, year) |>
   summarise(min_depth = min(depth_m), max_depth = max(depth_m))
@@ -81,8 +117,6 @@ group_by(dat, survey_name, year) |>
 ggplot(dat) +
   facet_wrap(~region) +
   geom_histogram(aes(log(catch_weight_t)))
-
-table(dat$region, dat$year)
 
 # function to fit each:
 fit_trawl_region <- function(dd) {
@@ -92,12 +126,6 @@ fit_trawl_region <- function(dd) {
   bc <- any(grepl("BC", dd$region, ignore.case = TRUE))
   goa <- any(grepl("goa", dd$survey_name, ignore.case = TRUE))
   hs <- any(grepl("HS", dd$region, ignore.case = TRUE))
-  # pre 1998, there are 3 year gaps... and it's a lot to ask the
-  # RW field to stitch together, these are removed now due to changes in survey design
-  # 1998 onwards there is the NWFSC Slope survey every year to help
-  # i.e., 1998 onwards has a survey every year
-  # if (nwfsc) dd <- filter(dd, year >= 1995)
-  # if (nwfsc) dd <- filter(dd, year >= 1989)
 
   domain <- fmesher::fm_nonconvex_hull_inla(
     as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
@@ -111,15 +139,15 @@ fit_trawl_region <- function(dd) {
   max_edge <- 45 # better convergence
 
   if (nwfsc) {
-  # #   # # 35 +/- 20%
-  # #   # min_edge <- 28
-  # #   # max_edge <- 42
-  # #   # # 38 +/- 20% #min est range of 150/4
+    # #   # # 35 +/- 20%
+    # #   # min_edge <- 28
+    # #   # max_edge <- 42
+    # #   # # 38 +/- 20% #min est range of 150/4
     min_edge <- 30
     max_edge <- 45
-  # #   # 45 +/- 20% #min est range of 135/3
-  # #   min_edge <- 36
-  # #   max_edge <- 54
+    # #   # 45 +/- 20% #min est range of 135/3
+    # #   min_edge <- 36
+    # #   max_edge <- 54
   }
 
   if (bc) {
@@ -138,7 +166,7 @@ fit_trawl_region <- function(dd) {
 
   if (!file.exists(f)) {
     mesh3 <- fmesher::fm_mesh_2d_inla(
-      loc = as.matrix(dd[,c("UTM.lon","UTM.lat")]),
+      loc = as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
       boundary = domain,
       max.edge = c(max_edge, 1000),
       # offset first value: does nothing with domain (vs. data)
@@ -147,7 +175,7 @@ fit_trawl_region <- function(dd) {
       cutoff = min_edge
     )
 
-    if(hs){
+    if (hs) {
       # much smaller domain needs different params
       domain <- fmesher::fm_nonconvex_hull_inla(
         as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
@@ -158,7 +186,7 @@ fit_trawl_region <- function(dd) {
       max_edge <- 16
 
       mesh3 <- fmesher::fm_mesh_2d_inla(
-        loc = as.matrix(dd[,c("UTM.lon","UTM.lat")]),
+        loc = as.matrix(dd[, c("UTM.lon", "UTM.lat")]),
         boundary = domain,
         max.edge = c(max_edge, 100),
         offset = c(10, 100),
@@ -174,37 +202,54 @@ fit_trawl_region <- function(dd) {
   mesh$mesh$n
 
   ggplot() +
-    geom_point(data = dd, aes(UTM.lon, UTM.lat),
-               # colour = "blue",
-               size = 0.5, alpha = 0.2, pch = 21) +
+    geom_point(
+      data = dd, aes(UTM.lon, UTM.lat),
+      # colour = "blue",
+      size = 0.5, alpha = 0.2, pch = 21
+    ) +
     inlabru::gg(mesh$mesh) +
-    xlab("UTM (km)") + ylab("UTM (km)") + coord_fixed()
+    xlab("UTM (km)") +
+    ylab("UTM (km)") +
+    coord_fixed()
 
-  ggsave(paste0("figs/trawl-model-mesh-", unique(dd$region),
-                "-",min_edge, "-", max_edge, ".pdf"), width = 6, height = 6)
-  ggsave(paste0("figs/trawl-model-mesh-", unique(dd$region),
-                "-",min_edge, "-", max_edge, ".png"), width = 6, height = 6)
+  ggsave(paste0(
+    "figs/trawl-model-mesh-", unique(dd$region),
+    "-", min_edge, "-", max_edge, ".pdf"
+  ), width = 6, height = 6)
+  ggsave(paste0(
+    "figs/trawl-model-mesh-", unique(dd$region),
+    "-", min_edge, "-", max_edge, ".png"
+  ), width = 6, height = 6)
 
   if (nwfsc) {
+    # option 1: choose option above
+    # dd <- dd |> mutate(survey_name = ifelse(
+    #      survey_name %in% c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2"),
+    #      "NWFSC.Combo", survey_name))
     # dd$survey_name <- factor(dd$survey_name,
-    #   levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial"))
+    #   levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial", "AFSC.Slope"))
 
-    dd <- dd |> mutate(survey_name = ifelse(
-      survey_name %in% c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2"),
-      "NWFSC.Combo", survey_name))
-
+    # option b: use this to check if the catchability is diff between the surveys
+    # dd <- dd |> mutate(survey_name = ifelse(
+    #   survey_name %in% c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2"),
+    #   "NWFSC.Combo", survey_name))
+    #
     dd$survey_name <- factor(dd$survey_name,
-                             levels = c("NWFSC.Combo", "AFSC.Slope", "NWFSC.Slope", "Triennial"))
+      levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "AFSC.Slope", "AFSC#.Slope1", "NWFSC.Slope", "Triennial", "Triennial1")
+    )
+
+    # option 3 model no extra coeff calculated for early surveys
+    # didn't converge
+    # dd$survey_name <- factor(dd$survey_name,
+    #  levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "NWFSC.Slope", "Triennial", "AFSC.Slope")
+    # )
   }
 
 
   if (length(unique(dd$survey_name)) > 1) {
-    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) + poly(julian_c, 2)
-    # f <- catch_weight_t ~ survey_name + s(depth_m, julian_c)
-    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2) use this if want to put julian back in
-    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)
+    # f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2)*poly(julian_c, 2) #use this if want julian interaction
+    f <- catch_weight_t ~ survey_name + poly(log(depth_m), 2) # <- use this
   } else {
-    #f <- catch_weight_t ~ poly(log(depth_m), 2) * poly(julian_c, 2)
     f <- catch_weight_t ~ poly(log(depth_m), 2)
   }
   table(dd$survey_name, dd$year)
@@ -212,11 +257,11 @@ fit_trawl_region <- function(dd) {
   # set_family <- delta_lognormal_mix(type = "poisson-link")
   set_family <- delta_lognormal(type = "poisson-link")
   # if(bc) set_family <- delta_lognormal_mix(type = "poisson-link") # doesn't fit with fine mesh
-  if(nwfsc) set_family <- delta_lognormal_mix(type = "poisson-link")
+  if (nwfsc) set_family <- delta_lognormal_mix(type = "poisson-link")
 
   set_spatial <- "on"
-  if(hs) set_spatial <- "off"
-  if(hs) f <- catch_weight_t ~ poly(log(depth_m), 2)
+  if (hs) set_spatial <- "off"
+  if (hs) f <- catch_weight_t ~ poly(log(depth_m), 2)
 
   if (bc) {
     # dd$survey_name <- factor(dd$survey_name,
@@ -247,35 +292,35 @@ fit_trawl_region <- function(dd) {
       map = list(logit_p_mix = factor(NA))
     ),
     priors = sdmTMBpriors(
-      matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
-      matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
+      matern_s = pc_matern(range_gt = max_edge * 3, sigma_lt = 2),
+      matern_st = pc_matern(range_gt = max_edge * 3, sigma_lt = 2)
     ),
   )
   sanity(fit)
 
 
-  if(set_spatial != "off"){
-  b1 <- tidy(fit, "ran_pars", model = 1)
-  sigO1 <- b1$estimate[b1$term == "sigma_O"]
-  sigO1se <- b1$std.error[b1$term == "sigma_O"]
+  if (set_spatial != "off") {
+    b1 <- tidy(fit, "ran_pars", model = 1)
+    sigO1 <- b1$estimate[b1$term == "sigma_O"]
+    sigO1se <- b1$std.error[b1$term == "sigma_O"]
 
-  if (sigO1 < 0.01 || sigO1se / sigO1 > 3) { # sometimes collapses here
-    fit <- update(fit, spatial = list("off", "on"))
-  }
+    if (sigO1 < 0.01 || sigO1se / sigO1 > 3) { # sometimes collapses here
+      fit <- update(fit, spatial = list("off", "on"))
+    }
 
-  b2 <- tidy(fit, "ran_pars", model = 2, conf.int = TRUE)
-  sigO2 <- b2$estimate[b2$term == "sigma_O"]
-  sigO2se <- b2$std.error[b2$term == "sigma_O"]
-  sigO2lwr <- b2$conf.low[b2$term == "sigma_O"]
+    b2 <- tidy(fit, "ran_pars", model = 2, conf.int = TRUE)
+    sigO2 <- b2$estimate[b2$term == "sigma_O"]
+    sigO2se <- b2$std.error[b2$term == "sigma_O"]
+    sigO2lwr <- b2$conf.low[b2$term == "sigma_O"]
 
-  if (sigO2 < 0.01 || sigO2se / sigO2 > 3 || sigO2lwr < 0.01) { # sometimes collapses here
-    fit <- update(fit, spatial = list("on", "off"))
-  }
+    if (sigO2 < 0.01 || sigO2se / sigO2 > 3 || sigO2lwr < 0.01) { # sometimes collapses here
+      fit <- update(fit, spatial = list("on", "off"))
+    }
   }
 
   s <- sanity(fit)
 
-  if(!s$gradients_ok){
+  if (!s$gradients_ok) {
     fit <- run_extra_optimization(fit)
   }
 
@@ -289,32 +334,31 @@ fit_trawl_region <- function(dd) {
     DHARMa::testResiduals(dh)
   }
 
-  if(hs){
+  if (hs) {
     nd <- readRDS("output/prediction_grid_hs.rds")
     nd <- add_utm_columns(nd, units = "km", utm_crs = coast_crs) %>%
       rename("UTM.lon" = "X", "UTM.lat" = "Y") |>
       mutate(
         UTM.lon = round(UTM.lon, 3),
         X = UTM.lon, Y = UTM.lat,
-        depth_m  = bot_depth
+        depth_m = bot_depth
       )
     # years <- seq(min(dd$year), max(dd$year), 1)
     nd <- purrr::map_dfr(unique(dd$year), ~ tibble(nd, year = .x))
     # ggplot(nd) + geom_point(aes(X,Y)) + facet_wrap(~year)
-
   } else {
-  nd <- grid
-  nd <- filter(nd, region %in% dd$region)
-  nd <- filter(nd, year %in% unique(dd$year))
-  if (length(unique(dd$survey_name)) > 1) {
-    nd$survey_name <-
-      factor(levels(dd$survey_name)[1],
-        levels = levels(dd$survey_name))
-  }
+    nd <- grid
+    nd <- filter(nd, region %in% dd$region)
+    nd <- filter(nd, year %in% unique(dd$year))
+    if (length(unique(dd$survey_name)) > 1) {
+      nd$survey_name <-
+        factor(levels(dd$survey_name)[1],
+          levels = levels(dd$survey_name)
+        )
+    }
   }
 
   nd$julian_c <- 0
-
   p <- predict(fit, newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(p, bias_correct = TRUE, area = nd$area_km)
   list(index = ind, fit = fit, pred = p)
@@ -323,23 +367,37 @@ fit_trawl_region <- function(dd) {
 ## For updating one model at a time
 # dat2 <- filter(dat, region == "NWFSC")
 # dat2 <- filter(dat, region == "GOA")
-# # dat2 <- filter(dat, region == "BC")
-# #
+# dat2 <- filter(dat, region == "BC")
+
 # out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
 
-# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-GOA.rds")
+# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-1995-onwards.rds")
+# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds")
+# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds")
+
+# out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds") # model with no no sep catch for afsc and nwfsc early and later surveys
+# out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") #model with sep catchabiltiy (Triennial, triennial early, afsc slope, afsc slope early, nwfsc combo and nwfsc slope and depth)
+# residuals
+# dat <- filter(dat, region == "NWFSC")
+# dat$resid <- residuals(out$fit, model = 2)
+# x <- simulate(fit, nsim = 100, type = "mle-mvn") |>
+#   dharma_residuals(fit)
+# dat <- bind_rows(dat, x)
+#
+# ggplot(dat, aes(longitude, latitude, col = observed)) +
+#   scale_colour_gradient2() +
+#   geom_point() +
+#   facet_wrap(~year) +
+#   coord_fixed()
+
 # out2 <- out
-# out <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian3.rds")
-# out$NWFSC <- out2$NWFSC
+# out <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-q-30-45.rds")
+# out$NWFSC <- out2$NWFSC #<- update one of the models
 # out$GOA <- out2$GOA
 
 out <- split(dat, dat$region) |> lapply(fit_trawl_region)
-#
-# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-allnwfsc.rds")
-# out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-allnwfsc.rds")
-
-saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
-out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
+# out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
 
 out$BC$fit
 out$GOA$fit
@@ -355,10 +413,14 @@ ind <- purrr::map_dfr(out, \(x) {
 ind$subregion <- ind$region
 # ind[ind$subregion=="HS",]$region <- "BC"
 # ind[ind$subregion=="HS",]$subregion <- "Hecate (subregion)"
-ind[ind$subregion!="HS",]$subregion <- "Region-specific"
+ind[ind$subregion != "HS", ]$subregion <- "Region-specific"
 
+# NWFSC models
+# saveRDS(aa, "output/trawl-catchabilities")
+# saveRDS(ind, "output/trawl-1995-onwards.rds")
+# saveRDS(aa, "output/trawl-coast-nocatchabilities.rds")
 
-coast_index <- readRDS("output/coast-index-trawl.rds")
+coast_index <- readRDS("output/coast-index-trawl.rds") # from 010-overall-trawl-model.R
 coast_index$subregion <- "Region-specific"
 
 aa <- bind_rows(
@@ -372,5 +434,10 @@ aa$region <- gsub("NWFSC", "US West Coast", aa$region)
 aa$region <- gsub("nwfsc", "US West Coast", aa$region)
 row.names(aa) <- NULL
 
+# Coast one
 saveRDS(aa, "output/trawl-coast-indexes.rds")
-#saveRDS(aa, "output/trawl-coast-indexes-allnwfsc.rds")
+
+# NWFSC specific ones
+# saveRDS(aa, "output/trawl-coast-indexes-julian.rds")
+# saveRDS(aa, "output/trawl-coast-indexes-allnwfsc.rds")
+# saveRDS(aa, "output/trawl-coast-indexes-catchabilities.rds")
