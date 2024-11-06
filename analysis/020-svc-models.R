@@ -5,7 +5,7 @@ source("analysis/999-prep-overall-trawl.R")
 
 dat_coast <- filter(dat, survey_name %in%
     c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year >= 2006)
+  filter(year >= 2005) #<- why is this 2006 and the linear declines are 2005?? I changed to match the linear declines
 
 # coast SVC trawl model ------------------------------------------------
 
@@ -90,7 +90,7 @@ if (FALSE) {
 source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
 source("analysis/999-prep-maturity-split-data.R")
-d <- prep_maturity_split_data() |> filter(year >= 2006)
+d <- prep_maturity_split_data() |> filter(year >= 2005) #<- change this to 2005 to match the coefficient plot, was 2006
 d$year_scaled <- (d$year - 2010) / 10
 
 fit_maturity_group_svc <- function(dd) {
