@@ -21,7 +21,8 @@ source("analysis/017-plot-mean-depth.R")
 
 # SVC trends:
 source("analysis/020-svc-models.R")
-source("analysis/021-plot-svc-models2.R")
+source("analysis/021-plot-svc-models2.R") # this is absolute declines
+source("analysis/021-plot-svc-models.R") # this is proportional declines
 
 source("analysis/031-plot-maturity-trends.R")
 source("analysis/040-model-table.R")
