@@ -4,12 +4,11 @@ theme_set(ggsidekick::theme_sleek())
 source("data-prep/00-set-crs.R")
 source("analysis/999-colours-etc.R")
 
-set_starting_year <- 1984 - 1 # was 1980
-max_year <- 2024
+set_starting_year <- 1980
+max_year <- 2023
 
-# these options for using less white space
-set_starting_year_iphc <- 1997
-grey_bar_end <- set_starting_year_iphc
+set_starting_year_iphc <- 1998
+grey_bar_end <- set_starting_year_iphc-1
 
 ## these options for using white space to show timeseries differences
 # set_starting_year_iphc <- set_starting_year
@@ -57,9 +56,8 @@ pnw
 
 
 
-# nwfsc index -------------------------------------------------------------
-# plot out different analyses for the longest time series possible
-ind1 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") # model with
+# nwfsc index w/wo catchabilities and julian -------------------------------------------------------------
+ind1 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") # model with catachabilities for early and late
 ind1 <- ind1$index |> mutate(model = "catchabilities")
 ind2 <- readRDS("output/trawl-1995-onwards.rds") |> mutate(model = "1995 onwards")
 # ind3 <- readRDS("output/trawl-coast-indexes-julian.rds") |>  filter(region == "US West Coast") |>
@@ -74,24 +72,13 @@ ind <- bind_rows(ind1, ind2, ind3)
 ggplot(ind, aes(year, (est), ymin = (lwr), ymax = (upr), colour = model)) +
   geom_pointrange(data = ind, mapping = aes(x = year - 0.25), size = 0.2, pch = 5, alpha = 0.6, position = position_dodge(width = 1)) +
   theme_classic() +
-  scale_colour_manual(values = c("#d8b365", "black", "#5ab4ac")) +
+  scale_colour_manual(values = c("#d8b365", "black", "#5ab4ac", "red")) +
   # facet_wrap(~group, scales = "free_y") +
   coord_cartesian(ylim = c(0, 200000))
 ggsave("Figs/nwfsc_index.jpg", width = 8, height = 5)
 
 
-out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds")
-out$fit
 
-m1_df <- broom::tidy(out$fit) # create data.frame of regression results
-m1_df # a tidy data.frame available for dwplot
-m1_df <- m1_df[c(1:7), ]
-m2_df <- broom::tidy(out$fit, model = 2) # create data.frame of regression results
-m2_df # a tidy data.frame available for dwplot
-m2_df <- m2_df[c(1:7), ]
-
-dotwhisker::dwplot(m1_df)
-dotwhisker::dwplot(m2_df)
 
 # trawl index ---------------------------------------------------------------
 
@@ -252,7 +239,7 @@ gg_trawl <- filter(ind, model == "Combined") |>
   ) +
   coord_cartesian(
     ylim = c(0, NA), expand = FALSE,
-    xlim = c(set_starting_year - 2, max_year)
+    xlim = c(set_starting_year - 2, max_year + 1)
   ) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf, lwd = .9, colour = "grey35") +
   theme(legend.position.inside = c(0.25, 0.86), legend.position = "inside") +
@@ -308,7 +295,7 @@ gg_iphc <-
   scale_x_continuous(breaks = c(2000, 2010, 2020)) +
   coord_cartesian(
     ylim = c(0, NA), expand = TRUE,
-    xlim = c(set_starting_year_iphc + 1, max_year - 1)
+    xlim = c(set_starting_year_iphc, max_year - 1)
   ) +
   geom_line(aes(x = year, y = glm_pred), inherit.aes = FALSE, data = glmdf_ll, lwd = .9, colour = "grey35") +
   geom_text(
@@ -369,4 +356,4 @@ g <- cowplot::plot_grid(g_left_panels, g_trend_panels,
 print(g)
 
 ggsave("figs/overall-survey-trends2.pdf", width = 6.7, height = 5.4)
-# ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
+ggsave("figs/overall-survey-trends2.png", width = 6.7, height = 5.4)
