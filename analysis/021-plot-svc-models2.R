@@ -289,3 +289,56 @@ unique(prs$group)
 
 ggsave("figs/svc-trawl-absolute.pdf", width = 7, height = 5.5)
 ggsave("figs/svc-trawl-absolute.png", width = 7, height = 5.5)
+
+
+
+# plot with location names for SOM ----------------------------------------
+p <- prs |> filter(group == "Combined")
+p <- p |> dplyr::select(-c("UTM.lon", "UTM.lat", "X", "Y"))
+p2 <- sdmTMB::add_utm_columns(p,
+                              ll_names = c("longitude", "latitude"), utm_crs = 32612, units = "m"
+)
+
+map_data <- rnaturalearth::ne_states(returnclass = "sf")
+coast <- sf::st_crop(
+  map_data,
+  c(xmin = -180, ymin = 25, xmax = -115, ymax = 70)
+)
+plot(st_geometry(coast))
+
+coast_proj <- sf::st_transform(coast, crs = 32612)
+
+p2 |>
+  ggplot(aes(X, Y, fill = exp(est_diff ), colour = exp(est_diff ))) +
+  theme_void() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.12, 0.5),
+    legend.title = element_text(colour = "grey30", size = 10),
+    plot.background = element_rect(fill = "white", linewidth = 0)
+  ) +
+  geom_sf(data = coast_proj, inherit.aes = FALSE, fill = "grey70", colour = "grey40") +
+  geom_tile(width = 3000, height = 3000) +
+  colorspace::scale_colour_continuous_divergingx(
+    palette = "RdBu", mid = 0,
+    trans = "log10",
+    limits = LIMS
+  ) +
+  colorspace::scale_fill_continuous_divergingx(
+    palette = "RdBu", mid = 0,
+    trans = "log10",
+    limits = LIMS
+  ) +
+   labs(fill = LAB, colour = LAB)
+  # coord_sf(
+  #   xlim = c(min(p$rotated_x), 1546730 - 1800000),
+  #   ylim = range(p$rotated_y) + c(0, 100000)
+  # )
+    # ) +
+  # geom_text(
+  #   data = mids, mapping = aes(x = mean_x - 1000000, label = group_clean),
+  #   y = 8500000, inherit.aes = FALSE, colour = "grey30", vjust = 1, hjust = 0
+  # )
+
+ggsave("figs/location-map.png", width = 7, height = 5.5)
+#ggsave("figs/svc-trawl-absolute.png", width = 7, height = 5.5)
