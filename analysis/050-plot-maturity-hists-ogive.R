@@ -310,195 +310,237 @@ ghist <-
 
 ghist
 
-# ghist <- ghist + geom_text(
-#   data = data_text,
-#   mapping = aes(
-#     x = x,
-#     y = y,
-#     label = label
-#   ), colour = "grey30"
-# )
-ghist <- ghist + geom_text(
-  data = line_dat,
-  mapping = aes(
-    x = maturepos,
-    y = c(0.068, 0.068, 0.068, 0.068),
-    label = label
-  ),
-  hjust = c(0, 0, 0, 0), size = 8 / .pt
-)
 
-# ghist + annotate("text", 25, 0.05, label = "Immature", hadj = 0)
+# # maturity ogive ----------------------------------------------------------
+# # pull output from 999-split-index-by-region-maturity.R
+# m <- readRDS("output/survey_samples_codedmaturity.rds")
+# raw <- m$data
+# m$data <- m$data |> mutate(mature_num = ifelse(mature == "FALSE", 0.5, 0.5))
+#
+# # blue <- RColorBrewer::brewer.pal(3, "Blues")[3]
+# # red <- RColorBrewer::brewer.pal(3, "Reds")[3]
+#
+# grey <- "grey60"
+# black <- "black"
+#
+# source("analysis/999-plot-mat-ogives.R")
+# g_mat <- plot_mat_ogive(m, col = c("M" = grey, "F" = black)) +
+#   guides(colour = "none", linetype = "none")
+#
+# # nd_re <- m$pred_data
+# # n_re <- length(unique(nd_re$sample_id)) / 5
+# # n_re2 <- ifelse(n_re < 15, 15, n_re)
+#
+# # tally by length group and calculate weight of each group
+# fm <- m$pred_data |>
+#   mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+#   filter(female == 1) |>
+#   slice_min(min2, n = 1, with_ties = FALSE)
+# fi <- m$pred_data |>
+#   mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+#   filter(female == 1) |>
+#   slice_min(min2, n = 1, with_ties = FALSE)
+# mi <- m$pred_data |>
+#   mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
+#   filter(female == 0) |>
+#   slice_min(min2, n = 1, with_ties = FALSE)
+# mi$age_or_length
+# mm <- m$pred_data |>
+#   mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
+#   filter(female == 0) |>
+#   slice_min(min2, n = 1, with_ties = FALSE)
+# mm$age_or_length
+#
+# m$pred_data <- m$pred_data |>
+#   mutate(cat = ifelse(female == 1 & age_or_length >= as.numeric(fm$age_or_length), 1,
+#     ifelse(female == 0 & age_or_length >= as.numeric(mm$age_or_length), 2,
+#       ifelse(female == 1 & age_or_length <= as.numeric(fi$age_or_length), 3,
+#         ifelse(female == 0 & age_or_length <= as.numeric(mi$age_or_length), 4,
+#           NA
+#         )
+#       )
+#     )
+#   ))
+#
+# m$pred_data <- m$pred_data |>
+#   group_by(cat) |>
+#   mutate(matlength = ifelse(cat %in% c(1, 2), min(age_or_length),
+#     ifelse(cat %in% c(3, 4), max(age_or_length),
+#       ifelse(is.na(cat == TRUE), NA, NA)
+#     )
+#   ))
+#
+# # data <- m$pred_data |>
+# #   group_by(female, cat) |>
+# #   summarize(unique = unique(matlength))
+# # data
+# # ann_text <- data.frame(
+# #   age_or_length = c(40, 40, 40, 40), glmm_re = c(0.75, 0.68, 0.60, 0.53),
+# #   lab = c("F05 = 77.0", "F95 = 95.6", "M05 = 65.1", "M95 = 76.7"),
+# #   female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
+# # )
+# #
+# # string <- data.frame(
+# #   length = c(
+# #     as.numeric(fm$age_or_length), as.numeric(fi$age_or_length) + 1,
+# #     as.numeric(mi$age_or_length), as.numeric(mm$age_or_length - 1)
+# #   ),
+# #   female = c(1, 1, 0, 0)
+# # )
+#
+#
 
-# ggsave("figs/length-distributions-trawl.pdf", width = 5, height = 4)
-# ggsave("figs/length-distributions-trawl.png", width = 5, height = 4)
-
-
-# maturity ogive ----------------------------------------------------------
-# pull output from 999-split-index-by-region-maturity.R
+# maturity plot - f and m seperate ----------------------------------------
+#<- LD added
+#pull output from 999-split-index-by-region-maturity.R
 m <- readRDS("output/survey_samples_codedmaturity.rds")
 raw <- m$data
 m$data <- m$data |> mutate(mature_num = ifelse(mature == "FALSE", 0.5, 0.5))
+#m$pred_data <- filter(m$pred_data, female == 1)  #<- plot females only
+nd_re <- m$pred_data
+n_re <- length(unique(nd_re$sample_id)) / 5
+n_re2 <- ifelse(n_re < 15, 15, n_re)
 
-# blue <- RColorBrewer::brewer.pal(3, "Blues")[3]
-# red <- RColorBrewer::brewer.pal(3, "Reds")[3]
+ann_text <- data.frame(
+  age_or_length = c(40, 40, 40, 40), glmm_re = c(0.75, 0.68, 0.75, 0.68),
+  lab = c("F05 = 77.0", "F95 = 95.6", "M05 = 65.1", "M95 = 76.7"),
+  female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
+)
 
-blue <- "grey30"
-red <- RColorBrewer::brewer.pal(3, "Reds")[3]
+string <- data.frame(
+  length = c(
+    as.numeric(fm$age_or_length), as.numeric(fi$age_or_length) + 1,
+    as.numeric(mi$age_or_length), as.numeric(mm$age_or_length - 1)
+  ),
+  female = c(1, 1, 0, 0)
+)
 
-source("analysis/999-plot-mat-ogives.R")
-g_mat <- plot_mat_ogive(m, col = c("M" = blue, "F" = red)) +
-  guides(colour = "none", linetype = "none")
+p <-
+  ggplot() +
+  geom_line(
+    data = nd_re, aes(age_or_length,
+      as.numeric(glmm_re),
+      group = paste(sample_id, female),
+      #fill = as.character(female),
+      colour = as.character(female)
+      #linetype = as.character(female)
+    ),
+    #colour = c("red", "grey"),
+    inherit.aes = FALSE,
+    alpha = 1 / n_re2,
+    show.legend = FALSE
+  ) +
+  # scale_linetype_manual(values = c("dotdash", "solid")) +
+  scale_colour_manual(values = c("grey10", "grey50")) +
+  scale_x_continuous(limits = c(0,125)) +
+  geom_rug(
+    data = filter(m$data, mature == "FALSE"), aes(
+      x = age_or_length,
+      y = mature_num
+      #colour = "female"
+      #linetype = as.character(female)
+    ),
+    #colour = c("red", "grey"),
+    sides = "b",
+    length = unit(c(0.04), "npc"),
+    alpha = c(0.05),
+    lty = 1,
+    show.legend = FALSE
+  ) +
+  geom_rug(
+    data = filter(m$data, mature == "TRUE"), aes(
+      x = age_or_length,
+      y =mature_num
+      #colour = "female"
+      #linetype = as.character(female)
+    ),
+    #colour = c("red", "grey"),
+    sides = "t",
+    alpha = 0.05,
+    # lty = 1,
+    show.legend = FALSE
+  ) +
+  labs(x = "Length (cm)", y = "Probability mature") +
+  theme(plot.margin = unit(c(5, 1, 1, 1), "lines")) +
+  geom_vline(
+    data = string,
+    aes(
+      xintercept = length,
+      #colour = female
+      #linetype = as.character(female)
+    ),
+    colour = c("grey10", "grey10", "grey50", "grey50"),
+    show.legend = FALSE,
+  ) +
+   facet_wrap(~female, nrow = 1) +
+  theme(strip.text.x = element_blank())
 
-# nd_re <- m$pred_data
-# n_re <- length(unique(nd_re$sample_id)) / 5
-# n_re2 <- ifelse(n_re < 15, 15, n_re)
+p <- p + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab),
+                   colour = c("grey10", "grey10", "grey10", "grey10"),
+                   show.legend = FALSE)
+p
+g_mat <- p
 
-# tally by length group and calculate weight of each group
-fm <- m$pred_data |>
-  mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
-  filter(female == 1) |>
-  slice_min(min2, n = 1, with_ties = FALSE)
-fi <- m$pred_data |>
-  mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
-  filter(female == 1) |>
-  slice_min(min2, n = 1, with_ties = FALSE)
-mi <- m$pred_data |>
-  mutate(min2 = abs(m$pred_data$glmm_fe - 0.95)) |>
-  filter(female == 0) |>
-  slice_min(min2, n = 1, with_ties = FALSE)
-mi$age_or_length
-mm <- m$pred_data |>
-  mutate(min2 = abs(m$pred_data$glmm_fe - 0.05)) |>
-  filter(female == 0) |>
-  slice_min(min2, n = 1, with_ties = FALSE)
-mm$age_or_length
+#ggsave("figs/maturityogive_facet.png", width = 4, height = 3)
 
-m$pred_data <- m$pred_data |>
-  mutate(cat = ifelse(female == 1 & age_or_length >= as.numeric(fm$age_or_length), 1,
-    ifelse(female == 0 & age_or_length >= as.numeric(mm$age_or_length), 2,
-      ifelse(female == 1 & age_or_length <= as.numeric(fi$age_or_length), 3,
-        ifelse(female == 0 & age_or_length <= as.numeric(mi$age_or_length), 4,
-          NA
-        )
-      )
-    )
-  ))
+# library(patchwork)
+# layout <- "
+# ABB
+# "
 
-m$pred_data <- m$pred_data |>
-  group_by(cat) |>
-  mutate(matlength = ifelse(cat %in% c(1, 2), min(age_or_length),
-    ifelse(cat %in% c(3, 4), max(age_or_length),
-      ifelse(is.na(cat == TRUE), NA, NA)
-    )
-  ))
-
-# data <- m$pred_data |>
-#   group_by(female, cat) |>
-#   summarize(unique = unique(matlength))
-# data
-# ann_text <- data.frame(
-#   age_or_length = c(40, 40, 40, 40), glmm_re = c(0.75, 0.68, 0.60, 0.53),
-#   lab = c("F05 = 77.0", "F95 = 95.6", "M05 = 65.1", "M95 = 76.7"),
-#   female = factor(c("1", "1", "0", "0"), levels = c("0", "1"))
-# )
-#
-# string <- data.frame(
-#   length = c(
-#     as.numeric(fm$age_or_length), as.numeric(fi$age_or_length) + 1,
-#     as.numeric(mi$age_or_length), as.numeric(mm$age_or_length - 1)
-#   ),
-#   female = c(1, 1, 0, 0)
-# )
-#
-# p <- ggplot() +
-#   geom_line(
-#     data = nd_re, aes(age_or_length,
-#       as.numeric(glmm_re),
-#       group = paste(sample_id, female),
-#       # colour = "female"
-#       linetype = as.character(female)
-#     ),
-#     inherit.aes = FALSE,
-#     alpha = 1 / n_re2,
-#     show.legend = FALSE
-#   ) +
-#   # scale_linetype_manual(values = c("dotdash", "solid")) +
-#   geom_rug(
-#     data = filter(m$data, mature == "FALSE"), aes(
-#       x = age_or_length,
-#       y = mature_num,
-#       # colour = "female"
-#       linetype = as.character(female)
-#     ),
-#     sides = "b",
-#     length = unit(c(0.04), "npc"),
-#     alpha = c(0.05),
-#     # lty = 1,
-#     show.legend = FALSE
-#   ) +
-#   geom_rug(
-#     data = filter(m$data, mature == "TRUE"), aes(
-#       x = age_or_length,
-#       y =mature_num,
-#       # colour = "female"
-#       linetype = as.character(female)
-#     ),
-#     sides = "t",
-#     alpha = 0.05,
-#     # lty = 1,
-#     show.legend = FALSE
-#   ) +
-#   labs(x = "Length (cm)", y = "Probability mature") +
-#   theme(plot.margin = unit(c(5, 1, 1, 1), "lines")) +
-#   geom_vline(
-#     data = string,
-#     aes(
-#       xintercept = length,
-#       # colour = female
-#       linetype = as.character(female)
-#     ),
-#     show.legend = FALSE,
-#   ) +
-#   # facet_wrap(~female) +
-#   theme(strip.text.x = element_blank())
-#
-# p <- p + geom_text(data = ann_text, aes(age_or_length, glmm_re, label = lab, col = as.numeric(female)), show.legend = FALSE)
-# p
-# ggsave("figs/maturityogive_nofacet.png", width = 4, height = 3)
-
-# cowplot both figures ----------------------------------------------------
-
-# p
-# hist
-
-# cowplot::plot_grid(g_mat, ghist,
-#   labels = c("(a) ", " (b)"),
-#   # rel_heights = c(5, 1),
-#   label_x = 0, label_y = 0.85,
-#   align = "v",
-#   axis =
-#   nrow = 1,
-#   ncol = 2,
-#   label_size = 12,
-#   rel_widths = c(1, 2),
-#   label_fontfamily = "sans"
-# )
-#
-
-library(patchwork)
 layout <- "
-ABB
+AA
+BB
 "
+
 th <- theme(tagger.panel.tag.text = element_text(color = "grey30", size = 10))
 
 g_mat + tagger::tag_facets(tag = "panel",
-  tag_prefix = "", position = "tl", tag_suffix = "", tag_pool = c("(a) Maturity ogives")
+                           tag_prefix = "", position = "tl", tag_suffix = "",
+                           #tag_pool = c("(a) Maturity ogives")
+                           tag_pool = c("(a) Males", "(b) Females")
 ) + th +
   ghist +tagger::tag_facets(tag = "panel",
-    tag_prefix = "", tag_suffix = "", position = "tl", tag_pool = c("(b) Males", "(c) Females")
+                            tag_prefix = "", tag_suffix = "", position = "tl",
+                            tag_pool = c("(c) Males", "(d) Females")
   ) + th +
   plot_layout(design = layout)
 
-ggsave("figs/maturity-ogives.png", width = 9, height = 2.7)
-ggsave("figs/maturity-ogives.pdf", width = 9, height = 2.7)
+ggsave("figs/maturity-ogives-new.png", width = 6, height = 6)
+ggsave("figs/maturity-ogives-new.pdf", width = 6, height = 6)
+
+# # cowplot both figures ----------------------------------------------------
+#
+# # p
+# # hist
+#
+# # cowplot::plot_grid(g_mat, ghist,
+# #   labels = c("(a) ", " (b)"),
+# #   # rel_heights = c(5, 1),
+# #   label_x = 0, label_y = 0.85,
+# #   align = "v",
+# #   axis =
+# #   nrow = 1,
+# #   ncol = 2,
+# #   label_size = 12,
+# #   rel_widths = c(1, 2),
+# #   label_fontfamily = "sans"
+# # )
+# #
+#
+# library(patchwork)
+# layout <- "
+# ABB
+# "
+# th <- theme(tagger.panel.tag.text = element_text(color = "grey30", size = 10))
+#
+# g_mat + tagger::tag_facets(tag = "panel",
+#   tag_prefix = "", position = "tl", tag_suffix = "", tag_pool = c("(a) Maturity ogives")
+# ) + th +
+#   ghist +tagger::tag_facets(tag = "panel",
+#     tag_prefix = "", tag_suffix = "", position = "tl", tag_pool = c("(b) Males", "(c) Females")
+#   ) + th +
+#   plot_layout(design = layout)
+#
+# ggsave("figs/maturity-ogives.png", width = 9, height = 2.7)
+# ggsave("figs/maturity-ogives.pdf", width = 9, height = 2.7)
