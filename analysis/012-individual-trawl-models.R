@@ -235,8 +235,7 @@ fit_trawl_region <- function(dd) {
     #   "NWFSC.Combo", survey_name))
     #
     dd$survey_name <- factor(dd$survey_name,
-      levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "AFSC.Slope", "AFSC#.Slope1", "NWFSC.Slope", "Triennial", "Triennial1")
-    )
+      levels = c("NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "AFSC.Slope", "AFSC.Slope1", "NWFSC.Slope", "Triennial", "Triennial1"))
 
     # option 3 model no extra coeff calculated for early surveys
     # didn't converge
@@ -358,7 +357,6 @@ fit_trawl_region <- function(dd) {
     }
   }
 
-  nd$julian_c <- 0
   p <- predict(fit, newdata = nd, return_tmb_object = TRUE)
   ind <- get_index(p, bias_correct = TRUE, area = nd$area_km)
   list(index = ind, fit = fit, pred = p)
@@ -375,6 +373,8 @@ fit_trawl_region <- function(dd) {
 # saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds")
 # saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds")
 
+
+
 # out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds") # model with no no sep catch for afsc and nwfsc early and later surveys
 # out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") #model with sep catchabiltiy (Triennial, triennial early, afsc slope, afsc slope early, nwfsc combo and nwfsc slope and depth)
 # residuals
@@ -390,12 +390,13 @@ fit_trawl_region <- function(dd) {
 #   facet_wrap(~year) +
 #   coord_fixed()
 
-# out2 <- out
-# out <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-q-30-45.rds")
-# out$NWFSC <- out2$NWFSC #<- update one of the models
-# out$GOA <- out2$GOA
 
-out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+ #out2 <- out
+ #out <- readRDS("output/output/fit-trawl-by-region-lognormal-poisson-link.rds")
+ #out$NWFSC <- out2$NWFSC #<- update one of the models
+ #out$GOA <- out2$GOA
+
+#out <- split(dat, dat$region) |> lapply(fit_trawl_region)
 saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
 # out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
 
@@ -434,7 +435,7 @@ aa$region <- gsub("NWFSC", "US West Coast", aa$region)
 aa$region <- gsub("nwfsc", "US West Coast", aa$region)
 row.names(aa) <- NULL
 
-# Coast one
+# Coast model
 saveRDS(aa, "output/trawl-coast-indexes.rds")
 
 # NWFSC specific ones
