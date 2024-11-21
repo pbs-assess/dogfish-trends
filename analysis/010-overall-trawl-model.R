@@ -10,7 +10,8 @@ source("analysis/999-prep-overall-trawl.R")
 
 dat_coast <- filter(dat, survey_name %in%
     c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year >= 2003)
+  filter(year >= 2003) |>
+  filter(survey_abbrev != "HS MSA")
 dat_coast$survey_name <- factor(dat_coast$survey_name,
   levels = c("GOA", "syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2"))
 levels(dat_coast$survey_name)
