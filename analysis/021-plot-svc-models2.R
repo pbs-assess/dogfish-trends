@@ -4,6 +4,7 @@ library(ggplot2)
 library(sf)
 source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-rotate.R")
+#devtools::install_github("seananderson/ggsidekick")
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
 
 # #trying this to see if the map of absolute decline is more intuitive
@@ -186,9 +187,8 @@ ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
   geom_tile() +
   #scale_colour_viridis_c(trans = "log10") +
   colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0)# , trans = "sqrt",
+    palette = "RdBu", mid = 0, trans = "fourth_root_power")
     #limits = LIMS)
-unique(prs$group)
 
 prs |>
     filter(year == 2005) |>
@@ -205,13 +205,13 @@ prs |>
   geom_sf(data = rotated_coast, inherit.aes = FALSE, fill = "grey70", colour = "grey40") +
   geom_tile(width = 3000, height = 3000) +
   colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0 #,
-    #trans = "log10" #,
+    palette = "RdBu", mid = 0,
+    trans = "fourth_root_power" #,
     #limits = LIMS
   ) +
   colorspace::scale_fill_continuous_divergingx(
-    palette = "RdBu", mid = 0 #,
-    #trans = "log10" #,
+    palette = "RdBu", mid = 0,
+    trans = "fourth_root_power" #,
     #limits = LIMS
   ) +
   labs(fill = LAB, colour = LAB) +
