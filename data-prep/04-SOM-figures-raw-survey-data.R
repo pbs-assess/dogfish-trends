@@ -18,12 +18,12 @@ tl <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
 
 map_data <- rnaturalearth::ne_countries(scale = "large", returnclass = "sf")
 
-coastwide <- st_crop(
+coast <- st_crop(
   map_data,
   c(xmin = -170, ymin = 30, xmax = -120, ymax = 65)
 )
 
-coast_proj2 <- sf::st_transform(coastwide, crs = 32609)
+coast_proj2 <- sf::st_transform(coast, crs = 32609)
 
 goa_coast <- st_crop(
   map_data,
@@ -268,9 +268,9 @@ ggplot(tl, aes(longitude, latitude,
 # trawl summary by region -----------------------------------
 
 df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
-  filter(survey_abbrev %in% c("GOA"))
+#  filter(survey_abbrev %in% c("GOA"))
 # filter(survey_name %in% c("syn bc"))
-# filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope"))
+ filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope"))
 
 # rming NWFSC surveys?
 # rm1 <- df |> filter(survey_name == "AFSC.Slope" & year < 1997)
@@ -409,148 +409,263 @@ df |>
 ggsave("figs/SummaryPlot_rawtrawl_goa2.jpg", width = 26, height = 6)
 
 
-# trawl julian date figure ------------------------------------------------------
+# trawl julian, depth, and latitude figure ------------------------------------------------------
 
 df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
-
-p1 <-
-  df |>
-  filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope")) |>
+df <- df |>
+  mutate(region = ifelse(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope"), "US West Coast", survey_name)) |>
   mutate(survey_name = ifelse(survey_name == "NWFSC.Combo.pass1", "WCGBT pass 1",
     ifelse(survey_name == "NWFSC.Combo.pass2", "WCGBT pass 2", survey_name)
   )) |>
-  ggplot() +
-  # geom_histogram(aes((depth_m))) +
-  geom_jitter(aes(year, julian), alpha = 0.25) +
-  facet_wrap(~survey_name, nrow = 1) +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
+  mutate(region = ifelse(region == "syn bc", "BC",
+    ifelse(region == "Gulf of Alaska Bottom Trawl Survey", "Alaska", region)
+  ))
+df <- df |> dplyr::select(survey_name, survey_abbrev, region, bot_depth, julian, latitude, year)
+head(df)
 
-p2 <- df |>
-  filter(survey_name %in% c("syn bc")) |>
-  ggplot() +
-  # geom_histogram(aes((depth_m))) +
-  geom_jitter(aes(year, julian), alpha = 0.25) +
-  facet_wrap(~survey_abbrev, nrow = 1) +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
-
-p3 <- df |>
-  filter(survey_name %in% c("Gulf of Alaska Bottom Trawl Survey")) |>
-  ggplot() +
-  # geom_histogram(aes((depth_m))) +
-  geom_jitter(aes(year, julian), alpha = 0.25) +
-  facet_wrap(~survey_abbrev, nrow = 1) +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
-
-# cowplot::plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 12, nrow = 3, rel_widths = c(2, 2, 1))
-cowplot::plot_grid(
-  cowplot::plot_grid(p3, NULL,
-    ncol = 2, nrow = 1, rel_widths = c(1, 3)
-  ), p1, p2,
-  nrow = 3,
-  ncol = 1
+test <- df %>% tidyr::pivot_longer(
+  cols = c("julian", "latitude", "bot_depth"),
+  names_to = "variable",
+  values_to = "value"
 )
-ggsave("figs/SummaryPlot_julian.jpg", width = 12, height = 8)
 
+head(test)
+variable2 <- c(
+  julian = "Julian",
+  bot_depth = "Depth (m)",
+  latitude = "Latitude (N)"
+)
 
-
-# trawl depth variability plot --------------------------------------------
 p1 <-
-  df |>
-  filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope")) |>
+  test |>
+  ggplot() +
+  # geom_histogram(aes((depth_m))) +
+  geom_jitter(aes(year, value, colour = survey_abbrev), alpha = 0.25) +
+  facet_grid(
+    rows = vars(variable), col = vars(region), scales = "free_y",
+    labeller = labeller(variable = variable2)
+  ) +
+  scale_colour_viridis_d() +
+  theme_bw() +
+  ylab(NULL) +
+  xlab("Year") +
+  labs(colour = "Survey name") +
+  theme(
+    axis.text.y = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 15),
+    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+    strip.text = element_text(size = 15),
+    legend.key.size = unit(2, "line")
+  )
+
+p1
+ggsave("figs/SummaryPlot_allvars.jpg", width = 12, height = 8)
+
+
+
+
+
+# trawl julian, depth, and latitude figure ------------------------------------------------------
+
+df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
+  mutate(region = ifelse(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope"), "US West Coast", survey_name)) |>
   mutate(survey_name = ifelse(survey_name == "NWFSC.Combo.pass1", "WCGBT pass 1",
     ifelse(survey_name == "NWFSC.Combo.pass2", "WCGBT pass 2", survey_name)
   )) |>
-  ggplot() +
-  geom_jitter(aes(year, bot_depth), alpha = 0.25) +
-  # geom_jitter(aes(year, julian)) +
-  facet_wrap(~survey_name, nrow = 1) +
-  ylab("Depth (m)") +
-  xlab("Year") +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
+  mutate(region = ifelse(region == "syn bc", "BC",
+    ifelse(region == "Gulf of Alaska Bottom Trawl Survey", "Alaska", region)
+  )) |>
+  dplyr::select(survey_name, survey_abbrev, region, bot_depth, julian, latitude, year) |>
+  filter(year >= 2003) |>
+  filter(!survey_abbrev %in% c("Triennial", "HS MSA"))
 
-p2 <-
-  df |>
-  filter(survey_name %in% c("syn bc")) |>
-  ggplot() +
-  geom_jitter(aes(year, bot_depth), alpha = 0.25) +
-  facet_wrap(~survey_abbrev, nrow = 1) +
-  ylab("Depth (m)") +
-  xlab("Year") +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
-
-p3 <-
-  df |>
-  filter(survey_name %in% c("Gulf of Alaska Bottom Trawl Survey")) |>
-  ggplot() +
-  geom_jitter(aes(year, bot_depth), alpha = 0.25) +
-  facet_wrap(~survey_abbrev, nrow = 1) +
-  ylab("Depth (m)") +
-  xlab("Year") +
-  theme(
-    axis.text.y = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    legend.text = element_text(size = 20),
-    legend.title = element_text(size = 20),
-    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
-    strip.text = element_text(size = 15),
-    legend.key.size = unit(2, "line")
-  )
-
-# cowplot::plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 12, nrow = 3, rel_widths = c(2, 2, 1))
-cowplot::plot_grid(
-  cowplot::plot_grid(p3, NULL,
-    ncol = 2, nrow = 1, rel_widths = c(1, 3)
-  ), p1, p2,
-  nrow = 3,
-  ncol = 1
+test <- df %>% tidyr::pivot_longer(
+  cols = c("julian", "latitude", "bot_depth"),
+  names_to = "variable",
+  values_to = "value"
 )
 
-ggsave("figs/SummaryPlot_depth.jpg", width = 12, height = 8)
+head(test)
+variable2 <- c(
+  julian = "Julian",
+  bot_depth = "Depth (m)",
+  latitude = "Latitude (N)"
+)
+
+p1 <-
+  test |>
+  ggplot() +
+  # geom_histogram(aes((depth_m))) +
+  geom_jitter(aes(year, value, colour = survey_abbrev), alpha = 0.25) +
+  facet_grid(
+    rows = vars(variable), col = vars(region), scales = "free_y",
+    labeller = labeller(variable = variable2)
+  ) +
+  scale_colour_viridis_d() +
+  theme_bw() +
+  ylab(NULL) +
+  xlab("Year") +
+  labs(colour = "Survey name") +
+  theme(
+    axis.text.y = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 15),
+    axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+    strip.text = element_text(size = 15),
+    legend.key.size = unit(2, "line")
+  )
+
+p1
+ggsave("figs/SummaryPlot_allvars_coastalmodel.jpg", width = 12, height = 8)
 
 
 
 
-# Figures SOM julian date and IPHC, trawl surveys -------------------------------------
+# # didn't use trawl julian date figure ------------------------------------------------------
+#
+# df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds")
+#
+# p1 <-
+#   df |>
+#   filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope")) |>
+#   mutate(survey_name = ifelse(survey_name == "NWFSC.Combo.pass1", "WCGBT pass 1",
+#     ifelse(survey_name == "NWFSC.Combo.pass2", "WCGBT pass 2", survey_name)
+#   )) |>
+#   ggplot() +
+#   # geom_histogram(aes((depth_m))) +
+#   geom_jitter(aes(year, julian), alpha = 0.25) +
+#   facet_wrap(~survey_name, nrow = 1) +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# p2 <- df |>
+#   filter(survey_name %in% c("syn bc")) |>
+#   ggplot() +
+#   # geom_histogram(aes((depth_m))) +
+#   geom_jitter(aes(year, julian), alpha = 0.25) +
+#   facet_wrap(~survey_abbrev, nrow = 1) +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# p3 <- df |>
+#   filter(survey_name %in% c("Gulf of Alaska Bottom Trawl Survey")) |>
+#   ggplot() +
+#   # geom_histogram(aes((depth_m))) +
+#   geom_jitter(aes(year, julian), alpha = 0.25) +
+#   facet_wrap(~survey_abbrev, nrow = 1) +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# # cowplot::plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 12, nrow = 3, rel_widths = c(2, 2, 1))
+# cowplot::plot_grid(
+#   cowplot::plot_grid(p3, NULL,
+#     ncol = 2, nrow = 1, rel_widths = c(1, 3)
+#   ), p1, p2,
+#   nrow = 3,
+#   ncol = 1
+# )
+# ggsave("figs/SummaryPlot_julian.jpg", width = 12, height = 8)
+#
+#
+#
+# # didn't use trawl depth variability plot --------------------------------------------
+# p1 <-
+#   df |>
+#   filter(survey_name %in% c("NWFSC.Combo", "Triennial", "NWFSC.Slope", "NWFSC.Combo.pass2", "NWFSC.Combo.pass1", "AFSC.Slope")) |>
+#   mutate(survey_name = ifelse(survey_name == "NWFSC.Combo.pass1", "WCGBT pass 1",
+#     ifelse(survey_name == "NWFSC.Combo.pass2", "WCGBT pass 2", survey_name)
+#   )) |>
+#   ggplot() +
+#   geom_jitter(aes(year, bot_depth), alpha = 0.25) +
+#   # geom_jitter(aes(year, julian)) +
+#   facet_wrap(~survey_name, nrow = 1) +
+#   ylab("Depth (m)") +
+#   xlab("Year") +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# p2 <-
+#   df |>
+#   filter(survey_name %in% c("syn bc")) |>
+#   ggplot() +
+#   geom_jitter(aes(year, bot_depth), alpha = 0.25) +
+#   facet_wrap(~survey_abbrev, nrow = 1) +
+#   ylab("Depth (m)") +
+#   xlab("Year") +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# p3 <-
+#   df |>
+#   filter(survey_name %in% c("Gulf of Alaska Bottom Trawl Survey")) |>
+#   ggplot() +
+#   geom_jitter(aes(year, bot_depth), alpha = 0.25) +
+#   facet_wrap(~survey_abbrev, nrow = 1) +
+#   ylab("Depth (m)") +
+#   xlab("Year") +
+#   theme(
+#     axis.text.y = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     legend.text = element_text(size = 20),
+#     legend.title = element_text(size = 20),
+#     axis.text.x = element_text(angle = 45, vjust = 0.5, size = 15),
+#     strip.text = element_text(size = 15),
+#     legend.key.size = unit(2, "line")
+#   )
+#
+# # cowplot::plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 12, nrow = 3, rel_widths = c(2, 2, 1))
+# cowplot::plot_grid(
+#   cowplot::plot_grid(p3, NULL,
+#     ncol = 2, nrow = 1, rel_widths = c(1, 3)
+#   ), p1, p2,
+#   nrow = 3,
+#   ncol = 1
+# )
+#
+# ggsave("figs/SummaryPlot_depth.jpg", width = 12, height = 8)
+#
+#
+#
+
+# didnt use Figures SOM julian date and IPHC, trawl surveys -------------------------------------
 # df <- readRDS("output/Wrangled_USCan_trawldata_marmapdepth.rds") |>
 #   mutate(survey_abbrev2 = ifelse(survey_abbrev == "NWFSC.Combo" & julian <= 226, "NWFSC.Combo.pass1",
 #     ifelse(survey_abbrev == "NWFSC.Combo" & julian > 226, "NWFSC.Combo.pass2",
