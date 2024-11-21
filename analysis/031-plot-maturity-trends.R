@@ -2,11 +2,9 @@ library(ggplot2)
 library(dplyr)
 source("analysis/999-colours-etc.R")
 indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-tv-pe.rds")
 # indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds")
 # indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gamma.rds")
 # indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gamma-pe.rds")
-
 # indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gengamma.rds")
 # indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gengamma-pe.rds")
 
@@ -107,6 +105,14 @@ glmdf <- add_maturity_group_clean_column(glmdf)
 indexes <- clean_region_names(indexes)
 glmdf <- clean_region_names(glmdf)
 
+# slopevalues <- glmdf |>
+#   filter(region != "Coastwide") |>
+#   distinct(group, slope, .keep_all = TRUE)
+#
+# values <- indexes |>
+#   filter(region != "Coastwide", group_clean == "Mature females")
+
+#keep coastwide
 slopevalues <- glmdf |>
   filter(region != "Coastwide") |>
   distinct(group, slope, .keep_all = TRUE)
@@ -114,9 +120,8 @@ slopevalues <- glmdf |>
 values <- indexes |>
   filter(region != "Coastwide", group_clean == "Mature females")
 
-
 slopes_plot <- glmdf |>
-  filter(region != "Coastwide") |>
+  #filter(region != "Coastwide") |> #<- keeping coastwide in now
   select(group_clean, region, slope, lwr, upr) |> distinct() |>
   mutate(group_clean = as.character(group_clean)) |>
   mutate(group_clean = gsub(" females", "\nfemales", group_clean)) |>
@@ -239,7 +244,7 @@ quant <- qnorm(0.75)
 # quant <- qnorm(0.975)
 g1 <- indexes |>
   filter(year >= 2003) |>
-  filter(region != "Coastwide") |>
+  #filter(region != "Coastwide") |> #<- keep coastwide in now
   mutate(group_clean = forcats::fct_rev(group_clean)) |>
   group_by(group_clean, region) |>
   mutate(geo_mean = exp(mean(log_est))) |>
@@ -254,7 +259,7 @@ g1 <- indexes |>
   # mutate(region = gsub("Gulf of Alaska", "Gulf of\nAlaska", region)) |>
   # mutate(region = gsub("US West Coast", "US West\nCoast", region)) |>
   # mutate(region = factor(region, levels = c("Coastwide", "Gulf of\nAlaska", "British\nColumbia", "US West\nCoast"))) |>
-  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast"))) |>
+  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast", "Coastwide"))) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = region, fill = region)) +
   geom_line() +
   geom_ribbon(alpha = 0.2, colour = NA) +
@@ -275,7 +280,7 @@ g1
 
 g2 <- indexes |>
   filter(year >= 2003) |>
-  filter(region != "Coastwide") |>
+  #filter(region != "Coastwide") |>
   group_by(region) |>
   mutate(geo_mean = exp(mean(log_est))) |>
   mutate(
@@ -289,7 +294,7 @@ g2 <- indexes |>
   # mutate(region = gsub("Gulf of Alaska", "Gulf of\nAlaska", region)) |>
   # mutate(region = gsub("US West Coast", "US West\nCoast", region)) |>
   # mutate(region = factor(region, levels = c("Coastwide", "Gulf of\nAlaska", "British\nColumbia", "US West\nCoast"))) |>
-  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast"))) |>
+  mutate(region = factor(region, levels = c("Gulf of Alaska", "British Columbia", "US West Coast", "Coastwide"))) |>
   ggplot(aes(year, est, ymin = lwr, ymax = upr, colour = group_clean, fill = group_clean)) +
   geom_line() +
   geom_ribbon(alpha = 0.2, colour = NA) +
@@ -307,7 +312,7 @@ g2 <- indexes |>
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9)) +
   scale_y_continuous(trans = "log10") +
-  theme(legend.position.inside = c(0.835, 0.22), legend.position = "inside", legend.text = element_text(size = 7),
+  theme(legend.position.inside = c(0.755, 0.22), legend.position = "inside", legend.text = element_text(size = 7),
         #legend.title = element_text(size = 8),
         legend.title = element_blank()) +
   # theme(legend.position = "bottom")
@@ -332,6 +337,7 @@ g2 + th +
   g3 + th +
   g1 + th +
   plot_layout(design = layout)
+
 ggsave("figs/maturity-index-trends-combo.pdf", width = 9.2, height = 5)
 ggsave("figs/maturity-index-trends-combo.png", width = 9.2, height = 5)
 
