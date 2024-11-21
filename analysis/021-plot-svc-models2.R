@@ -72,7 +72,7 @@ grab_svc_pred_LD <- function(fit) {
     p <- p |> mutate(estsum = (est1) + (est2)) #+ (est_non_rf1) + (est_non_rf2) + (est_rf1) + (est_rf2))
     p <- p |>
       group_by(FID) |>
-      mutate(est_diff = estsum[which(year == 2023)] - estsum[which(year == 2005)]) |>
+      mutate(est_diff = exp(estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
       filter(year == 2005)
   } else {
     p <- p |>
@@ -80,7 +80,7 @@ grab_svc_pred_LD <- function(fit) {
       #dplyr::select(c(longitude, latitude, UTM.lon, UTM.lat, estsum, FID, year, year))
     p <- p |>
       group_by(FID) |>
-      mutate(est_diff = estsum[which(year == 2023)] - estsum[which(year == 2005)]) |>
+      mutate(est_diff = exp(estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
       filter(year == 2005)
   }
   p
@@ -236,8 +236,8 @@ for (i in seq_len(dim(coast_proj4)[1])) {
 }
 rotated_coast <- do.call(rbind, rotated_coast)
 
-
-LIMS <- c(0.05, 2)
+LIMS <- c(-0.5, 2) #<- set up limits to contract colour scheme and make visualizations better
+LIMS <- c(0.05, 2) #<- set up limits to contract colour scheme and make visualizations better
 LIMS <- c(0.0001, 1000) #<-
 #LAB <- "Proportion\nbiomass change\nper decade"
 LAB <- "Est. biomass change\n('05-'23)"
@@ -245,19 +245,20 @@ LAB <- "Est. biomass change\n('05-'23)"
 # main plot ---------------------------------------------------------------
 
 test <- prs |> filter(group == "Combined") |> filter(year == 2005)
-ggplot(test, aes(UTM.lon, UTM.lat, colour = exp(est_diff))) +
+ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
   geom_tile() +
   #scale_colour_viridis_c(trans = "log10") +
   colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0, trans = "log10",
-    limits = LIMS)
+    palette = "RdBu", mid = 0)# , trans = "sqrt",
+    #limits = LIMS)
 unique(prs$group)
 
 #g <-
   prs |>
+    filter(year == 2005) |>
   #mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
   #mutate(svc = ifelse(exp(svc) <= LIMS[1], log(LIMS[1] + 1e-6), svc)) |>
-  ggplot(aes(rotated_x, rotated_y, fill = exp(est_diff ), colour = exp(est_diff ))) +
+  ggplot(aes(rotated_x, rotated_y, fill = (est_diff ), colour = (est_diff ))) +
   theme_void() +
   theme(
     legend.position = "inside",
@@ -269,12 +270,12 @@ unique(prs$group)
   geom_tile(width = 3000, height = 3000) +
   colorspace::scale_colour_continuous_divergingx(
     palette = "RdBu", mid = 0,
-    trans = "log10",
+    #trans = "log10",
     limits = LIMS
   ) +
   colorspace::scale_fill_continuous_divergingx(
     palette = "RdBu", mid = 0,
-    trans = "log10",
+    #trans = "log10",
     limits = LIMS
   ) +
   labs(fill = LAB, colour = LAB) +
