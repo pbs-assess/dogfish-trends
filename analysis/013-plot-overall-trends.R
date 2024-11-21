@@ -7,6 +7,7 @@ source("analysis/999-colours-etc.R")
 set_starting_year <- 1980
 max_year <- 2023
 
+coef_year <- 2005
 set_starting_year_iphc <- 1998
 grey_bar_end <- set_starting_year_iphc-1
 
@@ -181,7 +182,7 @@ ind <- bind_rows(ind, ind_hs2) |>
 # }
 
 glmdf <- ind |>
-  filter(year >= 2005, model == "Combined") |>
+  filter(year >= coef_year, model == "Combined") |>
   group_by(region) |>
   group_split() |>
   purrr::map_dfr(\(x) {
