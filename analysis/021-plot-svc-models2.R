@@ -7,7 +7,6 @@ source("analysis/999-rotate.R")
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
 
 # #trying this to see if the map of absolute decline is more intuitive
-# #needs cleaning and not included in manuscript for now, rough
 
 # coastwide absolute declines map -----------------------------------------
 grid <- grid |>
@@ -31,29 +30,20 @@ grid <- grid |> mutate(year_scaled = ifelse(year == 2005, -0.5, 1.3))
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds") #<- bring in svc model
 p <- predict(fit, newdata = grid)
 glimpse(p)
-#p$expest <- rowSums(p[c("est2", "est_non_rf2", "est_rf2", "est1", "est_non_rf1", "est_rf1")]) # sum the model 1 and 2 est including random and non random effects
-p$expest <- rowSums(p[c("est1", "est2")]) # sum the model 1 and 2 est including random and non random effects
+p$exp_est1 <- exp(p$est1)
+p$exp_est2 <- exp(p$est2) #<- natural space here
+
+p$expest <- rowSums(p[c("exp_est1", "exp_est2")]) # sum the model 1 and 2 est including random and non random effects
 #p$expest <- p$est1 * p$est2 # should they be multiplied since they are in log space?
 
 p <- p |>
+  #filter(FID == 49326) |>
   group_by(FID) |>
-  mutate(est_diff = expest[which(year == 2023)] - expest[which(year == 2005)])
+  mutate(x = expest[which(year == 2005)], y = expest[which(year == 2023)]) |>
+  mutate(est_diff = y - x )
 
-# p <- p |>
-#   group_by(FID) |>
-#   mutate(est_diff = expest[which(year == 2023)]/expest[which(year == 2005)])
-
-ggplot(p, aes(UTM.lon, UTM.lat, colour = exp(expest))) +
-  geom_tile() +
-  scale_colour_viridis_c(trans = "log10")
-
-ggplot(p, aes(UTM.lon, UTM.lat, colour = exp(est_diff))) +
-  geom_tile() +
-  #scale_colour_viridis_c(trans = "log10") +
-  colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0, trans = "log10")
-
-ggplot(p, aes(UTM.lon, UTM.lat, colour = exp(est_diff))) +
+range(p$est_diff)
+ggplot(p, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
   geom_tile() +
   #scale_colour_viridis_c(trans = "log10") +
   colorspace::scale_colour_continuous_divergingx(
@@ -69,19 +59,24 @@ grab_svc_pred_LD <- function(fit) {
   cat("-")
   p <- predict(fit, newdata = filter(grid, year %in% c(2005, 2023)))
   if (sdmTMB:::is_delta(fit)) {
-    p <- p |> mutate(estsum = (est1) + (est2)) #+ (est_non_rf1) + (est_non_rf2) + (est_rf1) + (est_rf2))
+    p <- p |> mutate(estsum = exp(est1) + exp(est2)) #+ (est_non_rf1) + (est_non_rf2) + (est_rf1) + (est_rf2))
     p <- p |>
       group_by(FID) |>
-      mutate(est_diff = exp(estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
+      mutate(y = estsum[which(year == 2023)],  x = estsum[which(year == 2005)]) |>
+      mutate(est_diff = y-x) |>
       filter(year == 2005)
   } else {
     p <- p |>
-      mutate(estsum = (est) )# |> + (est_non_rf) + (est_rf)) # |>
-      #dplyr::select(c(longitude, latitude, UTM.lon, UTM.lat, estsum, FID, year, year))
-    p <- p |>
-      group_by(FID) |>
-      mutate(est_diff = exp(estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
+      mutate(estsum = (est)) |>
+      mutate(y = estsum[which(year == 2023)],  x = estsum[which(year == 2005)]) |>
+      mutate(est_diff = y-x) |>
       filter(year == 2005)
+      #mutate(estsum = (est) )
+      #dplyr::select(c(longitude, latitude, UTM.lon, UTM.lat, estsum, FID, year, year))
+    # p <- p |>
+    #   group_by(FID) |>
+    #   mutate(est_diff = (estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
+    #   filter(year == 2005)
   }
   p
 }
@@ -92,65 +87,6 @@ p <- c(list(p), preds) # add in the coast pred data
 names(p) <- c("Combined", names(preds))
 
 # ###end of determining change in biomass by grid cell
-
-
-# fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds")
-# b1 <- tidy(fit, model = 1)
-# b2 <- tidy(fit, model = 2)
-# z1 <- b1$estimate[b1$term == "year_scaled"]
-# z2 <- b2$estimate[b1$term == "year_scaled"]
-#
-# # pick any year:
-# p <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-# p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
-# # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
-# p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-# p$combined_intercept <- p_start$est1 + p_start$est2
-#
-# # instead of intercept at scaled year = 0 (i.e., 2010), take prediction at an
-# # early time step
-#
-# # mat_trend_fits <- readRDS("output/fit-trawl-by-maturity-poisson-link-gengamma.rds")
-# # mm <- lapply(mat_trend_fits, \(x) x$data$lengthgroup[1]) |> unlist()
-# # names(mat_trend_fits) <- mm
-# #
-# fit_trend <- readRDS("output/fit-trawl-coast-lognormal-mix-poisson-link-30-45.rds")
-#
-# # p_start <- predict(fit_trend, newdata = filter(grid, year == min(fit$data$year))) # 2005 or 2006
-# # p$combined_intercept <- p_start$est1 + p_start$est2
-#
-# # maturity svc fits -------------------------------------------------------
-#
-# fits <- readRDS("output/fit-trawl-svc-maturity.rds")
-#
-# lapply(fits, \(x) x$family)
-#
-# grab_svc_pred <- function(fit) {
-#   cat("-")
-#   p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
-#   if (sdmTMB:::is_delta(fit)) {
-#     b1 <- tidy(fit, model = 1)
-#     b2 <- tidy(fit, model = 2)
-#     z1 <- b1$estimate[b1$term == "year_scaled"]
-#     z2 <- b2$estimate[b1$term == "year_scaled"]
-#     p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
-#     # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
-#     p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-#     p$combined_intercept <- p_start$est1 + p_start$est2
-#   } else {
-#     b1 <- tidy(fit)
-#     z1 <- b1$estimate[b1$term == "year_scaled"]
-#     p$svc <- z1 + p$zeta_s_year_scaled
-#     # p$combined_intercept <- p$est_non_rf + p$omega_s
-#     p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-#     p$combined_intercept <- p_start$est
-#   }
-#   p
-# }
-# preds <- lapply(fits, grab_svc_pred)
-#
-# p <- c(list(p), preds)
-# names(p) <- c("Combined", names(preds))
 
 # rotate and shift coastline: ----------------------------------------
 
@@ -244,7 +180,8 @@ LAB <- "Est. biomass change\n('05-'23)"
 
 # main plot ---------------------------------------------------------------
 
-test <- prs |> filter(group == "Combined") |> filter(year == 2005)
+unique(prs$group)
+test <- prs |> filter(group == "imm") |> filter(year == 2005)
 ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
   geom_tile() +
   #scale_colour_viridis_c(trans = "log10") +
@@ -253,8 +190,7 @@ ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
     #limits = LIMS)
 unique(prs$group)
 
-#g <-
-  prs |>
+prs |>
     filter(year == 2005) |>
   #mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
   #mutate(svc = ifelse(exp(svc) <= LIMS[1], log(LIMS[1] + 1e-6), svc)) |>
@@ -269,14 +205,14 @@ unique(prs$group)
   geom_sf(data = rotated_coast, inherit.aes = FALSE, fill = "grey70", colour = "grey40") +
   geom_tile(width = 3000, height = 3000) +
   colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0,
-    #trans = "log10",
-    limits = LIMS
+    palette = "RdBu", mid = 0 #,
+    #trans = "log10" #,
+    #limits = LIMS
   ) +
   colorspace::scale_fill_continuous_divergingx(
-    palette = "RdBu", mid = 0,
-    #trans = "log10",
-    limits = LIMS
+    palette = "RdBu", mid = 0 #,
+    #trans = "log10" #,
+    #limits = LIMS
   ) +
   labs(fill = LAB, colour = LAB) +
   coord_sf(
