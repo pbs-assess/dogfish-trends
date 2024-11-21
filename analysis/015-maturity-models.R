@@ -10,9 +10,25 @@ rm(dat) # only keep 'grid'
 source("analysis/999-prep-maturity-split-data.R")
 d <- prep_maturity_split_data()
 
-ggplot(d, aes(X, Y, colour = survey_name)) + geom_point() +
+ggplot(d, aes(X, Y, colour = survey_name)) +
+  geom_point() +
   facet_wrap(~lengthgroup)
 table(d$survey_name, d$lengthgroup)
+
+group_by(d, survey_name, lengthgroup) |>
+  summarise(npos = mean(catch_weight > 0))
+
+uniqued <- d |>
+  dplyr::select(-c(lengthgroup, catch_weight_t, catch_weight_ratio)) |>
+  distinct(survey_name, fishing_event_id, year, .keep_all = TRUE)
+
+dtest <- d |>
+  filter(lengthgroup %in% c("mf", "mm")) |>
+  group_by(survey_name, fishing_event_id) |> #<- create a new group that is all mature individuals maturemf
+  summarize(lengthgroup = "mature", catch_weight_t = sum(catch_weight_t)) |>
+  left_join(uniqued)
+
+d <- bind_rows(dtest, d)
 
 group_by(d, survey_name, lengthgroup) |>
   summarise(npos = mean(catch_weight > 0))
@@ -34,7 +50,7 @@ min_edge <- 50
 max_edge <- 55
 
 mesh3 <- fmesher::fm_mesh_2d_inla(
-  loc = as.matrix(example_dat[,c("X", "Y")]),
+  loc = as.matrix(example_dat[, c("X", "Y")]),
   boundary = domain,
   max.edge = c(max_edge, 1000),
   offset = c(10, 300),
@@ -76,14 +92,14 @@ for (i in seq_along(groups)) {
     silent = TRUE,
     share_range = FALSE,
     priors = sdmTMBpriors(
-      matern_s = pc_matern(range_gt = max_edge*3, sigma_lt = 2),
-      matern_st = pc_matern(range_gt = max_edge*3, sigma_lt = 2)
+      matern_s = pc_matern(range_gt = max_edge * 3, sigma_lt = 2),
+      matern_st = pc_matern(range_gt = max_edge * 3, sigma_lt = 2)
     ),
   )
 
   # check if spatial SDs collapsed; if so fix at zero:
-  b1 <- tidy(fit, effects = 'ran_pars', model = 1, se.fit = TRUE)
-  b2 <- tidy(fit, effects = 'ran_pars', model = 2, se.fit = TRUE)
+  b1 <- tidy(fit, effects = "ran_pars", model = 1, se.fit = TRUE)
+  b2 <- tidy(fit, effects = "ran_pars", model = 2, se.fit = TRUE)
   .spatial <- list("on", "on")
   do_refit <- FALSE
   if (b1$estimate[b1$term == "sigma_O"] < 0.01 || is.na(b1$std.error[b1$term == "sigma_O"])) {
@@ -118,7 +134,8 @@ for (i in seq_along(groups)) {
   index_l <- lapply(yy, run_index_coastwide)
   index <- do.call(rbind, index_l)
   if (FALSE) {
-    ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) + geom_line() +
+    ggplot(index, aes(year, est, ymin = lwr, ymax = upr)) +
+      geom_line() +
       geom_ribbon(alpha = 0.2)
   }
 
