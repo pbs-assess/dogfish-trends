@@ -30,6 +30,7 @@ grid <- grid |> mutate(year_scaled = ifelse(year == 2005, -0.5, 1.3))
 
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds") #<- bring in svc model
 p <- predict(fit, newdata = grid)
+p$combined_intercept <- p$est1 + p$est2
 glimpse(p)
 p$exp_est1 <- exp(p$est1)
 p$exp_est2 <- exp(p$est2) #<- natural space here
@@ -187,7 +188,7 @@ ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
     palette = "RdBu", mid = 0, trans = "fourth_root_power", #)
     limits = LIMS)
 
-prs |>
+g1 <- prs |>
     filter(year == 2005) |>
   #mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
   #mutate(svc = ifelse(exp(svc) <= LIMS[1], log(LIMS[1] + 1e-6), svc)) |>
@@ -220,10 +221,116 @@ prs |>
     data = mids, mapping = aes(x = mean_x - 1000000, label = group_clean),
     y = 8500000, inherit.aes = FALSE, colour = "grey30", vjust = 1, hjust = 0
   )
+g1
 
-ggsave("figs/svc-trawl-absolute.pdf", width = 7, height = 5.5)
-ggsave("figs/svc-trawl-absolute.png", width = 7, height = 5.5)
 
+# put total biomass code back in ------------------------------------------
+grab_svc_pred <- function(fit) {
+  p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
+  if (sdmTMB:::is_delta(fit)) {
+    b1 <- tidy(fit, model = 1)
+    b2 <- tidy(fit, model = 2)
+    z1 <- b1$estimate[b1$term == "year_scaled"]
+    z2 <- b2$estimate[b1$term == "year_scaled"]
+    p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
+    # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
+    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+    p$combined_intercept <- p_start$est1 + p_start$est2
+  } else {
+    b1 <- tidy(fit)
+    z1 <- b1$estimate[b1$term == "year_scaled"]
+    p$svc <- z1 + p$zeta_s_year_scaled
+    # p$combined_intercept <- p$est_non_rf + p$omega_s
+    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
+    p$combined_intercept <- p_start$est
+  }
+  p
+}
+preds <- lapply(fits, grab_svc_pred)
+p <- c(list(p), preds)
+names(p) <- c("Combined", names(preds))
+
+pr <- lapply(p, apply_rotation_df)
+# NOTE: the ordering happens here! not in factor levels
+# right to left
+pr2 <- c(
+  "Combined" = list(pr$Combined),
+  "mf" = list(pr$mf),
+  "mm" = list(pr$mm),
+  "maturingf" = list(pr$maturingf),
+  "maturingm" = list(pr$maturingm),
+  "imm" = list(pr$imm)
+)
+
+prsl <- lapply(seq_along(pr), \(i) {
+  d <- pr2[[i]]
+  d$rotated_x <- d$rotated_x - 750000 * (i - 1)
+  d
+})
+names(prsl) <- names(pr2)
+
+source("analysis/999-colours-etc.R")
+prs <- bind_rows(prsl, .id = "group")
+prs <- add_maturity_group_clean_column(prs)
+lvls <- c("Combined", rev(levels(prs$group_clean)))
+
+prs$group_clean <- as.character(prs$group_clean)
+prs$group_clean <- if_else(is.na(prs$group_clean), "Combined", prs$group_clean)
+
+lvls <- gsub("Mature ", "Mature\n", lvls)
+lvls <- gsub("Maturing ", "Maturing\n", lvls)
+prs$group_clean <- gsub("Mature ", "Mature\n", prs$group_clean)
+prs$group_clean <- gsub("Maturing ", "Maturing\n", prs$group_clean)
+
+prs$group_clean <- factor(prs$group_clean, levels = lvls)
+pal <- rev(RColorBrewer::brewer.pal(3, name = "RdBu"))
+mids <- group_by(prs, group_clean) |> summarise(mean_x = mean(rotated_x))
+
+prs2 <- prs |>
+  mutate(combined_intercept = ifelse(group == "Combined",
+                                     combined_intercept + log(1000), combined_intercept))
+# scale right?
+LABS2 <- "Relative\nbiomass\ndensity"
+range01 <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
+prs3 <- prs2 |>
+  group_by(group_clean) |>
+  # mutate(combined_intercept = combined_intercept - mean(combined_intercept)) |>
+  mutate(LWR = quantile(combined_intercept, probs = c(0.005))) |>
+  mutate(UPR = quantile(combined_intercept, probs = c(0.995))) |>
+  mutate(combined_intercept = ifelse(combined_intercept >= UPR, UPR - 1e-6, combined_intercept)) |>
+  mutate(combined_intercept = ifelse(combined_intercept <= LWR, LWR + 1e-6, combined_intercept)) |>
+  mutate(combined_intercept = range01(exp(combined_intercept))) |>
+  ungroup()
+# LIMS_INT <- quantile(prs3$combined_intercept, probs = c(0.005, 0.995))
+
+g2 <- prs3 |>
+  ggplot(aes(rotated_x, rotated_y, fill = combined_intercept, colour = combined_intercept)) +
+  theme_void() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.08, 0.5),
+    legend.title = element_text(colour = "grey30", size = 10),
+    plot.background = element_rect(fill = "white", colour = NA)
+  ) +
+  geom_sf(data = rotated_coast, inherit.aes = FALSE, fill = "grey70", colour = "grey40") +
+  geom_tile(width = 3000, height = 3000) +
+  scale_colour_viridis_c(option = "D", trans = "sqrt") +
+  scale_fill_viridis_c(option = "D", trans = "sqrt") +
+  labs(fill = LABS2, colour = LABS2) +
+  coord_sf(
+    xlim = c(min(prs$rotated_x), 1546730 - 1800000),
+    ylim = range(prs$rotated_y) + c(0, 100000)
+  ) +
+  geom_text(
+    data = mids, mapping = aes(x = mean_x - 1000000, label = group_clean),
+    y = 8500000, inherit.aes = FALSE, colour = "grey30", vjust = 1, hjust = 0
+  )
+
+g <- cowplot::plot_grid(g2, g1, nrow = 2, align = "v", labels = c("(a)", "(b)"), label_fontface = "plain", label_colour = "grey30", label_size = 12)
+ggsave("figs/svc-trawl-stacked-start.pdf", width = 6.1, height = 10)
+ggsave("figs/svc-trawl-stacked-start.png", width = 6.1, height = 10)
 
 
 # plot with location names for SOM ----------------------------------------
@@ -266,3 +373,4 @@ p2 |>
    labs(fill = LAB, colour = LAB)
 
 ggsave("figs/location-map.png", width = 7, height = 5.5)
+
