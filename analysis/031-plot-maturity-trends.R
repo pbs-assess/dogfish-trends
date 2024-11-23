@@ -1,72 +1,9 @@
 library(ggplot2)
 library(dplyr)
 source("analysis/999-colours-etc.R")
-indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gamma.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gamma-pe.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gengamma.rds")
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gengamma-pe.rds")
 
-# ---------------
-# indexes <- readRDS("output/index-trawl-by-maturity-poisson-link-gengamma-pe2.rds")
-# ----------------
-
+indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds") #<- note mature group is here rm when plotting
 indexes$region <- factor(indexes$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
-
-# # fits1 <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
-# fits2 <- readRDS("output/fit-trawl-by-maturity-poisson-link-gamma-pe.rds")
-# #
-# # fits1 <- readRDS("output/fit-trawl-by-maturity-poisson-link-gengamma.rds")
-# fits2 <- readRDS("output/fit-trawl-by-maturity-poisson-link-gengamma-pe.rds")
-# #
-# # lapply(fits1, \(x) x$family)
-# # lapply(fits2, \(x) x$family)
-# lapply(fits2, \(x) {p <- get_pars(x);p$gengamma_Q})
-#
-# fits2a <- readRDS("output/fit-trawl-by-maturity-poisson-link-tv-pe.rds")
-# lapply(fits2a, \(x) {AIC(x)})
-#
-# s <- simulate(fits2a[[1]], nsim = 200, type = "mle-mvn")
-# r <- dharma_residuals(s, fits2a[[1]], return_DHARMa = TRUE)
-# DHARMa::plotQQunif(r)
-#
-# fits2b <- readRDS("output/fit-trawl-by-maturity-poisson-link-gengamma-pe.rds")
-# lapply(fits2b, \(x) {AIC(x)})
-#
-# s <- simulate(fits2b[[1]], nsim = 200, type = "mle-mvn")
-# r <- dharma_residuals(s, fits2b[[1]], return_DHARMa = TRUE)
-# DHARMa::plotQQunif(r)
-#
-# fits2a[[1]]
-# fits2b[[1]]
-# set.seed(1)
-# r1 <- residuals(fits2a[[1]], model = 2)
-# set.seed(1)
-# r2 <- residuals(fits2b[[1]], model = 2)
-#
-
-
-# mm <- lapply(fits2, \(x) x$data$lengthgroup[1]) |> unlist()
-#
-# x1 <- lapply(fits1, \(x) tidy(x, 'ran_pars')) |> setNames(mm) |>
-#   bind_rows(.id = "lengthgroup") |> mutate(linear_predictor = 1)
-# x2 <- lapply(fits1, \(x) tidy(x, 'ran_pars', model = 2)) |> setNames(mm) |>
-#   bind_rows(.id = "lengthgroup")|> mutate(linear_predictor = 2)
-# xx1 <- bind_rows(x1, x2) |> mutate(data = "excluding zero samples")
-#
-# x1 <- lapply(fits2, \(x) tidy(x, 'ran_pars')) |> setNames(mm) |>
-#   bind_rows(.id = "lengthgroup") |> mutate(linear_predictor = 1)
-# x2 <- lapply(fits2, \(x) tidy(x, 'ran_pars', model = 2)) |> setNames(mm) |>
-#   bind_rows(.id = "lengthgroup")|> mutate(linear_predictor = 2)
-# xx2 <- bind_rows(x1, x2)|> mutate(data = "including zero samples")
-#
-# bind_rows(xx2, xx1) |>
-#   group_by(lengthgroup, linear_predictor) |>
-#   mutate(term = ifelse(term == "range", paste(1:2, term), term)) |>
-#   ggplot(aes(estimate, lengthgroup, colour = data)) + geom_point() + facet_grid(linear_predictor~term, scales = "free_x")
-
-
 
 glmdf <- indexes |> filter(year >= 2005) |>
   group_by(region, group) |>
@@ -88,14 +25,14 @@ glmdf <- indexes |> filter(year >= 2005) |>
     ret
   })
 
-glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
+glmdf |> dplyr::select(group, region, slope, lwr, upr) |> distinct() |>
   mutate(slope = exp(slope))
 
-glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
+glmdf |> dplyr::select(group, region, slope, lwr, upr) |> distinct() |>
   filter(group == "imm") |>
   mutate(slope = exp(slope))
 
-glmdf |> select(group, region, slope, lwr, upr) |> distinct() |>
+glmdf |> dplyr::select(group, region, slope, lwr, upr) |> distinct() |>
   ggplot(aes(slope, region, xmin = lwr, xmax = upr, colour = group)) +
   geom_pointrange(position = position_dodge(width = 0.2)) +
   geom_vline(xintercept = 0, lty = 2)
@@ -120,9 +57,32 @@ slopevalues <- glmdf |>
 values <- indexes |>
   filter(region != "Coastwide", group_clean == "Mature females")
 
+mature_slopes_plot <- glmdf |>
+  dplyr::select(group_clean, region, slope, lwr, upr) |> distinct() |>
+  mutate(group_clean = as.character(group_clean)) |>
+  mutate(group_clean = gsub(" females", "\nfemales", group_clean)) |>
+  mutate(group_clean = gsub(" males", "\nmales", group_clean)) |>
+  mutate(group_clean = ifelse(is.na(group_clean) == TRUE, "Mature", group_clean)) |>
+  mutate(group_clean = factor(group_clean,
+                              levels = rev(c("Immature", "Maturing\nmales","Mature\nmales", "Maturing\nfemales", "Mature\nfemales", "Mature")))) |>
+  mutate(slope = exp(slope), lwr = exp(lwr), upr = exp(upr)) |>
+  ggplot(aes(slope, group_clean, xmin = lwr, xmax = upr, colour = region)) +
+  geom_vline(xintercept = 1, lty = 2, colour = "grey70") +
+  geom_pointrange(position = position_dodge(width = 0.3), pch = 21) +
+  scale_colour_manual(values = cols_region, guide = guide_legend(reverse = TRUE)) +
+  ggsidekick::theme_sleek() +
+  scale_x_log10(breaks = c(0.3, 0.5, 0.7, 1, 1.3)) +
+  theme(axis.title.y.left = element_blank()) +
+  xlab("Proportion per decade") +
+  labs(colour = "Region") +
+  coord_cartesian(xlim = c(0.2, 1.4))
+mature_slopes_plot
+ggsave("figs/maturity-index-trends-with-mature.pdf", width = 5, height = 8.5)
+
 slopes_plot <- glmdf |>
   #filter(region != "Coastwide") |> #<- keeping coastwide in now
-  select(group_clean, region, slope, lwr, upr) |> distinct() |>
+  filter(group != "mature") |> #<- keeping coastwide in now
+  dplyr::select(group_clean, region, slope, lwr, upr) |> distinct() |>
   mutate(group_clean = as.character(group_clean)) |>
   mutate(group_clean = gsub(" females", "\nfemales", group_clean)) |>
   mutate(group_clean = gsub(" males", "\nmales", group_clean)) |>
@@ -244,6 +204,7 @@ quant <- qnorm(0.75)
 # quant <- qnorm(0.975)
 g1 <- indexes |>
   filter(year >= 2003) |>
+  filter(group != "mature") |>
   #filter(region != "Coastwide") |> #<- keep coastwide in now
   mutate(group_clean = forcats::fct_rev(group_clean)) |>
   group_by(group_clean, region) |>
@@ -272,7 +233,7 @@ g1 <- indexes |>
   theme(panel.spacing = unit(-0.1,'lines')) +
   scale_x_continuous(breaks = seq(2005, 2025, 10)) +
   tagger::tag_facets(tag = "panel",
-    tag_prefix = "(", position = "tl", tag_pool = c("e", "f", "g", "h", "i")
+    tag_prefix = "(", position = "tl", tag_pool = c("f", "g", "h", "i", "j")
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9)) +
   theme(legend.position.inside = c(0.13, 0.73), legend.position = "inside", legend.text = element_text(size = 7), legend.title = element_text(size = 8))
@@ -323,7 +284,7 @@ g2
 library(patchwork)
 g3 <- slopes_plot + guides(colour = "none", fill = "none") +
   tagger::tag_facets(tag = "panel",
-  tag_prefix = "(", position = "tl", tag_pool = c("d")
+  tag_prefix = "(", position = "tl", tag_pool = c("e") #<- I think this is e
 ) + theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9))
 
 layout <- "
