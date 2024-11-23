@@ -3,20 +3,23 @@ library(dplyr)
 library(ggplot2)
 library(tictoc)
 
+
 # data prep -----------------------------------------------------------------
 source("data-prep/00-set-crs.R")
 source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
 source("analysis/999-prep-maturity-split-data.R")
+
 d <- prep_maturity_split_data()
+d <- d |> filter(year >= 2003) |> filter(survey_name != "HS MSA")
+
+group_by(d, survey_name, year) |> distinct(year, survey_name) |> print(n=200)
 
 ggplot(d, aes(X, Y, colour = survey_name)) +
   geom_point() +
   facet_wrap(~lengthgroup)
 table(d$survey_name, d$lengthgroup)
 
-group_by(d, survey_name, lengthgroup) |>
-  summarise(npos = mean(catch_weight > 0))
 
 uniqued <- d |>
   dplyr::select(-c(lengthgroup, catch_weight_t, catch_weight_ratio)) |>
@@ -138,6 +141,9 @@ for (i in seq_along(groups)) {
       geom_line() +
       geom_ribbon(alpha = 0.2)
   }
+
+  #saveRDS(index, file = "output/index-trawl-by-maturity-poisson-link-coastal.rds")
+  #saveRDS(fit, file = "output/fit-trawl-by-maturity-poisson-link-coastal.rds")
 
   # predict by region -------------------------------------------------------
 
