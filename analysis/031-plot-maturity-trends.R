@@ -2,7 +2,8 @@ library(ggplot2)
 library(dplyr)
 source("analysis/999-colours-etc.R")
 
-indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds") #<- note mature group is here rm when plotting
+indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds") #|>
+  #filter(group != "mature") #<- note mature group is here rm below when plotting
 indexes$region <- factor(indexes$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
 
 glmdf <- indexes |> filter(year >= 2005) |>
@@ -241,7 +242,7 @@ g1
 
 g2 <- indexes |>
   filter(year >= 2003) |>
-  #filter(region != "Coastwide") |>
+  filter(group != "mature") |>
   group_by(region) |>
   mutate(geo_mean = exp(mean(log_est))) |>
   mutate(
