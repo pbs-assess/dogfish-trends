@@ -15,22 +15,26 @@ m1_df
 m2_df <- tidy(fitq, conf.int = TRUE, model = 1)
 m2_df <- m2_df[c(1, 4:6), ]
 m2_df$model <- "model1"
-m2_df2 <- tidy(fitq, conf.int = TRUE, model = 1)
+
+m2_df2 <- tidy(fitq, conf.int = TRUE, model = 2)
 m2_df2 <- m2_df2[c(1, 4:6), ]
 m2_df2$model <- "model2"
+m2 <- bind_rows(m2_df, m2_df2)
+m2
 
 m2 <- bind_rows(m2_df, m2_df2)
 m2 <- m2 |>
-  mutate(term2 = c("BC", "GOA", "WCGBT pass 1", "WCGBT pass 2",
-                   "BC", "GOA", "WCGBT pass 1", "WCGBT pass 2"))
+  mutate(term2 = c("Intercept", "GOA", "WCGBT pass 1", "WCGBT pass 2",
+                   "Intercept", "GOA", "WCGBT pass 1", "WCGBT pass 2"))
 
+m2 <- m2 %>%
+  mutate(term2 = factor(term2, levels = c("WCGBT pass 2", "WCGBT pass 1", "GOA", "Intercept")))
 ggplot(m2, aes(estimate,term2)) +
   geom_point() +
   geom_linerange(aes(xmin = conf.low, xmax = conf.high)) +
   facet_wrap(~model) +
   geom_vline(xintercept = 0, colour = "grey50", linetype = 2) +
   xlab("Estimate") + ylab("Coastwide")
-
 
 ggsave("figs/coastwide-catchability-coeff-plot.png", width = 5, height = 3)
 
