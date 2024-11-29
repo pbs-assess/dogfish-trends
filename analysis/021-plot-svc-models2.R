@@ -4,8 +4,9 @@ library(ggplot2)
 library(sf)
 source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-rotate.R")
-#devtools::install_github("seananderson/ggsidekick")
+devtools::install_github("seananderson/ggsidekick")
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
+pred_year = 2005
 
 # absolute decline map
 
@@ -14,42 +15,37 @@ grid <- grid |>
   dplyr::select(-c(year, year_scaled)) |>
   distinct(.keep_all = TRUE)
 grid$FID <- seq(1, nrow(grid), 1)
-#years <- seq(min(dat$year), max(dat$year), 1) #<- first and last years
 years <- c(2005, 2023) #<- we assume it's linear so just assume linear change between the years
 grid <- purrr::map_dfr(years, ~ tibble(grid, year = .x))
+unique(grid$year)
 
 dat_coast <- filter(dat, survey_name %in%
   c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year >= 2005)
+  filter(year %in% c(2005, 2023))
+year_scaled <- unique(dat_coast$year_scaled)
 
-dat_coast |>
-  dplyr::select(year, year_scaled) |>
-  distinct(.keep_all = TRUE) #<- get the year scaled values that match the data
-
-grid <- grid |> mutate(year_scaled = ifelse(year == 2005, -0.5, 1.3))
+grid <- grid |> mutate(year_scaled = ifelse(year == 2005, year_scaled[1], year_scaled[2]))
 
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds") #<- bring in svc model
 p <- predict(fit, newdata = grid)
-p$combined_intercept <- p$est1 + p$est2
-glimpse(p)
-p$exp_est1 <- exp(p$est1)
-p$exp_est2 <- exp(p$est2) #<- natural space here
+p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
 
-p$expest <- rowSums(p[c("exp_est1", "exp_est2")]) # sum the model 1 and 2 est including random and non random effects
-#p$expest <- p$est1 * p$est2 # should they be multiplied since they are in log space?
-
+#<- why is the range of est_diff so low compared to the maturity groups???
 p <- p |>
-  #filter(FID == 49326) |>
+  mutate(expest = exp(p$est1 + p$est2)) |>
   group_by(FID) |>
   mutate(x = expest[which(year == 2005)], y = expest[which(year == 2023)]) |>
-  mutate(est_diff = y - x )
+  mutate(est_diff = y - x ) |>
+  filter(year == pred_year)
 
-range(p$est_diff)
 ggplot(p, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
   geom_tile() +
-  #scale_colour_viridis_c(trans = "log10") +
   colorspace::scale_colour_continuous_divergingx(
     palette = "RdBu", mid = 0)
+
+ggplot(p, aes(UTM.lon, UTM.lat, colour = exp(combined_intercept))) +
+  geom_tile() +
+  scale_colour_viridis_c(trans = "log10")
 
 
 # coastwide maturity classes absolute declines map -----------------------------------------
@@ -61,34 +57,30 @@ grab_svc_pred_LD <- function(fit) {
   cat("-")
   p <- predict(fit, newdata = filter(grid, year %in% c(2005, 2023)))
   if (sdmTMB:::is_delta(fit)) {
-    p <- p |> mutate(estsum = exp(est1) + exp(est2)) #+ (est_non_rf1) + (est_non_rf2) + (est_rf1) + (est_rf2))
-    p <- p |>
+    p <- p |> mutate(expest = exp(est1 + est2)) |>
       group_by(FID) |>
-      mutate(y = estsum[which(year == 2023)],  x = estsum[which(year == 2005)]) |>
+      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
       mutate(est_diff = y-x) |>
       filter(year == 2005)
+
+    p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
+
   } else {
     p <- p |>
-      mutate(estsum = (est)) |>
-      mutate(y = estsum[which(year == 2023)],  x = estsum[which(year == 2005)]) |>
+      mutate(expest = exp(est)) |>
+      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
       mutate(est_diff = y-x) |>
       filter(year == 2005)
-      #mutate(estsum = (est) )
-      #dplyr::select(c(longitude, latitude, UTM.lon, UTM.lat, estsum, FID, year, year))
-    # p <- p |>
-    #   group_by(FID) |>
-    #   mutate(est_diff = (estsum[which(year == 2023)] - estsum[which(year == 2005)])) |>
-    #   filter(year == 2005)
+
+    p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
   }
   p
 }
 
 preds <- lapply(fits, grab_svc_pred_LD)
-x <- preds$imm
 p <- c(list(p), preds) # add in the coast pred data
 names(p) <- c("Combined", names(preds))
 
-# ###end of determining change in biomass by grid cell
 
 # rotate and shift coastline: ----------------------------------------
 
@@ -174,22 +166,23 @@ for (i in seq_len(dim(coast_proj4)[1])) {
 }
 rotated_coast <- do.call(rbind, rotated_coast)
 
-LIMS <- c(-200, 200) #<- set up limits to contract colour scheme and make visualizations better
-LAB <- "Est. biomass change\n('05-'23)"
 
 # main plot ---------------------------------------------------------------
 
-unique(prs$group)
-test <- prs |> filter(group == "imm") |> filter(year == 2005)
-ggplot(test, aes(UTM.lon, UTM.lat, colour = (est_diff))) +
-  geom_tile() +
-  #scale_colour_viridis_c(trans = "log10") +
-  colorspace::scale_colour_continuous_divergingx(
-    palette = "RdBu", mid = 0, trans = "fourth_root_power", #)
-    limits = LIMS)
+LIMS <- c(-5000, 1400) #<- set up limits to contract colour scheme and make visualizations better
+LAB <- "Est. biomass change\n('05-'23)"
+
+#<- from 021-plot-svc-models.R, combined is so much lower
+ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
+
+prs <- prs |>
+  mutate(est_diff = ifelse(group == "Combined",
+                           est_diff * 100, est_diff))
+# scale right?
+ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
 
 g1 <- prs |>
-    filter(year == 2005) |>
+  #filter(year == 2023) |>
   #mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
   #mutate(svc = ifelse(exp(svc) <= LIMS[1], log(LIMS[1] + 1e-6), svc)) |>
   ggplot(aes(rotated_x, rotated_y, fill = (est_diff ), colour = (est_diff ))) +
@@ -223,77 +216,12 @@ g1 <- prs |>
   )
 g1
 
-
-# put total biomass code back in ------------------------------------------
-grab_svc_pred <- function(fit) {
-  p <- predict(fit, newdata = filter(grid, year == max(grid$year)))
-  if (sdmTMB:::is_delta(fit)) {
-    b1 <- tidy(fit, model = 1)
-    b2 <- tidy(fit, model = 2)
-    z1 <- b1$estimate[b1$term == "year_scaled"]
-    z2 <- b2$estimate[b1$term == "year_scaled"]
-    p$svc <- z1 + z2 + p$zeta_s_year_scaled1 + p$zeta_s_year_scaled2
-    # p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
-    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-    p$combined_intercept <- p_start$est1 + p_start$est2
-  } else {
-    b1 <- tidy(fit)
-    z1 <- b1$estimate[b1$term == "year_scaled"]
-    p$svc <- z1 + p$zeta_s_year_scaled
-    # p$combined_intercept <- p$est_non_rf + p$omega_s
-    p_start <- predict(fit, newdata = filter(grid, year == min(fit$data$year)))
-    p$combined_intercept <- p_start$est
-  }
-  p
-}
-preds <- lapply(fits, grab_svc_pred)
-p <- c(list(p), preds)
-names(p) <- c("Combined", names(preds))
-
-pr <- lapply(p, apply_rotation_df)
-# NOTE: the ordering happens here! not in factor levels
-# right to left
-pr2 <- c(
-  "Combined" = list(pr$Combined),
-  "mf" = list(pr$mf),
-  "mm" = list(pr$mm),
-  "maturingf" = list(pr$maturingf),
-  "maturingm" = list(pr$maturingm),
-  "imm" = list(pr$imm)
-)
-
-prsl <- lapply(seq_along(pr), \(i) {
-  d <- pr2[[i]]
-  d$rotated_x <- d$rotated_x - 750000 * (i - 1)
-  d
-})
-names(prsl) <- names(pr2)
-
-source("analysis/999-colours-etc.R")
-prs <- bind_rows(prsl, .id = "group")
-prs <- add_maturity_group_clean_column(prs)
-lvls <- c("Combined", rev(levels(prs$group_clean)))
-
-prs$group_clean <- as.character(prs$group_clean)
-prs$group_clean <- if_else(is.na(prs$group_clean), "Combined", prs$group_clean)
-
-lvls <- gsub("Mature ", "Mature\n", lvls)
-lvls <- gsub("Maturing ", "Maturing\n", lvls)
-prs$group_clean <- gsub("Mature ", "Mature\n", prs$group_clean)
-prs$group_clean <- gsub("Maturing ", "Maturing\n", prs$group_clean)
-
-prs$group_clean <- factor(prs$group_clean, levels = lvls)
-pal <- rev(RColorBrewer::brewer.pal(3, name = "RdBu"))
-mids <- group_by(prs, group_clean) |> summarise(mean_x = mean(rotated_x))
-
-prs2 <- prs |>
-  mutate(combined_intercept = ifelse(group == "Combined",
-                                     combined_intercept + log(1000), combined_intercept))
-# scale right?
 LABS2 <- "Relative\nbiomass\ndensity"
+
 range01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
+
 prs3 <- prs2 |>
   group_by(group_clean) |>
   # mutate(combined_intercept = combined_intercept - mean(combined_intercept)) |>
@@ -327,10 +255,12 @@ g2 <- prs3 |>
     data = mids, mapping = aes(x = mean_x - 1000000, label = group_clean),
     y = 8500000, inherit.aes = FALSE, colour = "grey30", vjust = 1, hjust = 0
   )
-
+g2
 g <- cowplot::plot_grid(g2, g1, nrow = 2, align = "v", labels = c("(a)", "(b)"), label_fontface = "plain", label_colour = "grey30", label_size = 12)
-ggsave("figs/svc-trawl-stacked-start.pdf", width = 6.1, height = 10)
-ggsave("figs/svc-trawl-stacked-start.png", width = 6.1, height = 10)
+
+ggsave("figs/svc-trawl-stacked-abs.pdf", width = 6.1, height = 10)
+ggsave("figs/svc-trawl-stacked-abs.png", width = 6.1, height = 10)
+
 
 
 # plot with location names for SOM ----------------------------------------
@@ -370,7 +300,7 @@ p2 |>
     trans = "fourth_root_power",
     limits = LIMS
   ) +
-   labs(fill = LAB, colour = LAB)
+  labs(fill = LAB, colour = LAB)
 
 ggsave("figs/location-map.png", width = 7, height = 5.5)
 
