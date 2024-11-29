@@ -8,7 +8,7 @@ write_tex <- function(x, macro, append = TRUE) {
 }
 
 glmdf <- readRDS("output/glmdf-overall-trends.rds")
-decades <- (2022-2005)/10
+decades <- (2023-2005)/10
 s <- glmdf |> select(region, slope, lwr, upr) |> distinct() |>
   mutate(slope_dec = 100 * (1 - exp(slope * decades)), lwr_dec = 100 * (1 - exp(lwr * decades)), upr_dec = 100 * (1 - exp(upr * decades))) |>
   mutate(slope = exp(slope), lwr = exp(lwr), upr = exp(upr)) |>
@@ -30,7 +30,7 @@ for (i in seq(nrow(s))) {
   write_tex(x$propAbs, macro = paste0(x$tag, "PropAbs"))
 }
 
-svc <- readRDS("output/svc-spatial-data.rds")
+svc <- readRDS("output/svc-spatial-data.rds") #<- from 021-plot-svc-models.R
 
 write_tex(mround(100 * mean(exp(svc$svc) < 0.2), 0), "SVCeighty")
 
