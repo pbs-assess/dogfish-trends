@@ -134,20 +134,12 @@ rotated_coast <- do.call(rbind, rotated_coast)
 LIMS <- c(0.05, 2)
 LAB <- "Proportion\nbiomass change\nper decade"
 
+#<- scale looks good now
 ggplot(prs, aes(exp(combined_intercept))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
-
-prs2 <- prs |>
-  mutate(combined_intercept = ifelse(group == "Combined",
-                                     combined_intercept + log(1000), combined_intercept))
-
-# scale right?
-ggplot(prs2, aes(exp(combined_intercept))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
-
-
 
 # main plot ---------------------------------------------------------------
 
-g1 <- prs2 |>
+g1 <- prs |>
   mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
   mutate(svc = ifelse(exp(svc) <= LIMS[1], log(LIMS[1] + 1e-6), svc)) |>
   ggplot(aes(rotated_x, rotated_y, fill = exp(svc), colour = exp(svc))) +
@@ -184,7 +176,7 @@ range01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
-prs3 <- prs2 |>
+prs3 <- prs |>
   group_by(group_clean) |>
   # mutate(combined_intercept = combined_intercept - mean(combined_intercept)) |>
   mutate(LWR = quantile(combined_intercept, probs = c(0.005))) |>
