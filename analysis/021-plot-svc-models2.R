@@ -60,7 +60,7 @@ grab_svc_pred_LD <- function(fit) {
     p <- p |> mutate(expest = exp(est1 + est2)) |>
       group_by(FID) |>
       mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
-      mutate(est_diff = y-x) #|>
+      mutate(est_diff = y-x) |>
       filter(year == 2005)
 
     p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
@@ -69,7 +69,7 @@ grab_svc_pred_LD <- function(fit) {
     p <- p |>
       mutate(expest = exp(est)) |>
       mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
-      mutate(est_diff = y-x) #|>
+      mutate(est_diff = y-x) |>
       filter(year == 2005)
 
     p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
@@ -169,16 +169,10 @@ rotated_coast <- do.call(rbind, rotated_coast)
 
 # main plot ---------------------------------------------------------------
 
-LIMS <- c(-4000, 1400) #<- set up limits to contract colour scheme and make visualizations better
+LIMS <- c(-12, 4) #<- set up limits to contract colour scheme and make visualizations better
 LAB <- "Est. biomass change\n('05-'23)"
 
-#<- from 021-plot-svc-models.R, combined is so much lower
-ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
-
-prs <- prs |>
-  mutate(est_diff = ifelse(group == "Combined",
-                           est_diff * 50, est_diff))
-# scale right?
+#scale ok?
 ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
 
 g1 <- prs |>
@@ -222,7 +216,7 @@ range01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
-prs3 <- prs2 |>
+prs3 <- prs |>
   group_by(group_clean) |>
   # mutate(combined_intercept = combined_intercept - mean(combined_intercept)) |>
   mutate(LWR = quantile(combined_intercept, probs = c(0.005))) |>
