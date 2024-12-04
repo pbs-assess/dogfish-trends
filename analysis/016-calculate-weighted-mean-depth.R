@@ -4,7 +4,8 @@ source("analysis/999-prep-overall-trawl.R")
 
 dat |> group_by(survey_name) |> drop_na(bottom_temp_c) |> summarize(min = min(bottom_temp_c), max = max(bottom_temp_c))
 
-fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
+fits <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds") #<- st model
+#fits <- readRDS(file = "output/fit-trawl-by-maturity-poisson-link-sp-only.rds") #avg density model
 grid <- readRDS("output/pred-coastal-temp-grid.rds") #<- from 999-prep-temp-grid.R
 grid <- grid$data
 unique(grid$region)
@@ -68,12 +69,15 @@ run_mean_var_by_maturity_mvn <- function(i) {
     p <- reshape2::melt(pred) |> rename(year = Var1, iter = Var2, biomass = value)
     p$cell_id <- rep(seq_len(nrow(nd)), .nsim)
     nd$cell_id <- seq_len(nrow(nd))
+    p <- p |> group_by(cell_id, iter) |> #<- new
+    mutate(avg.density = mean(biomass))
     p <- left_join(p, select(nd, cell_id, bot_depth, bottom_temp_c), by = join_by(cell_id))
     cat("Summarizing samples\n")
     p |>
       group_by(year, iter) |>
       mutate(weighted_var = sum((bot_depth * biomass) / sum(biomass))) |>
       mutate(weighted_temp = sum((bottom_temp_c * biomass) / sum(biomass))) |>
+      mutate(weighted_temp_constantden = sum((bottom_temp_c * avg.density) / sum(avg.density))) |>
       group_by(year) |>
       summarise(
         mean_depth = mean(weighted_var),
@@ -116,6 +120,7 @@ ret <- lapply(seq_along(mats), run_mean_var_by_maturity_mvn)
 ret <- do.call(rbind, ret)
 
 #saveRDS(ret, file = "output/biomass-weighted-depth.rds")
-saveRDS(ret, file = "output/biomass-weighted-depth-temp.rds")
+#saveRDS(ret, file = "output/biomass-weighted-depth-temp.rds")
+saveRDS(ret, file = "output/biomass-weighted-depth-temp-sp-only.rds")
 
 
