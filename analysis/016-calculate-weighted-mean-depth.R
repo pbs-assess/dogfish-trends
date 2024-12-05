@@ -54,6 +54,9 @@ if (FALSE) {
 
 # do it with MVN draws for uncertainty --------------------------------------
 
+mm <- mem.maxVSize()
+mem.maxVSize(mm*1.5)
+
 run_mean_var_by_maturity_mvn <- function(i) {
   cat("\n#", names(fits)[i], "\n")
   out <- run_mean_var_by_region <- function(r) {
@@ -68,14 +71,18 @@ run_mean_var_by_maturity_mvn <- function(i) {
     pred <- predict(fits[[i]], newdata = nd, nsim = .nsim)
     pred <- exp(pred + log(nd$area_km)) # area expansion
     p <- reshape2::melt(pred) |> rename(year = Var1, iter = Var2, biomass = value)
-    p$cell_id <- rep(seq_len(nrow(nd)), .nsim)
-    nd$cell_id <- seq_len(nrow(nd))
 
-    # Convert p to a data.table if not already
+    nyrs <- length(unique(p$year))
+    ncells <- nrow(pred)/nyrs
+    cell_ids <- seq_len(ncells)
+    cell_ids <- rep(cell_ids, nyrs) # go through years first within an iteration
+    p$cell_id <- rep(cell_ids, .nsim) # then by iteration
+    nd$cell_id <- cell_ids # all years, 1 'iteration'
+
+    # Convert p to a data.table
     setDT(p)
     setDT(nd)
 
-    # Step 1: Add avg_density column
     p[, avg_density := mean(biomass), by = .(cell_id, iter)]
 
     # Step 2: Perform the join
@@ -135,6 +142,7 @@ run_mean_var_by_maturity_mvn <- function(i) {
     #   ) |>
     #   mutate(region = r)
   }
+  # out <- lapply(c(regions, "Coastwide"), run_mean_var_by_region)
   out <- lapply(c(regions, "Coastwide"), run_mean_var_by_region)
   out <- do.call(rbind, out)
   out$maturity_group <- mats[i]
@@ -146,6 +154,7 @@ ret <- do.call(rbind, ret)
 
 #saveRDS(ret, file = "output/biomass-weighted-depth.rds")
 #saveRDS(ret, file = "output/biomass-weighted-depth-temp.rds")
-saveRDS(ret, file = "output/biomass-weighted-depth-temp-sp-only.rds")
+# saveRDS(ret, file = "output/biomass-weighted-depth-temp-sp-only.rds")
+saveRDS(ret, file = "output/biomass-weighted-depth-temp-constant.rds")
 
 

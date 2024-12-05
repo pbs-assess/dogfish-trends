@@ -6,7 +6,8 @@ theme_set(ggsidekick::theme_sleek())
 source("analysis/999-colours-etc.R")
 
 #ret <- readRDS("output/biomass-weighted-depth.rds")
-ret <- readRDS("output/biomass-weighted-depth-temp.rds") #<- include depth and temp
+# ret <- readRDS("output/biomass-weighted-depth-temp.rds") #<- include depth and temp
+ret <- readRDS("output/biomass-weighted-depth-temp-constant.rds")
 
 ret <- filter(ret, maturity_group != "mature")
 ret <- rename(ret, group = maturity_group)
@@ -69,3 +70,29 @@ print(g)
 
 ggsave("figs/biomass-weighted-temp.png", width = 7.3, height = 2.8)
 ggsave("figs/biomass-weighted-temp.pdf", width = 7.3, height = 2.8)
+
+
+g <- ret |>
+  filter(region != "Coastwide") |>
+  ggplot(aes(year, mean_temp_constant_density , colour = group_clean, fill = group_clean)) +
+  geom_line() +
+  geom_ribbon(aes(
+    ymin = lwr25_temp_constant_density,
+    ymax = upr75_temp_constant_density),
+    colour = NA, alpha = 0.3
+  ) +
+  facet_wrap(~region, nrow = 1L) +
+  #scale_y_reverse() +
+  scale_colour_manual(values = cols_maturities) +
+  scale_fill_manual(values = cols_maturities) +
+  labs(
+    fill = "Group", colour = "Group", x = "Year",
+    y = "Biomass-weighted mean temp (C)"
+  ) +
+  theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
+  # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
+  tagger::tag_facets(tag = "panel",
+    tag_prefix = "(", position = "tl"
+  ) +
+  theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
+print(g)
