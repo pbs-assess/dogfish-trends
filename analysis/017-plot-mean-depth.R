@@ -108,7 +108,11 @@ print(g3)
 
 patchwork::wrap_plots(
   g + theme(legend.position.inside = c(0.1, 0.32)),
-  g2 + theme(legend.position = "none"),
-  g3 + theme(legend.position = "none"), ncol = 1, axis_titles = "collect", axes = "collect")
-ggsave("figs/biomass-weighted-temp-constant.png", width = 7.3, height = 7.5)
-ggsave("figs/biomass-weighted-temp-constant.pdf", width = 7.3, height = 7.5)
+  g2 + theme(legend.position = "none") + theme(legend.position = "none",
+    strip.background = element_blank(),
+    strip.text.x = element_blank()),
+  g3 + theme(legend.position = "none") + theme(legend.position = "none",
+    strip.background = element_blank(),
+    strip.text.x = element_blank()), ncol = 1, axis_titles = "collect", axes = "collect")
+ggsave("figs/biomass-weighted-temp-constant.png", width = 7.3, height = 7.3)
+ggsave("figs/biomass-weighted-temp-constant.pdf", width = 7.3, height = 7.3)
