@@ -79,30 +79,27 @@ run_mean_var_by_maturity_mvn <- function(i) {
     p$cell_id <- rep(cell_ids, .nsim) # then by iteration
     nd$cell_id <- cell_ids # all years, 1 'iteration'
 
-    # Convert p to a data.table
+    # convert to data.table in place
     setDT(p)
     setDT(nd)
 
     p[, avg_density := mean(biomass), by = .(cell_id, iter)]
 
-    # Step 2: Perform the join
     p <- merge(
       p,
-      nd[, .(cell_id, bot_depth, bottom_temp_c)],
-      by = "cell_id",
+      nd[, .(year, cell_id, bot_depth, bottom_temp_c)],
+      by = c("cell_id", "year"),
       all.x = TRUE
     )
 
     cat("Summarizing samples\n")
 
-    # Step 3: Add weighted columns by year and iter
     p[, `:=`(
       weighted_var = sum(bot_depth * biomass) / sum(biomass),
       weighted_temp = sum(bottom_temp_c * biomass) / sum(biomass),
       weighted_temp_constant_density = sum(bottom_temp_c * avg_density) / sum(avg_density)
     ), by = .(year, iter)]
 
-    # Step 4: Summarize results by year
     summary_p <- p[, .(
       mean_depth = mean(weighted_var),
       lwr25 = quantile(weighted_var, probs = 0.25),
@@ -115,10 +112,8 @@ run_mean_var_by_maturity_mvn <- function(i) {
       upr75_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.75)
     ), by = year]
 
-    # Step 5: Add the region column
     summary_p[, region := r]
     setDF(summary_p)
-
 
     # p <- p |> group_by(cell_id, iter) |> mutate(avg_density = mean(biomass)) |> ungroup()
     # p <- left_join(p, select(nd, cell_id, bot_depth, bottom_temp_c), by = join_by(cell_id))
