@@ -1,10 +1,10 @@
 library(dplyr)
 library(ggplot2)
+library(patchwork)
 #devtools::install_github("seananderson/ggsidekick")
 #devtools::install_github("eliocamp/tagger")
 theme_set(ggsidekick::theme_sleek())
 source("analysis/999-colours-etc.R")
-
 #ret <- readRDS("output/biomass-weighted-depth.rds")
 # ret <- readRDS("output/biomass-weighted-depth-temp.rds") #<- include depth and temp
 ret <- readRDS("output/biomass-weighted-depth-temp-constant.rds")
@@ -30,7 +30,7 @@ g <- ret |>
   scale_fill_manual(values = cols_maturities) +
   labs(
     fill = "Group", colour = "Group", x = "Year",
-    y = "Biomass-weighted mean depth (m)"
+    y = "Biomass-weighted\nmean depth (m)"
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.1, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
@@ -63,7 +63,7 @@ g2 <- ret |>
   theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
   tagger::tag_facets(tag = "panel",
-                     tag_prefix = "(", position = "tl"
+                     tag_prefix = "(", position = "tl", tag_pool = c("d", "e", "f")
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
 print(g2)
@@ -71,6 +71,15 @@ print(g2)
 ggsave("figs/biomass-weighted-temp.png", width = 7.3, height = 2.8)
 ggsave("figs/biomass-weighted-temp.pdf", width = 7.3, height = 2.8)
 
+patchwork::wrap_plots(
+  g + theme(legend.position.inside = c(0.1, 0.32)),
+  g2 + theme(legend.position = "none",
+    strip.background = element_blank(),
+    strip.text.x = element_blank()),
+  ncol = 1,
+  axis_titles = "collect", axes = "collect")
+ggsave("figs/biomass-weighted-temp.png", width = 7.3, height = 4.5)
+ggsave("figs/biomass-weighted-temp.pdf", width = 7.3, height = 4.5)
 
 g3 <- ret |>
   filter(region != "Coastwide") |>
@@ -97,5 +106,4 @@ g3 <- ret |>
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
 print(g3)
 
-library(patchwork)
 patchwork::wrap_plots(g, g2, g3, ncol = 1)
