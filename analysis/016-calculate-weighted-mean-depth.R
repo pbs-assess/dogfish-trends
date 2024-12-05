@@ -1,5 +1,6 @@
 library(dplyr)
 library(sdmTMB)
+library(data.table)
 source("analysis/999-prep-overall-trawl.R")
 
 dat |> group_by(survey_name) |> drop_na(bottom_temp_c) |> summarize(min = min(bottom_temp_c), max = max(bottom_temp_c))
@@ -69,27 +70,70 @@ run_mean_var_by_maturity_mvn <- function(i) {
     p <- reshape2::melt(pred) |> rename(year = Var1, iter = Var2, biomass = value)
     p$cell_id <- rep(seq_len(nrow(nd)), .nsim)
     nd$cell_id <- seq_len(nrow(nd))
-    p <- p |> group_by(cell_id, iter) |> mutate(avg_density = mean(biomass)) |> ungroup()
-    p <- left_join(p, select(nd, cell_id, bot_depth, bottom_temp_c), by = join_by(cell_id))
+
+    # Convert p to a data.table if not already
+    setDT(p)
+    setDT(nd)
+
+    # Step 1: Add avg_density column
+    p[, avg_density := mean(biomass), by = .(cell_id, iter)]
+
+    # Step 2: Perform the join
+    p <- merge(
+      p,
+      nd[, .(cell_id, bot_depth, bottom_temp_c)],
+      by = "cell_id",
+      all.x = TRUE
+    )
+
     cat("Summarizing samples\n")
-    p |>
-      group_by(year, iter) |>
-      mutate(weighted_var = sum((bot_depth * biomass) / sum(biomass))) |>
-      mutate(weighted_temp = sum((bottom_temp_c * biomass) / sum(biomass))) |>
-      mutate(weighted_temp_constant_density = sum((bottom_temp_c * avg_density) / sum(avg_density))) |>
-      group_by(year) |>
-      summarise(
-        mean_depth = mean(weighted_var),
-        lwr25 = quantile(weighted_var, probs = 0.25),
-        upr75 = quantile(weighted_var, probs = 0.75),
-        mean_temp = mean(weighted_temp),
-        lwr25_temp = quantile(weighted_temp, probs = 0.25),
-        upr75_temp = quantile(weighted_temp, probs = 0.75),
-        mean_temp_constant_density = mean(weighted_temp_constant_density),
-        lwr25_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.25),
-        upr75_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.75)
-      ) |>
-      mutate(region = r)
+
+    # Step 3: Add weighted columns by year and iter
+    p[, `:=`(
+      weighted_var = sum(bot_depth * biomass) / sum(biomass),
+      weighted_temp = sum(bottom_temp_c * biomass) / sum(biomass),
+      weighted_temp_constant_density = sum(bottom_temp_c * avg_density) / sum(avg_density)
+    ), by = .(year, iter)]
+
+    # Step 4: Summarize results by year
+    summary_p <- p[, .(
+      mean_depth = mean(weighted_var),
+      lwr25 = quantile(weighted_var, probs = 0.25),
+      upr75 = quantile(weighted_var, probs = 0.75),
+      mean_temp = mean(weighted_temp),
+      lwr25_temp = quantile(weighted_temp, probs = 0.25),
+      upr75_temp = quantile(weighted_temp, probs = 0.75),
+      mean_temp_constant_density = mean(weighted_temp_constant_density),
+      lwr25_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.25),
+      upr75_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.75)
+    ), by = year]
+
+    # Step 5: Add the region column
+    summary_p[, region := r]
+    setDF(summary_p)
+
+
+    # p <- p |> group_by(cell_id, iter) |> mutate(avg_density = mean(biomass)) |> ungroup()
+    # p <- left_join(p, select(nd, cell_id, bot_depth, bottom_temp_c), by = join_by(cell_id))
+    # cat("Summarizing samples\n")
+    # p |>
+    #   group_by(year, iter) |>
+    #   mutate(weighted_var = sum((bot_depth * biomass) / sum(biomass))) |>
+    #   mutate(weighted_temp = sum((bottom_temp_c * biomass) / sum(biomass))) |>
+    #   mutate(weighted_temp_constant_density = sum((bottom_temp_c * avg_density) / sum(avg_density))) |>
+    #   group_by(year) |>
+    #   summarise(
+    #     mean_depth = mean(weighted_var),
+    #     lwr25 = quantile(weighted_var, probs = 0.25),
+    #     upr75 = quantile(weighted_var, probs = 0.75),
+    #     mean_temp = mean(weighted_temp),
+    #     lwr25_temp = quantile(weighted_temp, probs = 0.25),
+    #     upr75_temp = quantile(weighted_temp, probs = 0.75),
+    #     mean_temp_constant_density = mean(weighted_temp_constant_density),
+    #     lwr25_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.25),
+    #     upr75_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.75)
+    #   ) |>
+    #   mutate(region = r)
   }
   out <- lapply(c(regions, "Coastwide"), run_mean_var_by_region)
   out <- do.call(rbind, out)
