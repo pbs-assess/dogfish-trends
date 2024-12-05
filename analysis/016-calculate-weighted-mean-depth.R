@@ -69,48 +69,29 @@ run_mean_var_by_maturity_mvn <- function(i) {
     p <- reshape2::melt(pred) |> rename(year = Var1, iter = Var2, biomass = value)
     p$cell_id <- rep(seq_len(nrow(nd)), .nsim)
     nd$cell_id <- seq_len(nrow(nd))
-    p <- p |> group_by(cell_id, iter) |> #<- new
-    mutate(avg.density = mean(biomass))
+    p <- p |> group_by(cell_id, iter) |> mutate(avg_density = mean(biomass)) |> ungroup()
     p <- left_join(p, select(nd, cell_id, bot_depth, bottom_temp_c), by = join_by(cell_id))
     cat("Summarizing samples\n")
     p |>
       group_by(year, iter) |>
       mutate(weighted_var = sum((bot_depth * biomass) / sum(biomass))) |>
       mutate(weighted_temp = sum((bottom_temp_c * biomass) / sum(biomass))) |>
-      mutate(weighted_temp_constantden = sum((bottom_temp_c * avg.density) / sum(avg.density))) |>
+      mutate(weighted_temp_constant_density = sum((bottom_temp_c * avg_density) / sum(avg_density))) |>
       group_by(year) |>
       summarise(
         mean_depth = mean(weighted_var),
-        lwr025 = quantile(weighted_var, probs = 0.025),
-        lwr05 = quantile(weighted_var, probs = 0.05),
-        lwr10 = quantile(weighted_var, probs = 0.10),
         lwr25 = quantile(weighted_var, probs = 0.25),
-        med = quantile(weighted_var, probs = 0.50),
         upr75 = quantile(weighted_var, probs = 0.75),
-        upr90 = quantile(weighted_var, probs = 0.90),
-        upr95 = quantile(weighted_var, probs = 0.95),
-        upr975 = quantile(weighted_var, probs = 0.975),
-        sd_depth = sd(weighted_var),
-        mean_log_depth = mean(log(weighted_var)),
-        sd_log_depth = sd(log(weighted_var)),
         mean_temp = mean(weighted_temp),
-        lwr025_temp = quantile(weighted_temp, probs = 0.025),
-        lwr05_temp = quantile(weighted_temp, probs = 0.05),
-        lwr10_temp = quantile(weighted_temp, probs = 0.10),
         lwr25_temp = quantile(weighted_temp, probs = 0.25),
-        med_temp = quantile(weighted_temp, probs = 0.50),
         upr75_temp = quantile(weighted_temp, probs = 0.75),
-        upr90_temp = quantile(weighted_temp, probs = 0.90),
-        upr95_temp = quantile(weighted_temp, probs = 0.95),
-        upr975_temp = quantile(weighted_temp, probs = 0.975),
-        sd_depth_temp = sd(weighted_temp),
-        mean_log_depth_temp = mean(log(weighted_temp)),
-        sd_log_depth_temp = sd(log(weighted_temp))
+        mean_temp_constant_density = mean(weighted_temp_constant_density),
+        lwr25_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.25),
+        upr75_temp_constant_density = quantile(weighted_temp_constant_density, probs = 0.75)
       ) |>
       mutate(region = r)
   }
   out <- lapply(c(regions, "Coastwide"), run_mean_var_by_region)
-  #out <- lapply(regions, run_mean_var_by_region)
   out <- do.call(rbind, out)
   out$maturity_group <- mats[i]
   gc()
