@@ -43,7 +43,7 @@ print(g)
 ggsave("figs/biomass-weighted-depth.png", width = 7.3, height = 2.8)
 ggsave("figs/biomass-weighted-depth.pdf", width = 7.3, height = 2.8)
 
-g <- ret |>
+g2 <- ret |>
   filter(region != "Coastwide") |>
   ggplot(aes(year, mean_temp , colour = group_clean, fill = group_clean)) +
   geom_line() +
@@ -58,7 +58,7 @@ g <- ret |>
   scale_fill_manual(values = cols_maturities) +
   labs(
     fill = "Group", colour = "Group", x = "Year",
-    y = "Biomass-weighted mean temp (C)"
+    y = "Biomass-weighted\nmean temperature (C)"
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
@@ -66,13 +66,13 @@ g <- ret |>
                      tag_prefix = "(", position = "tl"
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
-print(g)
+print(g2)
 
 ggsave("figs/biomass-weighted-temp.png", width = 7.3, height = 2.8)
 ggsave("figs/biomass-weighted-temp.pdf", width = 7.3, height = 2.8)
 
 
-g <- ret |>
+g3 <- ret |>
   filter(region != "Coastwide") |>
   ggplot(aes(year, mean_temp_constant_density , colour = group_clean, fill = group_clean)) +
   geom_line() +
@@ -87,7 +87,7 @@ g <- ret |>
   scale_fill_manual(values = cols_maturities) +
   labs(
     fill = "Group", colour = "Group", x = "Year",
-    y = "Biomass-weighted mean temp (C)"
+    y = "Average biomass-weighted\nmean temperature (C)"
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
@@ -95,4 +95,7 @@ g <- ret |>
     tag_prefix = "(", position = "tl"
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
-print(g)
+print(g3)
+
+library(patchwork)
+patchwork::wrap_plots(g, g2, g3, ncol = 1)
