@@ -101,9 +101,14 @@ g3 <- ret |>
   theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
   tagger::tag_facets(tag = "panel",
-    tag_prefix = "(", position = "tl"
+    tag_prefix = "(", position = "tl", tag_pool = c("g", "h", "i")
   ) +
   theme(tagger.panel.tag.text = element_text(color = "grey30", size = 9), axis.title.x = element_blank())
 print(g3)
 
-patchwork::wrap_plots(g, g2, g3, ncol = 1)
+patchwork::wrap_plots(
+  g + theme(legend.position.inside = c(0.1, 0.32)),
+  g2 + theme(legend.position = "none"),
+  g3 + theme(legend.position = "none"), ncol = 1, axis_titles = "collect", axes = "collect")
+ggsave("figs/biomass-weighted-temp-constant.png", width = 7.3, height = 7.5)
+ggsave("figs/biomass-weighted-temp-constant.pdf", width = 7.3, height = 7.5)
