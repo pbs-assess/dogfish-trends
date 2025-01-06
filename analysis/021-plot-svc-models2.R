@@ -171,7 +171,7 @@ rotated_coast <- do.call(rbind, rotated_coast)
 # main plot ---------------------------------------------------------------
 
 LIMS <- c(-12, 4) #<- set up limits to contract colour scheme and make visualizations better
-LAB <- "Est. biomass change\n('05-'23)"
+LAB <- "Biomass change\\\n2003--2023\\\n(t per km^2^)"
 
 #scale ok?
 ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
@@ -194,12 +194,12 @@ g1 <- prs |>
   colorspace::scale_colour_continuous_divergingx(
     palette = "RdBu", mid = 0,
     trans = "fourth_root_power",
-    limits = LIMS
+    limits = LIMS, breaks = c(-10, -2, -0.1, 0, 0.1, 2)
   ) +
   colorspace::scale_fill_continuous_divergingx(
     palette = "RdBu", mid = 0,
     trans = "fourth_root_power",
-    limits = LIMS
+    limits = LIMS, breaks = c(-10, -2, -0.1, 0, 0.1, 2)
   ) +
   labs(fill = LAB, colour = LAB) +
   coord_sf(
@@ -209,7 +209,8 @@ g1 <- prs |>
   geom_text(
     data = mids, mapping = aes(x = mean_x - 1000000, label = group_clean),
     y = 8500000, inherit.aes = FALSE, colour = "grey30", vjust = 1, hjust = 0
-  )
+  ) +
+  theme(legend.title = ggtext::element_markdown())
 g1
 
 LABS2 <- "Relative\nbiomass\ndensity"
