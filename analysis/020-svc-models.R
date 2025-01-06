@@ -5,7 +5,7 @@ source("analysis/999-prep-overall-trawl.R")
 
 dat_coast <- filter(dat, survey_name %in%
                       c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year >= 2005) #<- why is this 2006 and the linear declines are 2005?? I changed to match the linear declines
+  filter(year >= 2003)
 
 # coast SVC trawl model ------------------------------------------------
 
@@ -90,7 +90,7 @@ if (FALSE) {
 source("analysis/999-prep-overall-trawl.R")
 rm(dat) # only keep 'grid'
 source("analysis/999-prep-maturity-split-data.R")
-d <- prep_maturity_split_data() |> filter(year >= 2005) #<- change this to 2005 to match the coefficient plot, was 2006
+d <- prep_maturity_split_data() |> filter(year >= 2003)
 d$year_scaled <- (d$year - 2010) / 10
 
 fit_maturity_group_svc <- function(dd) {
@@ -126,11 +126,6 @@ ret <- split(d, d$lengthgroup) |> lapply(fit_maturity_group_svc)
 purrr::walk(ret, sanity)
 saveRDS(ret, file = "output/fit-trawl-svc-maturity.rds")
 ret <- readRDS("output/fit-trawl-svc-maturity.rds")
-sanity(ret$imm)
-sanity(ret$mm)
-sanity(ret$mf)
-sanity(ret$maturingf)
-sanity(ret$maturingm)
 
 # IPHC -----------------------------------------------------------------
 

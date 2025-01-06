@@ -4,9 +4,9 @@ library(ggplot2)
 library(sf)
 source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-rotate.R")
-devtools::install_github("seananderson/ggsidekick")
+# devtools::install_github("seananderson/ggsidekick")
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
-pred_year = 2005
+pred_year = 2003
 
 # absolute decline map
 
@@ -15,26 +15,25 @@ grid <- grid |>
   dplyr::select(-c(year, year_scaled)) |>
   distinct(.keep_all = TRUE)
 grid$FID <- seq(1, nrow(grid), 1)
-years <- c(2005, 2023) #<- we assume it's linear so just assume linear change between the years
+years <- c(2003, 2023) #<- we assume it's linear so just assume linear change between the years
 grid <- purrr::map_dfr(years, ~ tibble(grid, year = .x))
 unique(grid$year)
 
 dat_coast <- filter(dat, survey_name %in%
   c("syn bc", "NWFSC.Combo.pass1", "NWFSC.Combo.pass2", "GOA")) |>
-  filter(year %in% c(2005, 2023))
+  filter(year %in% c(2003, 2023))
 year_scaled <- unique(dat_coast$year_scaled)
 
-grid <- grid |> mutate(year_scaled = ifelse(year == 2005, year_scaled[1], year_scaled[2]))
+grid <- grid |> mutate(year_scaled = ifelse(year == 2003, year_scaled[1], year_scaled[2]))
 
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds") #<- bring in svc model
 p <- predict(fit, newdata = grid)
 p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
 
-#<- why is the range of est_diff so low compared to the maturity groups???
 p <- p |>
   mutate(expest = exp(p$est1 + p$est2)) |>
   group_by(FID) |>
-  mutate(x = expest[which(year == 2005)], y = expest[which(year == 2023)]) |>
+  mutate(x = expest[which(year == 2003)], y = expest[which(year == 2023)]) |>
   mutate(est_diff = y - x ) |>
   filter(year == pred_year)
 
@@ -55,22 +54,22 @@ lapply(fits, \(x) x$family)
 
 grab_svc_pred_LD <- function(fit) {
   cat("-")
-  p <- predict(fit, newdata = filter(grid, year %in% c(2005, 2023)))
+  p <- predict(fit, newdata = filter(grid, year %in% c(2003, 2023)))
   if (sdmTMB:::is_delta(fit)) {
     p <- p |> mutate(expest = exp(est1 + est2)) |>
       group_by(FID) |>
-      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
+      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2003)]) |>
       mutate(est_diff = y-x) |>
-      filter(year == 2005)
+      filter(year == 2003)
 
     p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
 
   } else {
     p <- p |>
       mutate(expest = exp(est)) |>
-      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2005)]) |>
+      mutate(y = expest[which(year == 2023)],  x = expest[which(year == 2003)]) |>
       mutate(est_diff = y-x) |>
-      filter(year == 2005)
+      filter(year == 2003)
 
     p$combined_intercept <- p$est_non_rf1 + p$omega_s1 + p$est_non_rf2 + p$omega_s2
   }
@@ -136,6 +135,8 @@ prs$group_clean <- factor(prs$group_clean, levels = lvls)
 pal <- rev(RColorBrewer::brewer.pal(3, name = "RdBu"))
 mids <- group_by(prs, group_clean) |> summarise(mean_x = mean(rotated_x))
 
+# saveRDS(prs, "output/svc-spatial-data.rds")
+
 # rotate sf coast ---------------------------------
 
 library(sf)
@@ -175,6 +176,7 @@ LAB <- "Est. biomass change\n('05-'23)"
 #scale ok?
 ggplot(prs, aes((est_diff))) + geom_histogram() + facet_wrap(~group_clean) + scale_x_log10()
 
+library(ggsidekick)
 g1 <- prs |>
   #filter(year == 2023) |>
   #mutate(svc = ifelse(exp(svc) >= LIMS[2], log(LIMS[2] - 1e-6), svc)) |>
@@ -254,7 +256,6 @@ g <- cowplot::plot_grid(g2, g1, nrow = 2, align = "v", labels = c("(a)", "(b)"),
 
 ggsave("figs/svc-trawl-stacked-abs.pdf", width = 6.1, height = 10)
 ggsave("figs/svc-trawl-stacked-abs.png", width = 6.1, height = 10)
-
 
 
 # plot with location names for SOM ----------------------------------------

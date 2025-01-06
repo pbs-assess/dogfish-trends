@@ -4,7 +4,7 @@ library(ggplot2)
 library(sf)
 source("analysis/999-prep-overall-trawl.R")
 source("analysis/999-rotate.R")
-pred_year = 2005
+pred_year = 2003
 grid <- mutate(grid, X = UTM.lon, Y = UTM.lat)
 
 fit <- readRDS("output/fit-trawl-svc-lognormal-mix.rds")
@@ -100,6 +100,8 @@ prs$group_clean <- factor(prs$group_clean, levels = lvls)
 pal <- rev(RColorBrewer::brewer.pal(3, name = "RdBu"))
 # 'mids' is for placing the maturity labels at the top:
 mids <- group_by(prs, group_clean) |> summarise(mean_x = mean(rotated_x))
+
+saveRDS(prs, "output/svc-spatial-data.rds")
 
 # rotate sf coast ---------------------------------
 

@@ -7,7 +7,7 @@ source("analysis/999-colours-etc.R")
 set_starting_year <- 1980
 max_year <- 2023
 
-coef_year <- 2005
+coef_year <- 2003
 set_starting_year_iphc <- 1998
 grey_bar_end <- set_starting_year_iphc-1
 
@@ -59,6 +59,7 @@ pnw
 
 # nwfsc index w/wo catchabilities and julian -------------------------------------------------------------
 ind1 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") # model with catachabilities for early and late
+ind11 <- dplyr::bind_rows(ind1)
 ind1 <- ind1$index |> mutate(model = "catchabilities")
 ind2 <- readRDS("output/trawl-1995-onwards.rds") |> mutate(model = "1995 onwards")
 # ind3 <- readRDS("output/trawl-coast-indexes-julian.rds") |>  filter(region == "US West Coast") |>

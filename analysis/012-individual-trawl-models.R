@@ -367,11 +367,11 @@ fit_trawl_region <- function(dd) {
 # dat2 <- filter(dat, region == "GOA")
 # dat2 <- filter(dat, region == "BC")
 
-# out <- split(dat2, dat2$region) |> lapply(fit_trawl_region)
+out <- split(dat, dat$region) |> lapply(fit_trawl_region)
 
 # saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-1995-onwards.rds")
 # saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds")
-# saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds")
+saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds")
 
 
 
@@ -396,7 +396,7 @@ fit_trawl_region <- function(dd) {
  #out$NWFSC <- out2$NWFSC #<- update one of the models
  #out$GOA <- out2$GOA
 
-#out <- split(dat, dat$region) |> lapply(fit_trawl_region)
+out <- split(dat, dat$region) |> lapply(fit_trawl_region)
 saveRDS(out, file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
 # out <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link.rds")
 
