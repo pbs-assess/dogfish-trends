@@ -6,7 +6,7 @@ indexes <- readRDS("output/index-trawl-by-maturity-poisson-link.rds") #|>
   #filter(group != "mature") #<- note mature group is here rm below when plotting
 indexes$region <- factor(indexes$region, levels = c("Coast", "GOA", "BC", "NWFSC"))
 
-glmdf <- indexes |> filter(year >= 2005) |>
+glmdf <- indexes |> filter(year >= 2003) |>
   group_by(region, group) |>
   group_split() |>
   purrr::map_dfr(\(x) {
