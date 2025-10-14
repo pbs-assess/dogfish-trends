@@ -25,7 +25,7 @@ The analysis requires R and the following packages (other packages on CRAN):
 
 Install required packages with:
 
-```r
+```R
 install.packages("pak")
 install.packages("tidyverse")
 install.packages("sf")
