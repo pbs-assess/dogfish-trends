@@ -96,7 +96,7 @@ g3 <- ret |>
   scale_fill_manual(values = cols_maturities) +
   labs(
     fill = "Group", colour = "Group", x = "Year",
-    y = "Average biomass-weighted\nmean temperature (C)"
+    y = "Average-biomass-weighted\nmean temperature (C)"
   ) +
   theme(legend.position = "inside", legend.position.inside = c(0.80, 0.28), axis.title.x = element_blank()) +
   # theme(legend.position = "inside", legend.position.inside = c(0.9, 0.75), axis.title.x = element_blank()) +
@@ -107,12 +107,13 @@ g3 <- ret |>
 print(g3)
 
 patchwork::wrap_plots(
-  g + theme(legend.position.inside = c(0.1, 0.32)),
+  g + theme(legend.position.inside = c(0.165, 0.32), legend.text = element_text(size = 7), legend.title = element_text(size = 9)) + guides(colour = guide_legend(ncol = 2, byrow = TRUE), fill = guide_legend(ncol = 2, byrow = TRUE)),
   g2 + theme(legend.position = "none") + theme(legend.position = "none",
     strip.background = element_blank(),
     strip.text.x = element_blank()),
   g3 + theme(legend.position = "none") + theme(legend.position = "none",
     strip.background = element_blank(),
     strip.text.x = element_blank()), ncol = 1, axis_titles = "collect", axes = "collect")
-ggsave("figs/biomass-weighted-temp-constant.png", width = 7.3, height = 7.3)
-ggsave("figs/biomass-weighted-temp-constant.pdf", width = 7.3, height = 7.3)
+# ggsave("figs/biomass-weighted-temp-constant.png", width = 7.3, height = 5.8)
+ggsave("figs/biomass-weighted-temp-constant.pdf", width = 7.4, height = 5.6)
+
