@@ -1,7 +1,6 @@
 library(inlabru)
 library(sdmTMB)
 library(ggplot)
-library(INLA)
 
 # add temp to grid --------------------------------------------------------
 #One "simple" way to do this is to use sdmTMB to project the observed bottom temperature to the grid cell level. Then use that for the density-weighted mean temperature.
