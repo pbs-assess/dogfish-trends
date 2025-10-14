@@ -1,4 +1,4 @@
-# Dogfish Trends: Transboundary Population Analyses
+# Code for *Mystery of the disappearing dogfish*
 
 This repository contains code and data for:
 
