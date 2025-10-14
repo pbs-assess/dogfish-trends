@@ -15,7 +15,6 @@ grey_bar_end <- set_starting_year_iphc-1
 # set_starting_year_iphc <- set_starting_year
 # grey_bar_end <- 2002
 
-
 # map -----------------------------------------------------------------------
 
 source("analysis/999-prep-overall-trawl.R")
@@ -331,10 +330,8 @@ g_coefs <- glmdf |>
   theme(axis.title.x.bottom = element_text(size = 9)) +
   annotate("text", x = 0.325, y = 1.1, label = "(c)")
 
-# img <- magick::image_read("figs/Spiny_dogfish.jpg")
-img <- magick::image_read("Spiny Dogfish Sketch_3D Paint.jpg")
+img <- magick::image_read("data-raw/Spiny Dogfish Sketch_3D Paint.jpg")
 (dog_image <- magick::image_ggplot(img) +
-  # theme(axis.text = element_text()) +
   annotate("text",
     x = 355, y = 1510,
     # x = 115, y = 410, colour = "white",
