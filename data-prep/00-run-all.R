@@ -1,7 +1,6 @@
 dir.create("output", showWarnings = FALSE)
 dir.create("figs", showWarnings = FALSE)
 
-
 if (FALSE) {
   remotes::install_github("pbs-assess/gfiphc")
   remotes::install_github("pfmc-assessments/nwfscSurvey")
