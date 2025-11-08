@@ -1,8 +1,10 @@
 if (FALSE) {
-  remotes::install_github("pbs-assess/sdmTMB")
+  remotes::install_github("pbs-assess/sdmTMB@dec92c1")
   remotes::install_github("seananderson/ggsidekick")
   remotes::install_github("ropensci/rnaturalearthhires")
   remotes::install_github("eliocamp/tagger")
+  remotes::install_version("fmesher", version = "0.5.0", repos = "https://cran.r-project.org")
+  remotes::install_version("ggplot2", version = "4.0.0", repos = "https://cran.r-project.org")
 }
 
 dir.create("output", showWarnings = FALSE)
@@ -14,6 +16,7 @@ source("analysis/010-overall-longline-model.R")
 source("analysis/012-individual-trawl-models.R")
 source("analysis/013-plot-overall-trends.R")
 source("analysis/014-plot-coefs.R")
+source("analysis/014a-plot-catchability-coefs.R")
 
 source("analysis/015-maturity-models.R")
 source("analysis/016-calculate-weighted-mean-depth.R")
