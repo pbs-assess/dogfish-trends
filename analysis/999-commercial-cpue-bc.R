@@ -79,8 +79,8 @@ fit_dgm <- update(
   anisotropy = FALSE,
   family = delta_lognormal_mix(),
   control = sdmTMBcontrol(
-    start = list(logit_p_mix = qlogis(0.01)),
-    map = list(logit_p_mix = factor(NA))
+    start = list(logit_p_extreme = qlogis(0.01)),
+    map = list(logit_p_extreme = factor(NA))
   )
 )
 saveRDS(fit_dgm, "output/fit_dgm.rds")

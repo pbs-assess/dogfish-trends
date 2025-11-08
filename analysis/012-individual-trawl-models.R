@@ -287,8 +287,8 @@ fit_trawl_region <- function(dd) {
     extra_time = seq(min(dd$year), max(dd$year)),
     family = set_family,
     control = sdmTMBcontrol(
-      start = list(logit_p_mix = qlogis(0.01)),
-      map = list(logit_p_mix = factor(NA))
+      start = list(logit_p_extreme = qlogis(0.01)),
+      map = list(logit_p_extreme = factor(NA))
     ),
     priors = sdmTMBpriors(
       matern_s = pc_matern(range_gt = max_edge * 3, sigma_lt = 2),

@@ -99,8 +99,8 @@ fit1 <- sdmTMB(
   spatiotemporal = "rw",
   family = delta_lognormal_mix(),
   control = sdmTMBcontrol(
-    start = list(logit_p_mix = qlogis(0.01)),
-    map = list(logit_p_mix = factor(NA))
+    start = list(logit_p_extreme = qlogis(0.01)),
+    map = list(logit_p_extreme = factor(NA))
   ),
   silent = FALSE,
   share_range = FALSE,
@@ -117,8 +117,8 @@ saveRDS(fit1, file = paste0("output/fit-trawl-coast-lognormal-mix-",min_edge,"-"
 fit1 <- readRDS(paste0("output/fit-trawl-coast-lognormal-mix-",min_edge,"-", max_edge,".rds"))
 
 p1 <- get_pars(fit1)
-plogis(p1$logit_p_mix)
-1 + exp(p1$log_ratio_mix)
+plogis(p1$logit_p_extreme)
+1 + exp(p1$logit_p_extreme)
 fit1$sd_report
 
 set.seed(1)
@@ -195,8 +195,8 @@ fitq <- sdmTMB(
   spatiotemporal = "rw",
   family = delta_lognormal_mix(),
   control = sdmTMBcontrol(
-    start = list(logit_p_mix = qlogis(0.01)),
-    map = list(logit_p_mix = factor(NA))
+    start = list(logit_p_extreme = qlogis(0.01)),
+    map = list(logit_p_extreme = factor(NA))
   ),
   silent = FALSE,
   share_range = FALSE,

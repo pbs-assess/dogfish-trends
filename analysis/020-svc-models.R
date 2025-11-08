@@ -43,8 +43,8 @@ fit <- sdmTMB(
   spatiotemporal = "off",
   family = delta_lognormal_mix(type = "poisson-link"),
   control = sdmTMBcontrol(
-    start = list(logit_p_mix = qlogis(0.01)),
-    map = list(logit_p_mix = factor(NA))
+    start = list(logit_p_extreme = qlogis(0.01)),
+    map = list(logit_p_extreme = factor(NA))
   ),
   silent = FALSE,
   share_range = FALSE,

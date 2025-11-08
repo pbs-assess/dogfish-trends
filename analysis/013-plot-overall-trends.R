@@ -56,27 +56,27 @@ pnw
 
 
 
-# nwfsc index w/wo catchabilities and julian -------------------------------------------------------------
-ind1 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") # model with catachabilities for early and late
-ind11 <- dplyr::bind_rows(ind1)
-ind1 <- ind1$index |> mutate(model = "catchabilities")
-ind2 <- readRDS("output/trawl-1995-onwards.rds") |> mutate(model = "1995 onwards")
-# ind3 <- readRDS("output/trawl-coast-indexes-julian.rds") |>  filter(region == "US West Coast") |>
-#  filter(model == "Region-specific") |> mutate(model = "all surveys, no seperate catachabtilites")
-ind3 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds")
-ind3 <- ind3$index |> mutate(model = "all surveys, no seperate catchabilities")
-ind4 <- readRDS("output/trawl-coast-indexes-julian.rds") |>
-  filter(region == "US West Coast") |>
-  mutate(model = "julian date")
-ind <- bind_rows(ind1, ind2, ind3)
-
-ggplot(ind, aes(year, (est), ymin = (lwr), ymax = (upr), colour = model)) +
-  geom_pointrange(data = ind, mapping = aes(x = year - 0.25), size = 0.2, pch = 5, alpha = 0.6, position = position_dodge(width = 1)) +
-  theme_classic() +
-  scale_colour_manual(values = c("#d8b365", "black", "#5ab4ac", "red")) +
-  # facet_wrap(~group, scales = "free_y") +
-  coord_cartesian(ylim = c(0, 200000))
-ggsave("Figs/nwfsc_index.jpg", width = 8, height = 5)
+# # nwfsc index w/wo catchabilities and julian -------------------------------------------------------------
+# ind1 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-catchabilities.rds") # model with catachabilities for early and late
+# ind11 <- dplyr::bind_rows(ind1)
+# ind1 <- ind1$index |> mutate(model = "catchabilities")
+# ind2 <- readRDS("output/trawl-1995-onwards.rds") |> mutate(model = "1995 onwards")
+# # ind3 <- readRDS("output/trawl-coast-indexes-julian.rds") |>  filter(region == "US West Coast") |>
+# #  filter(model == "Region-specific") |> mutate(model = "all surveys, no seperate catachabtilites")
+# ind3 <- readRDS(file = "output/fit-trawl-by-region-lognormal-poisson-link-w-julian-afsc-nwfsc-onecatch.rds")
+# ind3 <- ind3$index |> mutate(model = "all surveys, no seperate catchabilities")
+# ind4 <- readRDS("output/trawl-coast-indexes-julian.rds") |>
+#   filter(region == "US West Coast") |>
+#   mutate(model = "julian date")
+# ind <- bind_rows(ind1, ind2, ind3)
+#
+# ggplot(ind, aes(year, (est), ymin = (lwr), ymax = (upr), colour = model)) +
+#   geom_pointrange(data = ind, mapping = aes(x = year - 0.25), size = 0.2, pch = 5, alpha = 0.6, position = position_dodge(width = 1)) +
+#   theme_classic() +
+#   scale_colour_manual(values = c("#d8b365", "black", "#5ab4ac", "red")) +
+#   # facet_wrap(~group, scales = "free_y") +
+#   coord_cartesian(ylim = c(0, 200000))
+# ggsave("Figs/nwfsc_index.jpg", width = 8, height = 5)
 
 
 

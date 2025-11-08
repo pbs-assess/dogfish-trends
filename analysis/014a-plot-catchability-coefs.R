@@ -1,6 +1,10 @@
 # Plot catchability coefs
 
-
+library(sdmTMB)
+library(dplyr)
+library(ggplot2)
+min_edge <- 30
+max_edge <- 45
 
 # plot coef for coastwide catachability coef ------------------------------
 # pulled these from 010-overall-trawl-model.R

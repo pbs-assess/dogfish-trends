@@ -89,8 +89,8 @@ for (i in seq_along(groups)) {
     extra_time = seq(min(dd$year), max(dd$year)),
     family = delta_lognormal(type = "poisson-link"),
     control = sdmTMBcontrol(
-      start = list(logit_p_mix = qlogis(0.01), log_ratio_mix = -1),
-      map = list(logit_p_mix = factor(NA))
+      start = list(logit_p_extreme = qlogis(0.01), log_ratio_mix = -1),
+      map = list(logit_p_extreme = factor(NA))
     ),
     silent = TRUE,
     share_range = FALSE,

@@ -36,15 +36,16 @@ install.packages("pak")
 install.packages("patchwork")
 install.packages("RColorBrewer")
 install.packages("RhpcBLASctl")
-install.packages("sdmTMB", dependencies = TRUE)
 install.packages("sf")
 install.packages("spatioEco")
 install.packages("wesanderson")
+pak::pak("pbs-assess/sdmTMB@dec92c1", dependencies = TRUE)
 pak::pak("pbs-assess/gfiphc")
 pak::pak("pfmc-assessments/nwfscSurvey")
 pak::pak("seananderson/ggsidekick")
 pak::pak("ropensci/rnaturalearthhires")
 pak::pak("eliocamp/tagger")
+remotes::install_version("fmesher", version = "0.5.0", repos = "https://cran.r-project.org")
 ```
 
 ## Running the Analysis
@@ -56,6 +57,8 @@ The analysis can be reproduced by running scripts in sequence:
 
 Alternatively, run individual scripts in numerical order within each directory.
 
+Setting up R with an [optimized BLAS library](https://github.com/pbs-assess/sdmTMB?tab=readme-ov-file#installation) will substantially speed up model fitting.
+
 ## Contact
 
-For questions about this code, please open an issue or contact the corresponding author.
+For questions about this code, please open an issue or contact the paper's corresponding author.
