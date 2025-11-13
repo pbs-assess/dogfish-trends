@@ -13,15 +13,6 @@
     { "name": "Anderson, S.C." }
   ],
   "license": "MIT",
-  "keywords": [
-    "spiny dogfish",
-    "Squalus suckleyi",
-    "groundfish",
-    "stock assessment",
-    "Pacific Northwest",
-    "reproducible research",
-    "spatiotemporal analysis"
-  ],
   "related_identifiers": [
     {
       "relation": "isSupplementTo",
