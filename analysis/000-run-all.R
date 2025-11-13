@@ -1,12 +1,3 @@
-if (FALSE) {
-  remotes::install_github("pbs-assess/sdmTMB@dec92c1")
-  remotes::install_github("seananderson/ggsidekick")
-  remotes::install_github("ropensci/rnaturalearthhires")
-  remotes::install_github("eliocamp/tagger")
-  remotes::install_version("fmesher", version = "0.5.0", repos = "https://cran.r-project.org")
-  remotes::install_version("ggplot2", version = "4.0.0", repos = "https://cran.r-project.org")
-}
-
 dir.create("output", showWarnings = FALSE)
 dir.create("figs", showWarnings = FALSE)
 
@@ -25,7 +16,7 @@ source("analysis/017-plot-mean-depth.R")
 # SVC trends:
 source("analysis/020-svc-models.R")
 source("analysis/021-plot-svc-models2.R") # this is absolute declines
-source("analysis/021-plot-svc-models.R") # this is proportional declines
+source("analysis/021-plot-svc-models.R") # this is proportional declines.
 
 source("analysis/031-plot-maturity-trends.R")
 source("analysis/040-model-table.R")

@@ -6,7 +6,6 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
-devtools::install_github("eliocamp/tagger")
 source("analysis/999-colours-etc.R")
 
 # notes -------------------------------------------------------------------

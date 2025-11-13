@@ -17,7 +17,7 @@ dat |> group_by(survey_name) |> drop_na(julian_std) |> summarize(min = min(julia
 dat <- dat |> drop_na(bottom_temp_c)
 
 table(dat$survey_name, dat$year)
-table(dat$region, dat$year)
+# table(dat$region, dat$year)
 
 domain <- fmesher::fm_nonconvex_hull_inla(
   as.matrix(dat[, c("UTM.lon", "UTM.lat")]),
@@ -75,6 +75,7 @@ fit <- sdmTMB(
   #offset = "offset_km2",
   mesh = mesh,
   spatial = set_spatial,
+  control = sdmTMBcontrol(multiphase = FALSE),
   spatiotemporal = "ar1",
   silent = FALSE,
   share_range = FALSE,
@@ -86,7 +87,7 @@ tidy(fit, "ran_pars")
 saveRDS(fit, "output/fit-temp-model.rds")
 
 
-fit <- run_extra_optimization(fit)
+# fit <- run_extra_optimization(fit)
 
 
 # if (FALSE) {

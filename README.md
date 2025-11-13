@@ -46,6 +46,7 @@ pak::pak("seananderson/ggsidekick")
 pak::pak("ropensci/rnaturalearthhires")
 pak::pak("eliocamp/tagger")
 remotes::install_version("fmesher", version = "0.5.0", repos = "https://cran.r-project.org")
+remotes::install_version("ggplot2", version = "4.0.0", repos = "https://cran.r-project.org")
 ```
 
 ## Running the Analysis

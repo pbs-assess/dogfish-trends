@@ -18,7 +18,7 @@ fits_svc_mat <- readRDS("output/fit-trawl-svc-maturity.rds")
 
 fits_index_mat <- readRDS("output/fit-trawl-by-maturity-poisson-link.rds")
 
-all_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link-w-julian-i2.rds")
+all_reg <- readRDS("output/fit-trawl-by-region-lognormal-poisson-link.rds")
 fits_reg <- list()
 fits_reg[[1]] <- all_reg[[1]]$fit
 fits_reg[[2]] <- all_reg[[2]]$fit
