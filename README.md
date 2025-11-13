@@ -45,8 +45,8 @@ pak::pak("pfmc-assessments/nwfscSurvey")
 pak::pak("seananderson/ggsidekick")
 pak::pak("ropensci/rnaturalearthhires")
 pak::pak("eliocamp/tagger")
-remotes::install_version("fmesher", version = "0.5.0", repos = "https://cran.r-project.org")
-remotes::install_version("ggplot2", version = "4.0.0", repos = "https://cran.r-project.org")
+pak::pak("fmesher@0.5.0")
+pak::pak("ggplot2@4.0.0")
 ```
 
 ## Running the Analysis
@@ -57,6 +57,8 @@ The analysis can be reproduced by running scripts in sequence:
 2. **Statistical analysis**: Run `analysis/000-run-all.R` to fit models and generate figures
 
 Alternatively, run individual scripts in numerical order within each directory.
+
+Running the full analysis will take several hours.
 
 Setting up R with an [optimized BLAS library](https://github.com/pbs-assess/sdmTMB?tab=readme-ov-file#installation) will substantially speed up model fitting.
 
