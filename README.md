@@ -1,5 +1,7 @@
 # Code for *Mystery of the disappearing dogfish*
 
+[![DOI](https://zenodo.org/badge/792561210.svg)](https://doi.org/10.5281/zenodo.17604516)
+
 This repository contains code and data for:
 
 Davidson, L.N.K., P.A. English, J.R. King, P. Grant, I.G. Taylor, L. Barnett, V. Gertseva, C.A. Tribuzio, and S.C. Anderson. 2025. Mystery of the disappearing dogfish: transboundary analyses reveal steep population declines across the Northeast Pacific with little evidence for regional redistribution. *Fish and Fisheries*. <https://doi.org/10.1111/faf.70028>
